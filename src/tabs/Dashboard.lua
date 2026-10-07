@@ -1,11 +1,22 @@
 local Dashboard = {}
 
--- Serwisy
-local HttpService = game:GetService("HttpService")
-
 -- Ładowanie ikon
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 local Icons = loadstring(game:HttpGet(baseUrl .. "Icons.lua"))()
+
+local function getLocalVersion()
+    if typeof(readfile) == "function" then
+        local ok, content = pcall(readfile, "MenuTest/version.txt")
+        if ok and content and #content > 0 then
+            return content:gsub("^%s*(.-)%s*$", "%1")
+        end
+        local ok2, content2 = pcall(readfile, "version.txt")
+        if ok2 and content2 and #content2 > 0 then
+            return content2:gsub("^%s*(.-)%s*$", "%1")
+        end
+    end
+    return "0.0.1"
+end
 
 function Dashboard:Render(UI, order)
     local TabElements = UI:CreateTab("Dashboard", "layout-dashboard", order or 1)
@@ -101,8 +112,9 @@ function Dashboard:Render(UI, order)
         return Btn
     end
 
+    local versionStr = "v" .. getLocalVersion()
     createCard("Discord", "Join community", "users", "Copy", "https://dsc.gg/xeno-scripts-pl")
-    createCard("Version", "Ładowanie...", "package", "Copy")
+    createCard("Version", versionStr, "package", "Copy", versionStr)
     createCard("GitHub", "View source", "github", "Copy", "https://github.com/xxCichyxx/MenuTest")
 
     local UpdatesContainer = Instance.new("Frame")
@@ -211,56 +223,14 @@ function Dashboard:Render(UI, order)
         Separator.Parent = LogItem
         ThemeManager:Register(Separator, "BackgroundColor3", "Accent2")
     end
-    local function safeHttpGet(url)
-    -- Sprawdzamy czy executor obsługuje funkcję request (często pomija restrykcje gry)
-    if request then
-        local response = request({
-            Url = url,
-            Method = "GET"
-        })
-        if response and response.StatusCode == 200 then
-            return true, response.Body
-        end
-        return false, nil
-    elseif syn and syn.request then
-        local response = syn.request({
-            Url = url,
-            Method = "GET"
-        })
-        if response and response.StatusCode == 200 then
-            return true, response.Body
-        end
-        return false, nil
-    else
-        -- Awaryjnie zwykły HttpGet w pcall
-        local success, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-        return success, result
-    end
-    end
 
-    task.spawn(function()
-    local success, version = safeHttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/version.txt")
-    if versionLabel then
-        versionLabel.Text = (success and version) and "v" .. version:gsub("^%s*(.-)%s*$", "%1") or "Unknown"
+    -- Statyczny changelog (brak zewnętrznych zapytań HTTP do GitHub API / pobierania aktualizacji)
+    local changelog = {
+        { message = "Wersja lokalna", tag = versionStr }
+    }
+    for _, item in ipairs(changelog) do
+        addLog(item.message, item.tag)
     end
-
-    local successResp, response = safeHttpGet("https://api.github.com/repos/xxCichyxx/MenuTest/commits")
-
-    if successResp and response then
-        local successJson, commits = pcall(function() return HttpService:JSONDecode(response) end)
-        if successJson and type(commits) == "table" then
-            for _, child in pairs(ChangelogList:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
-            for i = 1, math.min(5, #commits) do
-                local commitData = commits[i]
-                if commitData and commitData.commit then
-                    addLog(commitData.commit.message, commitData.sha:sub(1, 7))
-                end
-            end
-        end
-    end
-    end)
 end
 
 return Dashboard
