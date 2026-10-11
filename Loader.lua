@@ -83,28 +83,17 @@ elseif Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)] then
     matchedName = Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)]
 end
 
-print("==================================================")
-print("🚀 [MenuTest Loader] Inicjalizacja...")
-print(string.format("📌 Aktualny PlaceId: %s | GameId: %s", tostring(placeId), tostring(gameId)))
+print("Loading...")
 
 if matchedId then
-    print(string.format("✅ Wykryto dedykowany skrypt dla gry: %s (ID: %s)", tostring(matchedName), tostring(matchedId)))
-    print("⏳ Ładowanie modułów gry...")
-    print("==================================================")
-
     local relPath = "Games/" .. tostring(matchedId) .. "/Script.lua"
     local fullUrl = baseUrl .. relPath
     local success, _ = safeExecute(relPath, fullUrl)
 
     if not success then
-        warn("[Loader] Nie udało się załadować dedykowanego skryptu! Przełączanie na Universal...")
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
-    print("ℹ️ Brak dedykowanego skryptu pod to ID gry.")
-    print("🌐 Uruchamianie Universal Suite (Render & ESP)...")
-    print("==================================================")
-
     local success, _ = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
         warn("[Loader] KRYTYCZNY BŁĄD: Nie udało się uruchomić Universal Suite!")

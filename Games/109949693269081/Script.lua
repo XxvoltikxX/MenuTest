@@ -179,52 +179,121 @@ local function GetPlotPads(plot)
     return padsFolder:GetChildren()
 end
 
-local function ParsePad(pad)
-    if not pad or not pad.Parent then return nil end
-    local price = pad:GetAttribute("Price") or 0
-    local name = pad:GetAttribute("Item") or pad:GetAttribute("Title") or pad.Name
+-- Kolory przycisków w grze:
+-- Zielony (do kupna): RGB 76, 190, 92
+-- Czerwony (do uzbierania / zablokowany): RGB 205, 72, 68
+-- Grupowy (pomiń): RGB 255, 196, 56
+local TARGET_BUY_COLOR = Color3.fromRGB(76, 190, 92)
+local TARGET_LOCKED_COLOR = Color3.fromRGB(205, 72, 68)
 
-    local touchPart = (pad:IsA("BasePart") and pad)
-        or pad:FindFirstChild("Pad")
+local function isColorClose(c1, c2, tolerance)
+    if not c1 or not c2 then return false end
+    tolerance = tolerance or 0.1
+    return math.abs(c1.R - c2.R) <= tolerance
+       and math.abs(c1.G - c2.G) <= tolerance
+       and math.abs(c1.B - c2.B) <= tolerance
+end
+
+local function isBuyableGreen(color)
+    if not color then return false end
+    if isColorClose(color, TARGET_BUY_COLOR, 0.12) then return true end
+    return (color.G > 0.55 and color.R < 0.45 and color.B < 0.45)
+end
+
+local function isLockedRed(color)
+    if not color then return false end
+    if isColorClose(color, TARGET_LOCKED_COLOR, 0.12) then return true end
+    return (color.R > 0.55 and color.G < 0.40 and color.B < 0.40)
+end
+
+local function isGroupButton(pad, color)
+    if color then
+        local r255 = math.floor(color.R * 255 + 0.5)
+        local g255 = math.floor(color.G * 255 + 0.5)
+        local b255 = math.floor(color.B * 255 + 0.5)
+        if math.abs(r255 - 255) <= 10 and math.abs(g255 - 196) <= 10 and math.abs(b255 - 56) <= 10 then
+            return true
+        end
+    end
+    if pad then
+        local name = tostring(pad.Name):lower()
+        local item = tostring(pad:GetAttribute("Item") or pad:GetAttribute("Title") or ""):lower()
+        if name:find("group") or item:find("group") or name:find("reward") or item:find("reward") then
+            return true
+        end
+        if pad:GetAttribute("Group") or pad:GetAttribute("IsGroup") or pad:FindFirstChild("Group") then
+            return true
+        end
+    end
+    return false
+end
+
+local function findPadButtonPart(pad)
+    if not pad or not pad.Parent then return nil, false end
+
+    -- 1. Szukamy części o zielonym kolorze (aktywny przycisk do kupna)
+    if pad:IsA("BasePart") and isBuyableGreen(pad.Color) and pad.Transparency < 1 then
+        return pad, true
+    elseif pad:IsA("Model") then
+        for _, child in ipairs(pad:GetDescendants()) do
+            if child:IsA("BasePart") and isBuyableGreen(child.Color) and child.Transparency < 1 then
+                return child, true
+            end
+        end
+    end
+
+    -- 2. Jeśli nie ma zielonego, szukamy części o czerwonym kolorze (zablokowany przycisk)
+    if pad:IsA("BasePart") and isLockedRed(pad.Color) then
+        return pad, false
+    elseif pad:IsA("Model") then
+        for _, child in ipairs(pad:GetDescendants()) do
+            if child:IsA("BasePart") and isLockedRed(child.Color) then
+                return child, false
+            end
+        end
+    end
+
+    -- 3. Fallback do części dotykowej
+    local fallback = pad:FindFirstChild("Pad")
         or pad:FindFirstChild("Button")
         or pad:FindFirstChild("Head")
+        or (pad:IsA("BasePart") and pad)
         or (pad:IsA("Model") and pad.PrimaryPart)
         or pad:FindFirstChildWhichIsA("BasePart")
 
+    if fallback and fallback:IsA("BasePart") then
+        local isGreen = isBuyableGreen(fallback.Color)
+        return fallback, isGreen
+    end
+
+    return nil, false
+end
+
+local function ParsePad(pad)
+    if not pad or not pad.Parent then return nil end
+
+    local touchPart, isGreen = findPadButtonPart(pad)
     if not touchPart then return nil end
 
-    -- Ignoruj przycisk grupy o kolorze 255, 196, 56 oraz inne przyciski grupowe
-    local col = touchPart.Color
-    local r255 = math.floor(col.R * 255 + 0.5)
-    local g255 = math.floor(col.G * 255 + 0.5)
-    local b255 = math.floor(col.B * 255 + 0.5)
-    if math.abs(r255 - 255) <= 6 and math.abs(g255 - 196) <= 6 and math.abs(b255 - 56) <= 6 then
+    if isGroupButton(pad, touchPart.Color) then
         return nil
     end
 
-    local lowerName = tostring(name):lower()
-    local padName = tostring(pad.Name):lower()
-    if lowerName:find("group") or padName:find("group") or lowerName:find("nagroda") or lowerName:find("reward") then
-        return nil
-    end
+    local price = pad:GetAttribute("Price") or 0
+    local name = pad:GetAttribute("Item") or pad:GetAttribute("Title") or pad.Name
 
-    if pad:GetAttribute("Group") or pad:GetAttribute("IsGroup") or pad:FindFirstChild("Group") then
-        return nil
-    end
-
-    local income = LocalPlayer:GetAttribute("Income") or 0
-    -- Kolory z gry: Zielony (76, 190, 92) do kupna, Czerwony (205, 72, 68) do uzbierania
-    local isGreen = (col.G > 0.55 and col.R < 0.45 and col.B < 0.45)
-    local isAffordable = (income >= price and (price > 0 or isGreen))
-    local isBuyable = isAffordable or isGreen
+    -- Przycisk jest do kupienia (IsBuyable) TYLKO gdy fizycznie jest ZIELONY!
+    -- Czerwone przyciski są ignorowane przez AutoBuy i oznaczane jako zablokowane w PlotESP.
+    local isBuyable = isGreen and touchPart.Transparency < 1
 
     return {
         Instance = pad,
         TouchPart = touchPart,
         Price = price,
         Name = name,
-        IsAffordable = isAffordable,
-        IsBuyable = isBuyable
+        IsAffordable = isBuyable,
+        IsBuyable = isBuyable,
+        IsGreen = isBuyable
     }
 end
 
@@ -1512,9 +1581,8 @@ local function UpdatePlotRender()
                     else
                         title.Text = "🔒 " .. info.Name
                         title.TextColor3 = plotColorLocked
-                        local diff = info.Price - income
-                        priceLbl.Text = "$" .. FormatNumber(info.Price) .. " (Brakuje: $" .. FormatNumber(diff) .. ")"
-                        priceLbl.TextColor3 = Color3.fromRGB(255, 200, 200)
+                        priceLbl.Text = "$" .. FormatNumber(info.Price) .. " (Zablokowany)"
+                        priceLbl.TextColor3 = Color3.fromRGB(255, 170, 170)
                     end
                 end
                 data.Billboard.Enabled = true
@@ -2270,8 +2338,4 @@ if typeof(getgenv) == "function" then
     end
 end
 
-print("==================================================")
-print("✅ [UPD 3.1] Tycoon, but one dropper")
-print("🚀 Menu załadowane pomyślnie z biblioteki MenuTest!")
-print("📌 Klawisz menu: K")
-print("==================================================")
+print("Loading...")
