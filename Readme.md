@@ -391,5 +391,5 @@ SpeedModule:AddSlider({
 Aby uruchomić skrypt z automatyczną detekcją gry i uniwersalnym wsparciem, wklej poniższy kod do swojego executora:
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Loader.lua?t=" .. tostring(tick())))()
 ```
