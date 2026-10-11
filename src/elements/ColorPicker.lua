@@ -112,7 +112,38 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         themeManager:Register(Label, "TextColor3", "Text_Secondary")
     end
 
-    -- Kontener podglądu koloru z obsługą przezroczystości (szachownica)
+    -- Proceduralny generator szachownicy (gwarantowane renderowanie przezroczystości offline i online)
+    local function createCheckerboard(targetParent, rows, cols)
+        local grid = Instance.new("Frame")
+        grid.Name = "Checkerboard"
+        grid.Size = UDim2.new(1, 0, 1, 0)
+        grid.BackgroundTransparency = 1
+        grid.BorderSizePixel = 0
+        grid.ClipsDescendants = true
+        grid.ZIndex = 1
+        grid.Parent = targetParent
+
+        local lightCol = Color3.fromRGB(225, 225, 230)
+        local darkCol  = Color3.fromRGB(150, 150, 160)
+
+        local wFrac = 1 / cols
+        local hFrac = 1 / rows
+
+        for r = 0, rows - 1 do
+            for c = 0, cols - 1 do
+                local sq = Instance.new("Frame")
+                sq.BorderSizePixel = 0
+                sq.Size = UDim2.new(wFrac, 1, hFrac, 1)
+                sq.Position = UDim2.new(c * wFrac, 0, r * hFrac, 0)
+                sq.BackgroundColor3 = ((r + c) % 2 == 0) and lightCol or darkCol
+                sq.ZIndex = 1
+                sq.Parent = grid
+            end
+        end
+        return grid
+    end
+
+    -- Kontener podglądu koloru z obsługą przezroczystości (prawdziwa szachownica)
     local PreviewWrapper = Instance.new("Frame")
     PreviewWrapper.Name = "PreviewWrapper"
     PreviewWrapper.Size = UDim2.new(0, 38, 0, 20)
@@ -128,15 +159,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     PreviewStroke.Thickness = 1
     PreviewStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    local PreviewChecker = Instance.new("ImageLabel")
-    PreviewChecker.Name = "Checker"
-    PreviewChecker.Size = UDim2.new(1, 0, 1, 0)
-    PreviewChecker.BackgroundTransparency = 0
-    PreviewChecker.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    PreviewChecker.Image = "rbxassetid://6235536028"
-    PreviewChecker.ScaleType = Enum.ScaleType.Tile
-    PreviewChecker.TileSize = UDim2.new(0, 8, 0, 8)
-    PreviewChecker.Parent = PreviewWrapper
+    createCheckerboard(PreviewWrapper, 2, 4)
 
     local PreviewColor = Instance.new("Frame")
     PreviewColor.Name = "Color"
@@ -144,13 +167,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     PreviewColor.BackgroundColor3 = CurrentColor
     PreviewColor.BackgroundTransparency = 1 - Alpha
     PreviewColor.BorderSizePixel = 0
+    PreviewColor.ZIndex = 2
     PreviewColor.Parent = PreviewWrapper
 
     if themeManager and themeManager.Register then
         themeManager:Register(PreviewStroke, "Color", "Accent")
     end
 
-    -- Ikona Lucide Chevron zamiast uszkodzonego znaku unicode!
+    -- Ikona Lucide Chevron
     local ChevronIcon = Instance.new("ImageLabel")
     ChevronIcon.Name = "Chevron"
     ChevronIcon.Size = UDim2.new(0, 14, 0, 14)
@@ -236,7 +260,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     BlackGrad.Rotation = 90
     BlackGrad.Parent = BlackGradFrame
 
-    -- Kropka wyboru pozycji (Picker Dot) - bezpiecznie wewnątrz krawędzi bez ucinania
+    -- Kropka wyboru pozycji (Picker Dot)
     local PickerDot = Instance.new("Frame")
     PickerDot.Name = "PickerDot"
     PickerDot.Size = UDim2.new(0, 12, 0, 12)
@@ -250,7 +274,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     DotStroke.Color = Color3.fromRGB(255, 255, 255)
     DotStroke.Thickness = 1.5
 
-    -- Helper dla pozycji sliderów zabezpieczający przed wychodzeniem knobów poza krawędź
+    -- Helpery dla pozycji elementów
     local function setKnobPos(knob, val)
         val = math.clamp(val, 0, 1)
         local knobHalf = 5
@@ -306,47 +330,13 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     HueKnobStroke.Color = Color3.fromRGB(70, 70, 80)
     HueKnobStroke.Thickness = 1
 
-    -- 3. Pasek SATURACJI (Nasycenie / Podbicie koloru - 0..100%)
-    local SatBar = Instance.new("Frame")
-    SatBar.Name = "SatBar"
-    SatBar.Size = UDim2.new(1, 0, 0, 12)
-    SatBar.BackgroundColor3 = Color3.new(1, 1, 1)
-    SatBar.LayoutOrder = 3
-    SatBar.Parent = DropdownContent
-
-    Instance.new("UICorner", SatBar).CornerRadius = UDim.new(0, 4)
-    local SatStroke = Instance.new("UIStroke", SatBar)
-    SatStroke.Color = Color3.fromRGB(50, 50, 60)
-    SatStroke.Thickness = 1
-    SatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-    local SatGrad = Instance.new("UIGradient")
-    SatGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromHSV(H, 0, V)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromHSV(H, 1, V))
-    })
-    SatGrad.Parent = SatBar
-
-    local SatKnob = Instance.new("Frame")
-    SatKnob.Name = "SatKnob"
-    SatKnob.Size = UDim2.new(0, 10, 1, 4)
-    SatKnob.AnchorPoint = Vector2.new(0.5, 0.5)
-    SatKnob.BackgroundColor3 = Color3.new(1, 1, 1)
-    SatKnob.ZIndex = 5
-    SatKnob.Parent = SatBar
-
-    Instance.new("UICorner", SatKnob).CornerRadius = UDim.new(0, 3)
-    local SatKnobStroke = Instance.new("UIStroke", SatKnob)
-    SatKnobStroke.Color = Color3.fromRGB(70, 70, 80)
-    SatKnobStroke.Thickness = 1
-
-    -- 4. Pasek ALPHA / TRANSPARENCY (Przezroczystość z podglądem szachownicy)
+    -- 3. Pasek ALPHA / TRANSPARENCY (Przezroczystość z prawdziwą szachownicą)
     local AlphaBar = Instance.new("Frame")
     AlphaBar.Name = "AlphaBar"
     AlphaBar.Size = UDim2.new(1, 0, 0, 12)
     AlphaBar.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
     AlphaBar.ClipsDescendants = true
-    AlphaBar.LayoutOrder = 4
+    AlphaBar.LayoutOrder = 3
     AlphaBar.Parent = DropdownContent
 
     Instance.new("UICorner", AlphaBar).CornerRadius = UDim.new(0, 4)
@@ -355,20 +345,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     AlphaStroke.Thickness = 1
     AlphaStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    local AlphaChecker = Instance.new("ImageLabel")
-    AlphaChecker.Name = "AlphaChecker"
-    AlphaChecker.Size = UDim2.new(1, 0, 1, 0)
-    AlphaChecker.BackgroundTransparency = 0
-    AlphaChecker.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    AlphaChecker.Image = "rbxassetid://6235536028"
-    AlphaChecker.ScaleType = Enum.ScaleType.Tile
-    AlphaChecker.TileSize = UDim2.new(0, 8, 0, 8)
-    AlphaChecker.Parent = AlphaBar
+    createCheckerboard(AlphaBar, 2, 16)
 
     local AlphaGradFrame = Instance.new("Frame")
+    AlphaGradFrame.Name = "AlphaGradFrame"
     AlphaGradFrame.Size = UDim2.new(1, 0, 1, 0)
     AlphaGradFrame.BackgroundColor3 = CurrentColor
     AlphaGradFrame.BorderSizePixel = 0
+    AlphaGradFrame.ZIndex = 2
     AlphaGradFrame.Parent = AlphaBar
 
     local AlphaGrad = Instance.new("UIGradient")
@@ -394,19 +378,18 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     if themeManager and themeManager.Register then
         themeManager:Register(SVStroke, "Color", "Accent")
         themeManager:Register(HueStroke, "Color", "Accent")
-        themeManager:Register(SatStroke, "Color", "Accent")
         themeManager:Register(AlphaStroke, "Color", "Accent")
     end
 
     -- ============================================================
-    -- 5. Dolna sekcja: Dedykowane, nierozjeżdżające się wiersze HEX i RGB/A
+    -- 4. Dolna sekcja: Wiersze HEX i RGB/A
     -- ============================================================
     -- Wiersz 1: Pole HEX
     local HexContainer = Instance.new("Frame")
     HexContainer.Name = "HexContainer"
     HexContainer.Size = UDim2.new(1, 0, 0, 26)
     HexContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-    HexContainer.LayoutOrder = 5
+    HexContainer.LayoutOrder = 4
     HexContainer.Parent = DropdownContent
 
     Instance.new("UICorner", HexContainer).CornerRadius = UDim.new(0, 5)
@@ -449,12 +432,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         themeManager:Register(HexInput, "TextColor3", "Text")
     end
 
-    -- Wiersz 2: Wartości RGB oraz Alpha w osobnych etykietach (zero nakładania się!)
+    -- Wiersz 2: Wartości RGB oraz Alpha w osobnych etykietach
     local ValuesRow = Instance.new("Frame")
     ValuesRow.Name = "ValuesRow"
     ValuesRow.Size = UDim2.new(1, 0, 0, 18)
     ValuesRow.BackgroundTransparency = 1
-    ValuesRow.LayoutOrder = 6
+    ValuesRow.LayoutOrder = 5
     ValuesRow.Parent = DropdownContent
 
     local RgbLabel = Instance.new("TextLabel")
@@ -495,27 +478,32 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
         SVBox.BackgroundColor3 = Color3.fromHSV(H, 1, 1)
 
-        -- Aktualizacja gradientu nasycenia: od zszarzałego/białego do pełnego koloru
-        SatGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0.0, Color3.fromHSV(H, 0, V)),
-            ColorSequenceKeypoint.new(1.0, Color3.fromHSV(H, 1, V))
-        })
-
-        -- Aktualizacja gradientu przezroczystości
+        -- Pasek Alpha dostosowuje swój kolor bazowy
         AlphaGradFrame.BackgroundColor3 = CurrentColor
-
-        if not skipHexText then
-            HexInput.Text = "#" .. CurrentColor:ToHex():upper()
-        end
 
         local r = math.floor(CurrentColor.R * 255 + 0.5)
         local g = math.floor(CurrentColor.G * 255 + 0.5)
         local b = math.floor(CurrentColor.B * 255 + 0.5)
+
+        if not skipHexText then
+            if Alpha < 0.999 then
+                local aByte = math.floor(Alpha * 255 + 0.5)
+                HexInput.Text = string.format("#%s%02X", CurrentColor:ToHex():upper(), aByte)
+            else
+                HexInput.Text = "#" .. CurrentColor:ToHex():upper()
+            end
+        end
+
         RgbLabel.Text = string.format("RGB: %d, %d, %d", r, g, b)
         AlphaLabel.Text = string.format("Alpha: %d%%", math.floor(Alpha * 100 + 0.5))
 
         if options.Callback then
-            pcall(options.Callback, CurrentColor, Alpha)
+            pcall(options.Callback, CurrentColor, Alpha, {
+                R = r, G = g, B = b, A = Alpha,
+                Transparency = 1 - Alpha,
+                Color = CurrentColor,
+                Hex = HexInput.Text
+            })
         end
 
         if optFlag and saveMenuConfig then
@@ -523,7 +511,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         end
     end
 
-    -- Obsługa dokładnego klikania i przeciągania myszą
+    -- Obsługa precyzyjnego przeciągania myszą
     local function updateSV(pos)
         local absPos = SVBox.AbsolutePosition
         local absSize = SVBox.AbsoluteSize
@@ -532,7 +520,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         S = relX
         V = 1 - relY
         setDotPos(S, V)
-        setKnobPos(SatKnob, S)
         UpdateColor()
     end
 
@@ -545,16 +532,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         UpdateColor()
     end
 
-    local function updateSat(pos)
-        local absPos = SatBar.AbsolutePosition
-        local absSize = SatBar.AbsoluteSize
-        local relX = math.clamp((pos.X - absPos.X) / absSize.X, 0, 1)
-        S = relX
-        setKnobPos(SatKnob, S)
-        setDotPos(S, V)
-        UpdateColor()
-    end
-
     local function updateAlpha(pos)
         local absPos = AlphaBar.AbsolutePosition
         local absSize = AlphaBar.AbsoluteSize
@@ -564,7 +541,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         UpdateColor()
     end
 
-    local draggingSV, draggingHue, draggingSat, draggingAlpha = false, false, false, false
+    local draggingSV, draggingHue, draggingAlpha = false, false, false
 
     SVBox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -577,13 +554,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingHue = true
             updateHue(input.Position)
-        end
-    end)
-
-    SatBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingSat = true
-            updateSat(input.Position)
         end
     end)
 
@@ -600,8 +570,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
                 updateSV(input.Position)
             elseif draggingHue then
                 updateHue(input.Position)
-            elseif draggingSat then
-                updateSat(input.Position)
             elseif draggingAlpha then
                 updateAlpha(input.Position)
             end
@@ -611,22 +579,37 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local endConn = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingSV, draggingHue, draggingSat, draggingAlpha = false, false, false, false
+            draggingSV, draggingHue, draggingAlpha = false, false, false
         end
     end)
     if addConnection then addConnection(endConn) end
 
-    -- Wpisywanie kodu HEX
+    -- Wpisywanie kodu HEX (z obsługą RGBA np. #FFFFFF00)
     HexInput.FocusLost:Connect(function(enterPressed)
         local raw = HexInput.Text:gsub("%s+", ""):gsub("^#", "")
-        if #raw == 6 or #raw == 3 then
+        if #raw == 8 then
+            local r = tonumber(raw:sub(1, 2), 16)
+            local g = tonumber(raw:sub(3, 4), 16)
+            local b = tonumber(raw:sub(5, 6), 16)
+            local a = tonumber(raw:sub(7, 8), 16)
+            if r and g and b and a then
+                CurrentColor = Color3.fromRGB(r, g, b)
+                Alpha = a / 255
+                H, S, V = Color3.toHSV(CurrentColor)
+                setDotPos(S, V)
+                setKnobPos(HueKnob, H)
+                setKnobPos(AlphaKnob, Alpha)
+                UpdateColor(true)
+                HexInput.Text = string.format("#%02X%02X%02X%02X", r, g, b, a)
+                return
+            end
+        elseif #raw == 6 or #raw == 3 then
             local ok, parsed = pcall(function() return Color3.fromHex(raw) end)
             if ok and parsed then
                 CurrentColor = parsed
                 H, S, V = Color3.toHSV(CurrentColor)
                 setDotPos(S, V)
                 setKnobPos(HueKnob, H)
-                setKnobPos(SatKnob, S)
                 UpdateColor(true)
                 HexInput.Text = "#" .. CurrentColor:ToHex():upper()
                 return
@@ -638,7 +621,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Płynne rozwijanie / zwijanie (Accordion z animacją Tween)
     local isExpanded = false
     local isTweening = false
-    local TARGET_CONTENT_HEIGHT = 228
+    local TARGET_CONTENT_HEIGHT = 214
 
     local function togglePicker()
         if isTweening then return end
@@ -683,7 +666,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Inicjalizacja pozycji
     setDotPos(S, V)
     setKnobPos(HueKnob, H)
-    setKnobPos(SatKnob, S)
     setKnobPos(AlphaKnob, Alpha)
     UpdateColor(true)
 
@@ -695,7 +677,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             CurrentColor = Color3.fromRGB(newCol[1] or 255, newCol[2] or 255, newCol[3] or 255)
             if newCol[4] ~= nil then Alpha = math.clamp(tonumber(newCol[4]) or 1, 0, 1) end
         elseif type(newCol) == "string" then
-            local ok, c = pcall(function() return Color3.fromHex(newCol:gsub("#", "")) end)
+            local clean = newCol:gsub("#", "")
+            if #clean == 8 then
+                local a = tonumber(clean:sub(7, 8), 16)
+                if a then Alpha = a / 255 end
+            end
+            local ok, c = pcall(function() return Color3.fromHex(clean:sub(1, 6)) end)
             if ok and c then CurrentColor = c end
         end
         if newAlpha ~= nil then
@@ -704,7 +691,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         H, S, V = Color3.toHSV(CurrentColor)
         setDotPos(S, V)
         setKnobPos(HueKnob, H)
-        setKnobPos(SatKnob, S)
         setKnobPos(AlphaKnob, Alpha)
         UpdateColor()
     end

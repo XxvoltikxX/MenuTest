@@ -36,10 +36,12 @@ local espHighlights = true
 local espNames = true
 local espDistance = true
 local espColor = Color3.fromRGB(0, 255, 170)
+local espAlpha = 1.0
 
 local tracersEnabled = false
 local tracerOriginMode = "Dół Ekranu (Bottom)"
 local tracerColor = Color3.fromRGB(0, 220, 255)
+local tracerAlpha = 1.0
 
 local trackedPlayers = {}
 
@@ -104,26 +106,26 @@ local function UpdateESP()
                 local dist = math.floor((hrp.Position - Camera.CFrame.Position).Magnitude)
 
                 -- 1. Chams (Highlight)
-                if espEnabled and espHighlights then
+                if espEnabled and espHighlights and espAlpha > 0.005 then
                     if not data.Highlight or data.Highlight.Parent ~= char then
                         if data.Highlight then data.Highlight:Destroy() end
                         local hl = Instance.new("Highlight")
                         hl.Name = "UniversalESP_Highlight"
                         hl.Adornee = char
-                        hl.FillTransparency = 0.5
-                        hl.OutlineTransparency = 0
                         hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                         hl.Parent = char
                         data.Highlight = hl
                     end
                     data.Highlight.FillColor = espColor
+                    data.Highlight.FillTransparency = 1 - (espAlpha * 0.5)
+                    data.Highlight.OutlineTransparency = 1 - espAlpha
                     data.Highlight.Enabled = true
                 elseif data.Highlight then
                     data.Highlight.Enabled = false
                 end
 
                 -- 2. BillboardGui (Names & Distance)
-                if espEnabled and (espNames or espDistance) then
+                if espEnabled and (espNames or espDistance) and espAlpha > 0.005 then
                     if not data.Billboard or data.Billboard.Parent ~= hrp then
                         if data.Billboard then data.Billboard:Destroy() end
                         local bb = Instance.new("BillboardGui")
@@ -139,7 +141,6 @@ local function UpdateESP()
                         nameLbl.BackgroundTransparency = 1
                         nameLbl.Font = Enum.Font.GothamBold
                         nameLbl.TextSize = 12
-                        nameLbl.TextStrokeTransparency = 0.2
 
                         local distLbl = Instance.new("TextLabel", bb)
                         distLbl.Name = "Dist"
@@ -148,7 +149,6 @@ local function UpdateESP()
                         distLbl.BackgroundTransparency = 1
                         distLbl.Font = Enum.Font.GothamMedium
                         distLbl.TextSize = 10
-                        distLbl.TextStrokeTransparency = 0.2
 
                         bb.Parent = hrp
                         data.Billboard = bb
@@ -159,10 +159,14 @@ local function UpdateESP()
                     if nameLbl then
                         nameLbl.Text = espNames and player.DisplayName or ""
                         nameLbl.TextColor3 = espColor
+                        nameLbl.TextTransparency = 1 - espAlpha
+                        nameLbl.TextStrokeTransparency = 0.2 + (0.8 * (1 - espAlpha))
                     end
                     if distLbl then
                         distLbl.Text = espDistance and (tostring(dist) .. " studs") or ""
                         distLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        distLbl.TextTransparency = 1 - espAlpha
+                        distLbl.TextStrokeTransparency = 0.2 + (0.8 * (1 - espAlpha))
                     end
                     data.Billboard.Enabled = true
                 elseif data.Billboard then
@@ -170,7 +174,7 @@ local function UpdateESP()
                 end
 
                 -- 3. Tracers (Drawing API jeśli dostępne)
-                if tracersEnabled and onScreen and typeof(Drawing) == "table" and Drawing.new then
+                if tracersEnabled and onScreen and typeof(Drawing) == "table" and Drawing.new and tracerAlpha > 0.005 then
                     if not data.TracerLine then
                         local l = Drawing.new("Line")
                         l.Thickness = 1.5
@@ -180,6 +184,7 @@ local function UpdateESP()
                     data.TracerLine.From = originPos
                     data.TracerLine.To = Vector2.new(screenPos.X, screenPos.Y)
                     data.TracerLine.Color = tracerColor
+                    data.TracerLine.Transparency = tracerAlpha
                 elseif data.TracerLine then
                     data.TracerLine.Visible = false
                 end
@@ -244,8 +249,9 @@ ESPMod:AddColorPicker({
     Name = "Color",
     Default = Color3.fromRGB(0, 255, 170),
     Flag = "Universal_ESPColor",
-    Callback = function(col)
+    Callback = function(col, alpha)
         espColor = col
+        espAlpha = (alpha ~= nil and alpha) or 1.0
     end
 })
 
@@ -279,8 +285,9 @@ TracerMod:AddColorPicker({
     Name = "Color",
     Default = Color3.fromRGB(0, 220, 255),
     Flag = "Universal_TracerColor",
-    Callback = function(col)
+    Callback = function(col, alpha)
         tracerColor = col
+        tracerAlpha = (alpha ~= nil and alpha) or 1.0
     end
 })
 
