@@ -1,0 +1,26 @@
+# // ==========================================================================
+# // MENUTEST LOADER CONFIGURATION & MANIFEST
+# // ==========================================================================
+
+name: MenuTest Master Loader
+version: 1.0.0
+repository: https://github.com/xxCichyxx/MenuTest
+entrypoint: Loader.lua
+
+execution:
+  online_url: https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Loader.lua
+  local_path: MenuTest/Loader.lua
+
+games:
+  109949693269081:
+    name: "[UPD 3.1] Tycoon, but one dropper"
+    path: "Games/109949693269081/Script.lua"
+    url: "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Games/109949693269081/Script.lua"
+    status: "active"
+
+fallback:
+  name: "Universal Suite"
+  path: "Games/Universal.lua"
+  url: "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Games/Universal.lua"
+  modules:
+    - Render: "Player ESP & Tracers"
