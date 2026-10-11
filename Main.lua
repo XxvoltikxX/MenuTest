@@ -87,7 +87,7 @@ local function safeLoadUrl(url, fallbackValue)
         return fallbackValue
     end
     
-    GlobalModuleCache[url] = result
+    SessionModuleCache[url] = result
     return result
 end
 
@@ -378,7 +378,7 @@ function MenuLib:CreateWindow(options)
 
     local uncached = {}
     for _, url in ipairs(preloadList) do
-        if not GlobalCache[url] then
+        if not SessionCache[url] then
             table.insert(uncached, url)
         end
     end
@@ -388,7 +388,8 @@ function MenuLib:CreateWindow(options)
         for _, url in ipairs(uncached) do
             task.spawn(function()
                 local ok, content = false, nil
-                if typeof(readfile) == "function" then
+                local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+                if isDev and typeof(readfile) == "function" then
                     local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
                     local candidates = {
                         "MenuTest/src/" .. localRel,
@@ -409,7 +410,7 @@ function MenuLib:CreateWindow(options)
                     ok, content = safeHttpGet(url, 2, 0.2)
                 end
                 if ok and content then
-                    GlobalCache[url] = content
+                    SessionCache[url] = content
                 end
                 finishedCount = finishedCount + 1
                 loader:Update((finishedCount / #uncached) * 0.8, string.format("Pobieranie (%d/%d)...", finishedCount, #uncached))
