@@ -47,19 +47,25 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         ToggleElement = safeLoadSub("elements/Toggle.lua", baseUrl .. "elements/Toggle.lua")
     end
 
-    -- Tworzymy dedykowaną stronę Settings bezpośrednio w PagesContainer
-    -- (Settings nie pojawia się w liście zakładek sidebara, lecz otwiera się z ikonki zębatki w profilu Discord-style)
+    -- Tworzymy dedykowaną stronę Settings bezpośrednio w PagesContainer z pełną obsługą przewijania
     local Page = Instance.new("ScrollingFrame")
     Page.Name = "SettingsPage"
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.BorderSizePixel = 0
     Page.Visible = false
+    Page.Active = true
+    Page.Selectable = false
     Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Page.ScrollBarThickness = 4
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Page.ScrollingDirection = Enum.ScrollingDirection.Y
+    Page.ScrollBarThickness = 5
+    Page.ScrollBarImageTransparency = 0
+    Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
     Page.Parent = UI.PagesContainer
 
     local ThemeManager = UI.ThemeManager
+    ThemeManager:Register(Page, "ScrollBarImageColor3", "Accent")
 
     local function getColor(colorTable)
         return Color3.fromRGB(unpack(colorTable))
@@ -67,12 +73,13 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local PageLayout = Instance.new("UIListLayout", Page)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    PageLayout.Padding = UDim.new(0, 20)
+    PageLayout.Padding = UDim.new(0, 18)
 
     local PagePadding = Instance.new("UIPadding", Page)
-    PagePadding.PaddingTop = UDim.new(0, 20)
-    PagePadding.PaddingRight = UDim.new(0, 20)
+    PagePadding.PaddingTop = UDim.new(0, 15)
+    PagePadding.PaddingRight = UDim.new(0, 16)
     PagePadding.PaddingLeft = UDim.new(0, 20)
+    PagePadding.PaddingBottom = UDim.new(0, 30)
 
     table.insert(UI.Pages, Page)
     UI.SettingsPage = Page
@@ -80,7 +87,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     -- Sekcja: Themes (LayoutOrder = 1) - stała wysokość, aby nie przesuwać sekcji OPTIONS przy rozwijaniu listy!
     local ThemesSection = Instance.new("Frame")
     ThemesSection.Name = "ThemesSection"
-    ThemesSection.Size = UDim2.new(1, -40, 0, 75)
+    ThemesSection.Size = UDim2.new(1, 0, 0, 75)
     ThemesSection.AutomaticSize = Enum.AutomaticSize.None
     ThemesSection.BackgroundTransparency = 1
     ThemesSection.LayoutOrder = 1
@@ -337,7 +344,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     -- Sekcja: Other Settings (LayoutOrder = 2)
     local SettingsSection = Instance.new("Frame")
     SettingsSection.Name = "SettingsSection"
-    SettingsSection.Size = UDim2.new(1, -40, 0, 0)
+    SettingsSection.Size = UDim2.new(1, 0, 0, 0)
     SettingsSection.AutomaticSize = Enum.AutomaticSize.Y
     SettingsSection.BackgroundTransparency = 1
     SettingsSection.LayoutOrder = 2
@@ -557,7 +564,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     -- ============================================================
     local ConfigsSection = Instance.new("Frame")
     ConfigsSection.Name = "ConfigsSection"
-    ConfigsSection.Size = UDim2.new(1, -40, 0, 0)
+    ConfigsSection.Size = UDim2.new(1, 0, 0, 0)
     ConfigsSection.AutomaticSize = Enum.AutomaticSize.Y
     ConfigsSection.BackgroundTransparency = 1
     ConfigsSection.LayoutOrder = 3
@@ -722,13 +729,11 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 6)
     SaveBtn.Parent = SaveBar
 
-    -- Row 3: Configs List (ScrollingFrame)
-    local ListFrame = Instance.new("ScrollingFrame")
+    -- Row 3: Configs List (dynamiczne rozszerzanie bez konfliktów scrolla)
+    local ListFrame = Instance.new("Frame")
     ListFrame.Name = "ListFrame"
-    ListFrame.Size = UDim2.new(1, 0, 0, 155)
-    ListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    ListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    ListFrame.ScrollBarThickness = 2
+    ListFrame.Size = UDim2.new(1, 0, 0, 0)
+    ListFrame.AutomaticSize = Enum.AutomaticSize.Y
     ListFrame.BackgroundTransparency = 1
     ListFrame.LayoutOrder = 3
     ListFrame.Parent = ConfigsContainer

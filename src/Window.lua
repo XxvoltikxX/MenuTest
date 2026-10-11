@@ -919,9 +919,16 @@ function Window:Create(config)
         Page.BackgroundTransparency = 1
         Page.BorderSizePixel = 0
         Page.Visible = false                       -- domyślnie ukryta; SelectDashboard otworzy właściwą
+        Page.Active = true
+        Page.Selectable = false
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-        Page.ScrollBarThickness = 4
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        Page.ScrollingDirection = Enum.ScrollingDirection.Y
+        Page.ScrollBarThickness = 5
+        Page.ScrollBarImageTransparency = 0
+        Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
         Page.Parent = UI.PagesContainer
+        ThemeManager:Register(Page, "ScrollBarImageColor3", "Accent")
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 10)
