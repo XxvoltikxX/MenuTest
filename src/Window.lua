@@ -129,6 +129,7 @@ function Window:Create(config)
     UI.SelectedTab = nil
     UI.MenuConfig     = config.MenuConfig
     UI.SaveMenuConfig = config.SaveMenuConfig
+    UI.GameId         = tostring(config.GameId or "109949693269081")
 
     -- // THEME MANAGER
     local ThemeManager = { Elements = {}, CurrentTheme = config.Theme or {} }

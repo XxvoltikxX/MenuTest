@@ -33,7 +33,8 @@ local function safeLoadSub(relativePath, remoteUrl)
     return nil
 end
 
-function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons)
+function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons, passedGameId)
+    local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "109949693269081")
     local Icons = passedIcons or (UI and UI.Icons) or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
     if not Icons then
         Icons = safeLoadSub("Icons.lua", baseUrl .. "Icons.lua")
@@ -591,10 +592,13 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         local query = SearchInput.Text:lower():gsub("^%s+", ""):gsub("%s+$", "")
         local items = {}
 
-        -- 1. Scan Public configs
-        local publicNames = {"Default", "Tycoon", "Legit"}
+        -- 1. Scan Public configs dla danego GameId (src/configs/<GameId>/)
+        local publicNames = {}
         if typeof(readfile) == "function" then
-            local pFolders = {"MenuTest/src/configs", "src/configs"}
+            local pFolders = {
+                "MenuTest/src/configs/" .. GameId,
+                "src/configs/" .. GameId
+            }
             for _, pFolder in ipairs(pFolders) do
                 if typeof(isfolder) == "function" and isfolder(pFolder) and typeof(listfiles) == "function" then
                     for _, file in ipairs(listfiles(pFolder)) do
@@ -618,9 +622,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                         Load = function()
                             if typeof(readfile) == "function" then
                                 local cands = {
-                                    "MenuTest/src/configs/" .. pName .. ".json",
-                                    "src/configs/" .. pName .. ".json",
-                                    "configs/" .. pName .. ".json"
+                                    "MenuTest/src/configs/" .. GameId .. "/" .. pName .. ".json",
+                                    "src/configs/" .. GameId .. "/" .. pName .. ".json",
+                                    "configs/" .. GameId .. "/" .. pName .. ".json"
                                 }
                                 for _, c in ipairs(cands) do
                                     if typeof(isfile) == "function" and isfile(c) then
@@ -634,7 +638,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                                     end
                                 end
                             end
-                            local url = baseUrl .. "configs/" .. pName .. ".json"
+                            local url = baseUrl .. "configs/" .. GameId .. "/" .. pName .. ".json"
                             local ok, res = pcall(function() return game:HttpGet(url) end)
                             if ok and res and #res > 0 then
                                 local decOk, decData = pcall(function() return HttpService:JSONDecode(res) end)
@@ -649,37 +653,45 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             end
         end
 
-        -- 2. Scan Local configs
-        local localConfigsFolder = mainFolder .. "/configs"
-        if typeof(isfolder) == "function" and isfolder(localConfigsFolder) and typeof(listfiles) == "function" then
-            for _, file in ipairs(listfiles(localConfigsFolder)) do
-                if file:sub(-5) == ".json" then
-                    local lName = file:match("([^/\\]+)%.json$")
-                    if lName and lName ~= "settings" then
-                        if activeFilter == "all" or activeFilter == "local" then
-                            if query == "" or lName:lower():find(query, 1, true) then
-                                table.insert(items, {
-                                    Name = lName,
-                                    Type = "local",
-                                    Path = file,
-                                    Load = function()
-                                        if typeof(readfile) == "function" and isfile(file) then
-                                            local s, content = pcall(readfile, file)
-                                            if s and content and #content > 0 then
-                                                local decOk, decData = pcall(function() return HttpService:JSONDecode(content) end)
-                                                if decOk and type(decData) == "table" then
-                                                    return decData
+        -- 2. Scan Local configs na PC dla tego GameId
+        local candidateFolders = {
+            mainFolder .. "/configs/" .. GameId,
+            mainFolder .. "/configs"
+        }
+        local scannedFiles = {}
+
+        for _, lFolder in ipairs(candidateFolders) do
+            if typeof(isfolder) == "function" and isfolder(lFolder) and typeof(listfiles) == "function" then
+                for _, file in ipairs(listfiles(lFolder)) do
+                    if file:sub(-5) == ".json" then
+                        local lName = file:match("([^/\\]+)%.json$")
+                        if lName and lName ~= "settings" and not scannedFiles[lName] then
+                            scannedFiles[lName] = true
+                            if activeFilter == "all" or activeFilter == "local" then
+                                if query == "" or lName:lower():find(query, 1, true) then
+                                    table.insert(items, {
+                                        Name = lName,
+                                        Type = "local",
+                                        Path = file,
+                                        Load = function()
+                                            if typeof(readfile) == "function" and isfile(file) then
+                                                local s, content = pcall(readfile, file)
+                                                if s and content and #content > 0 then
+                                                    local decOk, decData = pcall(function() return HttpService:JSONDecode(content) end)
+                                                    if decOk and type(decData) == "table" then
+                                                        return decData
+                                                    end
                                                 end
                                             end
+                                            return nil
+                                        end,
+                                        Delete = function()
+                                            if typeof(delfile) == "function" then
+                                                pcall(delfile, file)
+                                            end
                                         end
-                                        return nil
-                                    end,
-                                    Delete = function()
-                                        if typeof(delfile) == "function" then
-                                            pcall(delfile, file)
-                                        end
-                                    end
-                                })
+                                    })
+                                end
                             end
                         end
                     end
@@ -689,11 +701,23 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         if #items == 0 then
             local emptyLabel = Instance.new("TextLabel")
-            emptyLabel.Size = UDim2.new(1, 0, 0, 40)
+            emptyLabel.Size = UDim2.new(1, -20, 0, 48)
+            emptyLabel.Position = UDim2.new(0, 10, 0, 10)
             emptyLabel.BackgroundTransparency = 1
-            emptyLabel.Font = Enum.Font.Gotham
-            emptyLabel.TextSize = 13
-            emptyLabel.Text = query ~= "" and ("No configs matching '" .. query .. "'") or "No configs available."
+            emptyLabel.Font = Enum.Font.GothamMedium
+            emptyLabel.TextSize = 12
+            emptyLabel.TextWrapped = true
+
+            if query ~= "" then
+                emptyLabel.Text = "Brak konfiguracji pasujących do: '" .. query .. "'"
+            elseif activeFilter == "public" then
+                emptyLabel.Text = "Brak publicznych konfiguracji Online dla gry (ID: " .. GameId .. ").\nMożesz stworzyć i zapisać własny config w sekcji Local."
+            elseif activeFilter == "local" then
+                emptyLabel.Text = "Brak lokalnych konfiguracji na PC dla gry (ID: " .. GameId .. ").\nWpisz nazwę powyżej i kliknij 'Save Config'."
+            else
+                emptyLabel.Text = "Brak konfiguracji dla gry (ID: " .. GameId .. ").\nWpisz nazwę powyżej i zapisz swój własny config na PC!"
+            end
+
             ThemeManager:Register(emptyLabel, "TextColor3", "Text_Secondary")
             emptyLabel.Parent = ListFrame
             return
@@ -817,9 +841,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         local safeName = rawText:gsub("[^%w_%-%s]", ""):sub(1, 24)
         if #safeName == 0 then safeName = "Config" end
 
-        local localConfigsFolder = mainFolder .. "/configs"
+        local localConfigsFolder = mainFolder .. "/configs/" .. GameId
         if typeof(isfolder) == "function" and not isfolder(localConfigsFolder) and typeof(makefolder) == "function" then
-            makefolder(localConfigsFolder)
+            pcall(function()
+                if not isfolder(mainFolder .. "/configs") then makefolder(mainFolder .. "/configs") end
+                makefolder(localConfigsFolder)
+            end)
         end
 
         local filePath = localConfigsFolder .. "/" .. safeName .. ".json"

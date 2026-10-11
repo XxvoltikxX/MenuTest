@@ -268,6 +268,7 @@ function MenuLib:CreateWindow(options)
     local Config = options or {}
     local rawName = tostring(Config.Name or "Menu")
     local Name   = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
+    local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "109949693269081")
     local startTime = os.clock()
 
     -- Uruchomienie wskaźnika procesu ładowania
@@ -356,12 +357,14 @@ function MenuLib:CreateWindow(options)
     end
 
     -- FOLDERY I MOTYWY
-    local mainFolder    = Name
-    local themesFolder  = mainFolder .. "/themes"
-    local configsFolder = mainFolder .. "/configs"
+    local mainFolder        = Name
+    local themesFolder      = mainFolder .. "/themes"
+    local configsFolder     = mainFolder .. "/configs"
+    local gameConfigsFolder = configsFolder .. "/" .. GameId
 
     if not isfolder(mainFolder)          then makefolder(mainFolder) end
     if not isfolder(configsFolder)       then makefolder(configsFolder) end
+    if not isfolder(gameConfigsFolder)   then makefolder(gameConfigsFolder) end
     if not isfolder(mainFolder.."/emotes") then makefolder(mainFolder.."/emotes") end
     if not isfolder(themesFolder)        then makefolder(themesFolder) end
     if not isfile(mainFolder.."/emotes/favorites.json") then
@@ -442,6 +445,7 @@ function MenuLib:CreateWindow(options)
         TittlePos      = Config.TittlePos or "Left",
         Theme          = themeColors,
         MenuId         = menuId,
+        GameId         = GameId,
         GenerateID     = function() return MenuLib:GenerateID() end,
         MenuConfig     = menuConfig,
         SaveMenuConfig = saveMenuConfig,
@@ -686,7 +690,7 @@ function MenuLib:CreateWindow(options)
         local settOk, settErr = pcall(function()
             local SettingsModule = safeLoadUrl(baseUrl .. "tabs/Settings.lua", nil)
             if SettingsModule and type(SettingsModule.Render) == "function" then
-                SettingsModule:Render(UI, 999, themeColors, mainFolder, ToggleElement, UI.Icons)
+                SettingsModule:Render(UI, 999, themeColors, mainFolder, ToggleElement, UI.Icons, GameId)
             else
                 warn("[MenuLib] Settings.lua nie załadował się lub brak metody Render.")
             end
