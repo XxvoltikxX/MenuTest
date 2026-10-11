@@ -229,6 +229,9 @@ local autoPrizeEnabled = false
 local autoPrizeDaily = true
 local autoPrizeObby = true
 local autoPrizeCrates = true
+local autoPrizeCandy = true
+local autoPrizeReturn = true
+local findPriorityTarget, findReadyReward = nil, nil
 
 local autoQuestsEnabled = false
 local autoQuestsInterval = 10
@@ -504,6 +507,11 @@ local function TriggerPadTouch(hrp, touchPart)
 end
 
 local function ProcessAutoBuyStep()
+    -- Priorytet dla MysteryCrate / CandyPail oraz gotowych nagród gdy AutoPrize jest włączone
+    if autoPrizeEnabled and typeof(findPriorityTarget) == "function" and (findPriorityTarget() or findReadyReward()) then
+        return
+    end
+
     local plot = GetPlayerPlot()
     if not plot then return end
 
@@ -617,99 +625,214 @@ local function StartAutoSpinLoop()
     end)
 end
 
--- 4. Auto Prize (Daily, Obby/Power, Crates)
-local autoPrizeThread = nil
-local function CollectMysteryCrates()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+-- 4. Auto Prize (MysteryCrate, CandyPail, Obby/Power, Daily/Group)
+local PRIORITY_NAMES = {
+    ["CandyPail"] = true,
+    ["MysteryCrate"] = true
+}
 
-    -- Sprawdź skrzynki i dropy w Workspace
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if obj.Name:find("Crate") or obj.Name:find("Drop") or obj:GetAttribute("Mystery") then
-            local p = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
-            if p and (p.Position - hrp.Position).Magnitude < 300 then
-                pcall(function()
-                    local oldCF = hrp.CFrame
-                    hrp.CFrame = p.CFrame
-                    task.wait(0.1)
-                    hrp.CFrame = oldCF
-                end)
+local REWARD_PATHS = {
+    {"World", "Obby", "GoldenDropper", "Reward"},
+    {"World", "PowerPlant", "DiamondDropper", "Reward"}
+}
+
+local function resolveInstance(pathTable)
+    local current = Workspace
+    for _, name in ipairs(pathTable) do
+        current = current:FindFirstChild(name)
+        if not current then return nil end
+    end
+    return current
+end
+
+local function isRewardReady(rewardObj)
+    if not rewardObj then return false, nil end
+
+    local touchPart = nil
+    if rewardObj:IsA("BasePart") and rewardObj:FindFirstChildWhichIsA("TouchTransmitter") then
+        touchPart = rewardObj
+    else
+        for _, desc in ipairs(rewardObj:GetDescendants()) do
+            if desc:IsA("TouchTransmitter") then
+                touchPart = desc.Parent
                 break
             end
         end
     end
-end
 
-local function CheckObbyRewards()
-    local world = Workspace:FindFirstChild("World")
-    if not world then return end
+    if not touchPart then return false, nil end
 
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    local isReady = false
 
-    local serverTime = Workspace:GetServerTimeNow()
-    local obbyNext = LocalPlayer:GetAttribute("ObbyNext") or 0
-    local powerNext = LocalPlayer:GetAttribute("PowerNext") or 0
-
-    -- Obby gotowe do odbioru
-    if obbyNext > 0 and serverTime >= obbyNext then
-        local obby = world:FindFirstChild("Obby")
-        local goal = obby and (obby:FindFirstChild("Goal") or obby:FindFirstChild("Pad") or obby:FindFirstChild("Reward"))
-        local p = goal and (goal:IsA("BasePart") and goal or goal:FindFirstChildWhichIsA("BasePart"))
-        if p then
-            pcall(function()
-                local oldCF = hrp.CFrame
-                hrp.CFrame = p.CFrame + Vector3.new(0, 3, 0)
-                task.wait(0.2)
-                hrp.CFrame = oldCF
-            end)
+    -- 1. Przeszukiwanie tekstu w GUI (SurfaceGui / BillboardGui)
+    for _, desc in ipairs(rewardObj:GetDescendants()) do
+        if desc:IsA("TextLabel") or desc:IsA("TextButton") then
+            local text = string.lower(desc.Text or "")
+            if string.find(text, "ready") and not string.find(text, "not ready") then
+                isReady = true
+                break
+            end
         end
     end
 
-    -- PowerPlant gotowe do odbioru
-    if powerNext > 0 and serverTime >= powerNext then
-        local pp = world:FindFirstChild("PowerPlant")
-        local goal = pp and (pp:FindFirstChild("Goal") or pp:FindFirstChild("Pad") or pp:FindFirstChild("Reward"))
-        local p = goal and (goal:IsA("BasePart") and goal or goal:FindFirstChildWhichIsA("BasePart"))
-        if p then
-            pcall(function()
-                local oldCF = hrp.CFrame
-                hrp.CFrame = p.CFrame + Vector3.new(0, 3, 0)
-                task.wait(0.2)
-                hrp.CFrame = oldCF
-            end)
+    -- 2. Sprawdzanie atrybutów lub wartości StringValue o nazwie Status
+    if not isReady then
+        local statusVal = rewardObj:FindFirstChild("Status", true)
+        if statusVal and statusVal:IsA("StringValue") then
+            if string.find(string.lower(statusVal.Value), "ready") then
+                isReady = true
+            end
+        end
+        local attrStatus = rewardObj:GetAttribute("Status")
+        if attrStatus and string.find(string.lower(tostring(attrStatus)), "ready") then
+            isReady = true
         end
     end
+
+    return isReady, touchPart
 end
+
+findReadyReward = function()
+    for _, path in ipairs(REWARD_PATHS) do
+        local rewardObj = resolveInstance(path)
+        if rewardObj then
+            local ready, part = isRewardReady(rewardObj)
+            if ready and part then
+                return rewardObj, part
+            end
+        end
+    end
+    return nil, nil
+end
+
+local function getPartFromInstance(instance)
+    if not instance then return nil end
+    if instance:IsA("BasePart") then
+        return instance
+    elseif instance:IsA("Model") then
+        return instance.PrimaryPart or instance:FindFirstChildWhichIsA("BasePart")
+    end
+    return nil
+end
+
+findPriorityTarget = function()
+    -- 1. Bezpośrednio w Workspace
+    for name, _ in pairs(PRIORITY_NAMES) do
+        local allowed = false
+        if name == "CandyPail" and autoPrizeCandy then allowed = true end
+        if name == "MysteryCrate" and autoPrizeCrates then allowed = true end
+
+        if allowed then
+            local obj = Workspace:FindFirstChild(name)
+            if obj then
+                local part = getPartFromInstance(obj)
+                if part and part:IsDescendantOf(Workspace) then
+                    return obj, part, name
+                end
+            end
+        end
+    end
+
+    -- 2. Wśród dzieci Workspace (na wypadek specyficznych nazw lub kontenerów)
+    for _, child in ipairs(Workspace:GetChildren()) do
+        if autoPrizeCandy and (child.Name == "CandyPail" or child.Name:find("CandyPail") or child.Name:find("Candy")) then
+            local part = getPartFromInstance(child)
+            if part and part:IsDescendantOf(Workspace) then
+                return child, part, "CandyPail"
+            end
+        end
+        if autoPrizeCrates and (child.Name == "MysteryCrate" or child.Name:find("MysteryCrate") or (child.Name:find("Crate") and not child.Name:find("Box"))) then
+            local part = getPartFromInstance(child)
+            if part and part:IsDescendantOf(Workspace) then
+                return child, part, "MysteryCrate"
+            end
+        end
+    end
+
+    return nil, nil, nil
+end
+
+local autoPrizeThread = nil
+local lastDailyCheck = 0
 
 local function StartAutoPrizeLoop()
     if autoPrizeThread then return end
     autoPrizeThread = task.spawn(function()
         while autoPrizeEnabled do
-            -- 1. Daily i nagrody zdalne
-            if autoPrizeDaily then
-                pcall(function()
-                    SafeCallAction("ClaimDaily")
-                    SafeCallAction("Daily")
-                    SafeCallAction("ClaimGroup")
-                    SafeCallAction("NewsSeen")
-                    SafeCallAction("StarterSeen")
-                end)
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and hum and hum.Health > 0 then
+                -- 1. Skrzynie MysteryCrate oraz wiadra CandyPail (najwyższy priorytet)
+                local prioObj, prioPart, prioType = findPriorityTarget()
+                if prioObj and prioPart then
+                    local returnCFrame = hrp.CFrame
+                    hrp.CFrame = prioPart.CFrame
+
+                    if typeof(firetouchinterest) == "function" then
+                        pcall(function()
+                            firetouchinterest(hrp, prioPart, 0)
+                            task.wait(0.01)
+                            firetouchinterest(hrp, prioPart, 1)
+                        end)
+                    end
+
+                    local timeout = 0
+                    while prioObj:IsDescendantOf(Workspace) and timeout < 0.8 do
+                        task.wait(0.05)
+                        timeout = timeout + 0.05
+                    end
+
+                    if autoPrizeReturn and hrp and hum and hum.Health > 0 then
+                        hrp.CFrame = returnCFrame
+                    end
+                    task.wait(0.3)
+
+                elseif autoPrizeObby then
+                    -- 2. Nagrody Obby (GoldenDropper) oraz PowerPlant (DiamondDropper)
+                    local rewardObj, rewardPart = findReadyReward()
+                    if rewardObj and rewardPart then
+                        local returnCFrame = hrp.CFrame
+                        hrp.CFrame = rewardPart.CFrame * CFrame.new(0, 3, 0)
+
+                        if typeof(firetouchinterest) == "function" then
+                            pcall(function()
+                                firetouchinterest(hrp, rewardPart, 0)
+                                task.wait(0.01)
+                                firetouchinterest(hrp, rewardPart, 1)
+                            end)
+                        end
+
+                        local waitTimer = 0
+                        while waitTimer < 1.0 do
+                            local stillReady = isRewardReady(rewardObj)
+                            if not stillReady then break end
+                            task.wait(0.1)
+                            waitTimer = waitTimer + 0.1
+                        end
+
+                        if autoPrizeReturn and hrp and hum and hum.Health > 0 then
+                            hrp.CFrame = returnCFrame
+                        end
+                        task.wait(0.4)
+                    end
+                end
+
+                -- 3. Daily i nagrody zdalne (co 15 sekund)
+                if autoPrizeDaily and (tick() - lastDailyCheck >= 15) then
+                    lastDailyCheck = tick()
+                    pcall(function()
+                        SafeCallAction("ClaimDaily")
+                        SafeCallAction("Daily")
+                        SafeCallAction("ClaimGroup")
+                        SafeCallAction("NewsSeen")
+                        SafeCallAction("StarterSeen")
+                    end)
+                end
             end
 
-            -- 2. Nagrody z Obby / PowerPlant
-            if autoPrizeObby then
-                pcall(CheckObbyRewards)
-            end
-
-            -- 3. Mystery Crates
-            if autoPrizeCrates then
-                pcall(CollectMysteryCrates)
-            end
-
-            task.wait(5)
+            task.wait(0.2)
         end
         autoPrizeThread = nil
     end)
@@ -1644,6 +1767,33 @@ local AutoPrizeMod = TabAutoFarm:CreateModule({
 })
 
 AutoPrizeMod:AddToggle({
+    Name = "MysteryCrate",
+    Default = true,
+    Flag = "AutoFarm_PrizeCrates",
+    Callback = function(state)
+        autoPrizeCrates = state
+    end
+})
+
+AutoPrizeMod:AddToggle({
+    Name = "CandyPail",
+    Default = true,
+    Flag = "AutoFarm_PrizeCandy",
+    Callback = function(state)
+        autoPrizeCandy = state
+    end
+})
+
+AutoPrizeMod:AddToggle({
+    Name = "Obby & Power",
+    Default = true,
+    Flag = "AutoFarm_PrizeObby",
+    Callback = function(state)
+        autoPrizeObby = state
+    end
+})
+
+AutoPrizeMod:AddToggle({
     Name = "Daily",
     Default = true,
     Flag = "AutoFarm_PrizeDaily",
@@ -1653,20 +1803,11 @@ AutoPrizeMod:AddToggle({
 })
 
 AutoPrizeMod:AddToggle({
-    Name = "Obby",
+    Name = "Return Pos",
     Default = true,
-    Flag = "AutoFarm_PrizeObby",
+    Flag = "AutoFarm_PrizeReturn",
     Callback = function(state)
-        autoPrizeObby = state
-    end
-})
-
-AutoPrizeMod:AddToggle({
-    Name = "Crates",
-    Default = true,
-    Flag = "AutoFarm_PrizeCrates",
-    Callback = function(state)
-        autoPrizeCrates = state
+        autoPrizeReturn = state
     end
 })
 
