@@ -10,6 +10,7 @@
 if typeof(getgenv) == "function" then
     if getgenv()._TycoonScriptCleanup then pcall(getgenv()._TycoonScriptCleanup) end
     if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup) end
+    getgenv()._TycoonScriptCleanup = nil
     getgenv()._MenuTestModuleCache = nil
     getgenv()._MenuTestCache = nil
     getgenv()._MenuTestToggleElement = nil
@@ -17,6 +18,8 @@ if typeof(getgenv) == "function" then
     getgenv()._MenuTestIconsModule = nil
     getgenv()._MenuTestIconsData = nil
 end
+if _G._TycoonScriptCleanup then pcall(_G._TycoonScriptCleanup); _G._TycoonScriptCleanup = nil end
+if _G._MenuTestCleanup then pcall(_G._MenuTestCleanup); _G._MenuTestCleanup = nil end
 _G._MenuTestModuleCache = nil
 _G._MenuTestCache = nil
 _G._MenuTestToggleElement = nil
@@ -2331,27 +2334,46 @@ LocalPlayer.CharacterAdded:Connect(function()
     if trailEnabled then SetTrailState(true) end
 end)
 
--- Rejestracja globalnego czyszczenia wątków i GUI dla kolejnych uruchomień
-if typeof(getgenv) == "function" then
-    getgenv()._TycoonScriptCleanup = function()
-        autoBuyEnabled = false
-        autoRebirthEnabled = false
-        autoSpinEnabled = false
-        autoPrizeEnabled = false
-        autoQuestsEnabled = false
-        flyEnabled = false
-        speedEnabled = false
-        infJumpEnabled = false
-        orbitingStarsEnabled = false
-        orbitingRingsEnabled = false
-        auraEnabled = false
-        trailEnabled = false
-        esp3DEnabled = false
-        tracersEnabled = false
-        obbyEspEnabled = false
-        plotRenderEnabled = false
-        pcall(DestroyOldGuis)
-    end
+-- Rejestracja globalnego czyszczenia wątków, efektów i GUI dla kolejnych uruchomień
+local function FullCleanupSession()
+    autoBuyEnabled = false
+    autoRebirthEnabled = false
+    autoSpinEnabled = false
+    autoPrizeEnabled = false
+    autoQuestsEnabled = false
+    flyEnabled = false
+    speedEnabled = false
+    infJumpEnabled = false
+    orbitingStarsEnabled = false
+    orbitingRingsEnabled = false
+    auraEnabled = false
+    trailEnabled = false
+    esp3DEnabled = false
+    tracersEnabled = false
+    obbyEspEnabled = false
+    plotRenderEnabled = false
+
+    pcall(function() if SetFlyState then SetFlyState(false) end end)
+    pcall(function() if SetSpeedState then SetSpeedState(false) end end)
+    pcall(function() if SetTrailState then SetTrailState(false) end end)
+    pcall(function() if CleanupStars then CleanupStars() end end)
+    pcall(function() if CleanupRings then CleanupRings() end end)
+    pcall(function() if CleanupAura then CleanupAura() end end)
+    pcall(function() if CleanupObbyESP then CleanupObbyESP() end end)
+    pcall(function() if CleanupPlotRender then CleanupPlotRender() end end)
+    pcall(function()
+        if espTrackedPlayers then
+            for player, _ in pairs(espTrackedPlayers) do
+                if CleanupPlayerESP then CleanupPlayerESP(player) end
+            end
+        end
+    end)
+    pcall(DestroyOldGuis)
 end
+
+if typeof(getgenv) == "function" then
+    getgenv()._TycoonScriptCleanup = FullCleanupSession
+end
+_G._TycoonScriptCleanup = FullCleanupSession
 
 print("Loading...")

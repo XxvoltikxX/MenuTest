@@ -172,16 +172,15 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     ContentPadding.PaddingBottom = UDim.new(0, 14)
     ContentPadding.Parent = Content
 
-    -- Stan
-    local Enabled = options.Default or false
+    -- Stan: Moduły przy załadowaniu ZAWSZE startują jako wyłączone (Enabled = false)
+    -- Stan modułów włącza się wyłącznie na żądanie użytkownika lub przez Settings -> Configs -> Load
+    local Enabled = false
     local Expanded = false
     local Keybind = nil
     local Binding = false
 
-    if options.Flag and menuConfig[options.Flag] ~= nil then
-        Enabled = menuConfig[options.Flag]
-    end
-    if options.Flag and menuConfig[options.Flag .. "_Bind"] then
+    -- Zachowujemy jedynie zbindowany klawisz (np. [R]), aby gracz nie tracił swoich bindów
+    if options.Flag and menuConfig and menuConfig[options.Flag .. "_Bind"] then
         local bindName = menuConfig[options.Flag .. "_Bind"]
         if bindName then pcall(function() Keybind = Enum.KeyCode[bindName] end) end
         if Keybind then BindBadge.Text = "[" .. Keybind.Name:sub(1, 3) .. "]" end
@@ -234,7 +233,9 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local function ToggleModule(forceState)
         if forceState ~= nil then Enabled = forceState else Enabled = not Enabled end
         UpdateVisuals(false)
-        if options.Flag then saveMenuConfig(options.Flag, Enabled) end
+        if options.Flag and menuConfig then
+            menuConfig[options.Flag] = Enabled
+        end
         if options.Callback then options.Callback(Enabled) end
     end
 

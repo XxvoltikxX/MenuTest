@@ -328,24 +328,39 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SettingsPadding.Parent = SettingsContainer
 
     -- AntiAFK & Keybinds Overlay wewnątrz SettingsContainer
-    local antiAfkConnection
+    local antiAfkConnection = nil
+    local function enableAntiAfk()
+        if antiAfkConnection then antiAfkConnection:Disconnect() end
+        antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end)
+    end
+    local function disableAntiAfk()
+        if antiAfkConnection then
+            antiAfkConnection:Disconnect()
+            antiAfkConnection = nil
+        end
+    end
+
+    -- Włącz AntiAFK natychmiast od startu sesji
+    enableAntiAfk()
+    if UI.MenuConfig then
+        UI.MenuConfig["AntiAfk"] = true
+    end
 
     ToggleElement({
         Name = "AntiAFK",
-        CurrentValue = false,
+        CurrentValue = true,
+        Default = true,
         Flag = "AntiAfk",
         Callback = function(Value)
             if Value then
-                if antiAfkConnection then antiAfkConnection:Disconnect() end
-                antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
-                    VirtualUser:CaptureController()
-                    VirtualUser:ClickButton2(Vector2.new())
-                end)
+                enableAntiAfk()
             else
-                if antiAfkConnection then
-                    antiAfkConnection:Disconnect()
-                    antiAfkConnection = nil
-                end
+                disableAntiAfk()
             end
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
@@ -371,17 +386,18 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 
     -- Przycisk konfiguracji klawisza otwierania Menu (Menu Keybind)
+    -- Stylizowany w 100% identycznie jak moduły (ciemne tło, szary badge jak np. [R])
     local KeybindWidget = Instance.new("TextButton")
     KeybindWidget.Name = "MenuKeybindWidget"
     KeybindWidget.Size = UDim2.new(0.5, -5, 0, 35)
-    KeybindWidget.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    KeybindWidget.BackgroundTransparency = 0.2
+    KeybindWidget.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    KeybindWidget.BackgroundTransparency = 0
     KeybindWidget.Text = ""
     KeybindWidget.Parent = SettingsContainer
-    Instance.new("UICorner", KeybindWidget).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", KeybindWidget).CornerRadius = UDim.new(0, 8)
 
     local KeybindStroke = Instance.new("UIStroke", KeybindWidget)
-    KeybindStroke.Color = Color3.fromRGB(50, 50, 60)
+    KeybindStroke.Color = Color3.fromRGB(55, 55, 60)
     KeybindStroke.Thickness = 1
     KeybindStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
@@ -403,14 +419,19 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     KeybindBadge.Text = "[" .. initialKey .. "]"
     KeybindBadge.Font = Enum.Font.GothamBold
     KeybindBadge.TextSize = 11
-    KeybindBadge.TextColor3 = Color3.fromRGB(100, 180, 255)
+    KeybindBadge.TextColor3 = Color3.fromRGB(160, 160, 165)
     KeybindBadge.Size = UDim2.new(0, 36, 0, 22)
     KeybindBadge.AutomaticSize = Enum.AutomaticSize.X
     KeybindBadge.Position = UDim2.new(1, -10, 0.5, 0)
     KeybindBadge.AnchorPoint = Vector2.new(1, 0.5)
-    KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 42, 56)
+    KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
     KeybindBadge.Parent = KeybindWidget
-    Instance.new("UICorner", KeybindBadge).CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", KeybindBadge).CornerRadius = UDim.new(0, 5)
+
+    local BadgeStroke = Instance.new("UIStroke", KeybindBadge)
+    BadgeStroke.Color = Color3.fromRGB(55, 55, 62)
+    BadgeStroke.Thickness = 1
+    BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local BadgePad = Instance.new("UIPadding")
     BadgePad.PaddingLeft = UDim.new(0, 6)
@@ -422,8 +443,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         if isBinding then return end
         isBinding = true
         KeybindBadge.Text = "[...]"
-        KeybindBadge.TextColor3 = Color3.fromRGB(255, 220, 80)
-        KeybindBadge.BackgroundColor3 = Color3.fromRGB(55, 50, 30)
+        KeybindBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
+        KeybindBadge.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        BadgeStroke.Color = Color3.fromRGB(100, 100, 110)
 
         local bindConn
         bindConn = game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
@@ -435,8 +457,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                     newKey = Enum.KeyCode.K
                 end
                 KeybindBadge.Text = "[" .. newKey.Name .. "]"
-                KeybindBadge.TextColor3 = Color3.fromRGB(100, 180, 255)
-                KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 42, 56)
+                KeybindBadge.TextColor3 = Color3.fromRGB(160, 160, 165)
+                KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+                BadgeStroke.Color = Color3.fromRGB(55, 55, 62)
                 if UI and UI.SetMenuKeybind then
                     UI:SetMenuKeybind(newKey)
                 end
@@ -448,6 +471,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         UI.OnMenuKeybindChanged = function(newKey)
             local kName = (typeof(newKey) == "EnumItem" and newKey.Name) or tostring(newKey)
             KeybindBadge.Text = "[" .. kName .. "]"
+            KeybindBadge.TextColor3 = Color3.fromRGB(160, 160, 165)
+            KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+            BadgeStroke.Color = Color3.fromRGB(55, 55, 62)
         end
     end
 
