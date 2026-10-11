@@ -1014,20 +1014,23 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             ThemeManager:Register(CardIcon, "ImageColor3", "Text_Secondary")
             Icons:Apply(CardIcon, item.Type == "public" and "cloud" or "hard-drive")
 
+            local isLocal = (item.Type == "local")
+
             local NameLabel = Instance.new("TextLabel")
-            NameLabel.Size = UDim2.new(1, -190, 1, 0)
+            NameLabel.Size = UDim2.new(1, isLocal and -236 or -150, 1, 0)
             NameLabel.Position = UDim2.new(0, 34, 0, 0)
             NameLabel.BackgroundTransparency = 1
             NameLabel.Font = Enum.Font.GothamMedium
             NameLabel.TextSize = 13
             NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
             NameLabel.Text = item.Name
             ThemeManager:Register(NameLabel, "TextColor3", "Text")
             NameLabel.Parent = Card
 
             local Badge = Instance.new("Frame")
             Badge.Size = UDim2.new(0, 48, 0, 18)
-            Badge.Position = UDim2.new(1, item.Type == "local" and -95 or -65, 0.5, 0)
+            Badge.Position = UDim2.new(1, isLocal and -148 or -62, 0.5, 0)
             Badge.AnchorPoint = Vector2.new(1, 0.5)
             Badge.BackgroundColor3 = item.Type == "public" and Color3.fromRGB(25, 40, 70) or Color3.fromRGB(25, 60, 35)
             Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 4)
@@ -1042,9 +1045,45 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             BadgeLabel.TextColor3 = item.Type == "public" and Color3.fromRGB(130, 190, 255) or Color3.fromRGB(130, 255, 160)
             BadgeLabel.Parent = Badge
 
+            if isLocal then
+                local CardSaveBtn = Instance.new("TextButton")
+                CardSaveBtn.Name = "SaveBtn"
+                CardSaveBtn.Size = UDim2.new(0, 50, 0, 24)
+                CardSaveBtn.Position = UDim2.new(1, -92, 0.5, 0)
+                CardSaveBtn.AnchorPoint = Vector2.new(1, 0.5)
+                CardSaveBtn.Text = "Save"
+                CardSaveBtn.Font = Enum.Font.GothamMedium
+                CardSaveBtn.TextSize = 11
+                ThemeManager:Register(CardSaveBtn, "BackgroundColor3", "Accent2")
+                ThemeManager:Register(CardSaveBtn, "TextColor3", "Text")
+                Instance.new("UICorner", CardSaveBtn).CornerRadius = UDim.new(0, 4)
+                CardSaveBtn.Parent = Card
+
+                CardSaveBtn.MouseButton1Click:Connect(function()
+                    local encoded = HttpService:JSONEncode(UI.MenuConfig or {})
+                    local success = false
+                    if typeof(writefile) == "function" and item.Path then
+                        local s = pcall(writefile, item.Path, encoded)
+                        success = s
+                    end
+                    if success then
+                        CardSaveBtn.Text = "Saved!"
+                        task.delay(1.2, function()
+                            if CardSaveBtn and CardSaveBtn.Parent then CardSaveBtn.Text = "Save" end
+                        end)
+                    else
+                        CardSaveBtn.Text = "Error"
+                        task.delay(1.2, function()
+                            if CardSaveBtn and CardSaveBtn.Parent then CardSaveBtn.Text = "Save" end
+                        end)
+                    end
+                end)
+            end
+
             local LoadBtn = Instance.new("TextButton")
-            LoadBtn.Size = UDim2.new(0, 52, 0, 24)
-            LoadBtn.Position = UDim2.new(1, item.Type == "local" and -36 or -6, 0.5, 0)
+            LoadBtn.Name = "LoadBtn"
+            LoadBtn.Size = UDim2.new(0, 50, 0, 24)
+            LoadBtn.Position = UDim2.new(1, isLocal and -36 or -6, 0.5, 0)
             LoadBtn.AnchorPoint = Vector2.new(1, 0.5)
             LoadBtn.Text = "Load"
             LoadBtn.Font = Enum.Font.GothamMedium
@@ -1070,18 +1109,34 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                 end
             end)
 
-            if item.Type == "local" and item.Delete then
+            if isLocal and item.Delete then
                 local DelBtn = Instance.new("TextButton")
+                DelBtn.Name = "DeleteBtn"
                 DelBtn.Size = UDim2.new(0, 24, 0, 24)
                 DelBtn.Position = UDim2.new(1, -6, 0.5, 0)
                 DelBtn.AnchorPoint = Vector2.new(1, 0.5)
-                DelBtn.Text = "✕"
-                DelBtn.Font = Enum.Font.GothamBold
-                DelBtn.TextSize = 11
+                DelBtn.Text = ""
                 ThemeManager:Register(DelBtn, "BackgroundColor3", "Close")
-                ThemeManager:Register(DelBtn, "TextColor3", "Text")
                 Instance.new("UICorner", DelBtn).CornerRadius = UDim.new(0, 4)
                 DelBtn.Parent = Card
+
+                local DelIcon = Instance.new("ImageLabel")
+                DelIcon.Name = "Icon"
+                DelIcon.Size = UDim2.new(0, 14, 0, 14)
+                DelIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+                DelIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+                DelIcon.BackgroundTransparency = 1
+                DelIcon.Active = false
+                DelIcon.Parent = DelBtn
+                ThemeManager:Register(DelIcon, "ImageColor3", "Text")
+                Icons:Apply(DelIcon, "x")
+
+                DelBtn.MouseEnter:Connect(function()
+                    TweenService:Create(DelBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
+                end)
+                DelBtn.MouseLeave:Connect(function()
+                    TweenService:Create(DelBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+                end)
 
                 DelBtn.MouseButton1Click:Connect(function()
                     item.Delete()
