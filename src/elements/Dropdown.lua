@@ -1,14 +1,37 @@
-return function(options, themeManager, parent, menuConfig, saveMenuConfig)
+return function(options, themeManager, parent, menuConfig, saveMenuConfig, addConnection, passedIcons)
     local TweenService = game:GetService("TweenService")
     local RunService = game:GetService("RunService")
-    local Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/Icons.lua"))()
+
+    local Icons = passedIcons or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    if not Icons then
+        if typeof(readfile) == "function" then
+            local s, d = pcall(readfile, "MenuTest/src/Icons.lua")
+            if s and d and #d > 0 then
+                local chunk = loadstring(d)
+                if chunk then Icons = chunk() end
+            end
+        end
+    end
+    if not Icons then
+        local ok, res = pcall(function()
+            return game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/Icons.lua")
+        end)
+        if ok and res then
+            local chunk = loadstring(res)
+            if chunk then Icons = chunk() end
+        end
+    end
+    if Icons then
+        if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
+        _G._MenuTestIconsModule = Icons
+    end
 
     local Colors = {
         Background = Color3.fromRGB(18, 18, 22),
-        Stroke = Color3.fromRGB(31, 31, 38),
+        Stroke = Color3.fromRGB(45, 45, 52),
         Text = Color3.fromRGB(255, 255, 255),
         TextDim = Color3.fromRGB(150, 150, 160),
-        Accent = Color3.fromRGB(120, 100, 255)
+        Accent = Color3.fromRGB(255, 255, 255)
     }
 
     local DropdownFrame = Instance.new("Frame")
@@ -47,33 +70,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Icon.BackgroundTransparency = 1
     Icon.ImageColor3 = Colors.TextDim
     Icon.Parent = Main
-    Icons:Apply(Icon, "chevron-down")
-
-    -- Lista (W ScreenGui)
-    local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-
-    local List = Instance.new("Frame")
-    List.Name = "DropdownList"
-    List.Size = UDim2.new(0, 200, 0, 0) -- Szerokość zostanie zaktualizowana
-    List.BackgroundColor3 = Colors.Background
-    List.Visible = false
-    List.ZIndex = 100 -- Bardzo wysoki ZIndex
-    List.Parent = ScreenGui -- Przypinamy do ScreenGui
-
-    Instance.new("UICorner", List).CornerRadius = UDim.new(0, 6)
-    local ListStroke = Instance.new("UIStroke", List)
-    ListStroke.Color = Colors.Stroke
-
-    local Scroll = Instance.new("ScrollingFrame")
-    Scroll.Size = UDim2.new(1, 0, 1, 0)
-    Scroll.BackgroundTransparency = 1
-    Scroll.BorderSizePixel = 0
-    Scroll.ScrollBarThickness = 2
-    Scroll.Parent = List
-
-    local ListLayout = Instance.new("UIListLayout")
-    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.Parent = Scroll
+    if Icons then Icons:Apply(Icon, "chevron-down") end
 
     local Options = options.Options or {}
     local CurrentOption = options.CurrentOption or {Options[1]}
@@ -86,36 +83,53 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     end
     UpdateLabel()
 
-    local isOpen = false
+    -- LISTA (Portal / CoreGui)
+    local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    local List = Instance.new("Frame")
+    List.Size = UDim2.new(1, 0, 0, 0)
+    List.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    List.Visible = false
+    List.ZIndex = 100
+    List.ClipsDescendants = true
+    List.Parent = ScreenGui
+    Instance.new("UICorner", List).CornerRadius = UDim.new(0, 6)
+    local ListStroke = Instance.new("UIStroke", List)
+    ListStroke.Color = Colors.Stroke
+    ListStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+    local Scroll = Instance.new("ScrollingFrame")
+    Scroll.Size = UDim2.new(1, 0, 1, 0)
+    Scroll.BackgroundTransparency = 1
+    Scroll.ScrollBarThickness = 2
+    Scroll.Parent = List
+    local Layout = Instance.new("UIListLayout", Scroll)
+
+    local isOpen = false
     local function Toggle()
         isOpen = not isOpen
         List.Visible = isOpen
 
         if isOpen then
-            Icons:Apply(Icon, "chevron-up")
-
-            -- Pozycjonowanie
+            if Icons then Icons:Apply(Icon, "chevron-up") end
             local absPos = Main.AbsolutePosition
             local absSize = Main.AbsoluteSize
             List.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
             List.Size = UDim2.new(0, absSize.X, 0, math.min(#Options * 30, 150))
             Scroll.CanvasSize = UDim2.new(0, 0, 0, #Options * 30)
         else
-            Icons:Apply(Icon, "chevron-down")
+            if Icons then Icons:Apply(Icon, "chevron-down") end
         end
     end
 
     Main.MouseButton1Click:Connect(Toggle)
 
-    -- Aktualizacja pozycji przy scrollowaniu menu
     RunService.RenderStepped:Connect(function()
         if isOpen and Main.Parent then
             local absPos = Main.AbsolutePosition
             local absSize = Main.AbsoluteSize
             List.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
         elseif isOpen and not Main.Parent then
-            Toggle() -- Zamknij jeśli rodzic zniknął
+            Toggle()
         end
     end)
 

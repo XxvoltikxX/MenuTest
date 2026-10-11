@@ -27,7 +27,27 @@ local function safeHttpGet(url, maxRetries, retryDelay)
 end
 
 local function safeLoadUrl(url, fallbackValue)
-    local ok, content = safeHttpGet(url)
+    local ok, content = false, nil
+    if typeof(readfile) == "function" then
+        local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
+        local candidates = {
+            "MenuTest/src/" .. localRel,
+            "src/" .. localRel,
+            localRel
+        }
+        for _, c in ipairs(candidates) do
+            if typeof(isfile) == "function" and isfile(c) then
+                local s, data = pcall(readfile, c)
+                if s and data and type(data) == "string" and #data > 0 then
+                    ok, content = true, data
+                    break
+                end
+            end
+        end
+    end
+    if not ok or not content then
+        ok, content = safeHttpGet(url)
+    end
     if not ok or not content then
         warn("[Window] Nie udało się pobrać: " .. tostring(url))
         return fallbackValue
@@ -81,7 +101,13 @@ local SidebarFallback = {
 }
 
 -- Ładowanie modułów z fallbackami
-local Icons        = safeLoadUrl(baseUrl .. "Icons.lua",        IconsFallback)
+local Icons = (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+if not Icons then
+    Icons = safeLoadUrl(baseUrl .. "Icons.lua", IconsFallback)
+    if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
+    _G._MenuTestIconsModule = Icons
+end
+
 local Interactions = safeLoadUrl(baseUrl .. "Interactions.lua", InteractionsFallback)
 local SidebarModule= safeLoadUrl(baseUrl .. "Sidebar.lua",      SidebarFallback)
 
@@ -90,6 +116,7 @@ local SidebarModule= safeLoadUrl(baseUrl .. "Sidebar.lua",      SidebarFallback)
 -- // ============================================================
 function Window:Create(config)
     local UI = {}
+    UI.Icons      = Icons
     UI.Tabs       = {}
     UI.Pages      = {}
     UI.TabObjects = {}      -- { Button, Page, LayoutOrder }
@@ -395,6 +422,142 @@ function Window:Create(config)
             end
         end)
         Interactions:MakeDraggable(MobileToggle, MobileToggle)
+    end
+
+    -- // ============================================================
+    -- // KEYBINDS OVERLAY (MINECRAFT STYLE ARRAYLIST / HUD)
+    -- // ============================================================
+    local KeybindsOverlay = Instance.new("Frame")
+    KeybindsOverlay.Name = "KeybindsOverlay"
+    KeybindsOverlay.Size = UDim2.new(0, 190, 0, 0)
+    KeybindsOverlay.Position = UDim2.new(1, -210, 0, 30)
+    KeybindsOverlay.AutomaticSize = Enum.AutomaticSize.Y
+    KeybindsOverlay.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    KeybindsOverlay.BackgroundTransparency = 0.2
+    KeybindsOverlay.Visible = false
+    KeybindsOverlay.ZIndex = 50
+    KeybindsOverlay.Parent = ScreenGui
+
+    Instance.new("UICorner", KeybindsOverlay).CornerRadius = UDim.new(0, 8)
+    local OverlayStroke = Instance.new("UIStroke", KeybindsOverlay)
+    OverlayStroke.Color = Color3.fromRGB(60, 60, 65)
+    OverlayStroke.Thickness = 1.2
+    OverlayStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local OverlayHeader = Instance.new("Frame")
+    OverlayHeader.Name = "Header"
+    OverlayHeader.Size = UDim2.new(1, 0, 0, 28)
+    OverlayHeader.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    OverlayHeader.Parent = KeybindsOverlay
+    Instance.new("UICorner", OverlayHeader).CornerRadius = UDim.new(0, 8)
+
+    local HeaderBottomSquare = Instance.new("Frame")
+    HeaderBottomSquare.Size = UDim2.new(1, 0, 0, 6)
+    HeaderBottomSquare.Position = UDim2.new(0, 0, 1, -6)
+    HeaderBottomSquare.BorderSizePixel = 0
+    HeaderBottomSquare.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    HeaderBottomSquare.Parent = OverlayHeader
+
+    local OverlayTitle = Instance.new("TextLabel")
+    OverlayTitle.Text = "⌨️ Keybinds"
+    OverlayTitle.Font = Enum.Font.GothamBold
+    OverlayTitle.TextSize = 12
+    OverlayTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    OverlayTitle.TextXAlignment = Enum.TextXAlignment.Left
+    OverlayTitle.Size = UDim2.new(1, -12, 1, 0)
+    OverlayTitle.Position = UDim2.new(0, 10, 0, 0)
+    OverlayTitle.BackgroundTransparency = 1
+    OverlayTitle.Parent = OverlayHeader
+
+    local OverlayList = Instance.new("Frame")
+    OverlayList.Name = "List"
+    OverlayList.Size = UDim2.new(1, 0, 0, 0)
+    OverlayList.Position = UDim2.new(0, 0, 0, 28)
+    OverlayList.AutomaticSize = Enum.AutomaticSize.Y
+    OverlayList.BackgroundTransparency = 1
+    OverlayList.Parent = KeybindsOverlay
+
+    local OverlayListLayout = Instance.new("UIListLayout", OverlayList)
+    OverlayListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    OverlayListLayout.Padding = UDim.new(0, 4)
+
+    local OverlayListPadding = Instance.new("UIPadding", OverlayList)
+    OverlayListPadding.PaddingTop = UDim.new(0, 6)
+    OverlayListPadding.PaddingBottom = UDim.new(0, 8)
+    OverlayListPadding.PaddingLeft = UDim.new(0, 10)
+    OverlayListPadding.PaddingRight = UDim.new(0, 10)
+
+    if Interactions and Interactions.MakeDraggable then
+        Interactions:MakeDraggable(OverlayHeader, KeybindsOverlay)
+    end
+
+    UI.KeybindsOverlay = KeybindsOverlay
+    UI.RegisteredModules = {}
+
+    function UI:RegisterModule(mod)
+        table.insert(UI.RegisteredModules, mod)
+        UI:UpdateKeybindsOverlay()
+    end
+
+    function UI:UpdateKeybindsOverlay()
+        for _, child in ipairs(OverlayList:GetChildren()) do
+            if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
+        end
+
+        local count = 0
+        for _, mod in ipairs(UI.RegisteredModules) do
+            local key = mod.GetKeybind and mod.GetKeybind()
+            local isEnabled = mod.GetEnabled and mod.GetEnabled()
+
+            if key or isEnabled then
+                count = count + 1
+                local item = Instance.new("Frame")
+                item.Name = mod.Name
+                item.Size = UDim2.new(1, 0, 0, 22)
+                item.BackgroundTransparency = 1
+                item.LayoutOrder = isEnabled and 1 or 2
+                item.Parent = OverlayList
+
+                local nameLbl = Instance.new("TextLabel")
+                nameLbl.Text = mod.Name:gsub("%s*%b()", "")
+                nameLbl.Font = isEnabled and Enum.Font.GothamBold or Enum.Font.GothamMedium
+                nameLbl.TextSize = 12
+                nameLbl.TextColor3 = isEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 155)
+                nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                nameLbl.Size = UDim2.new(1, -45, 1, 0)
+                nameLbl.BackgroundTransparency = 1
+                nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                nameLbl.Parent = item
+
+                local keyLbl = Instance.new("TextLabel")
+                keyLbl.Text = key and ("[" .. tostring(key):sub(1, 3) .. "]") or "[ON]"
+                keyLbl.Font = Enum.Font.GothamBold
+                keyLbl.TextSize = 11
+                keyLbl.TextColor3 = isEnabled and Color3.fromRGB(160, 255, 180) or Color3.fromRGB(130, 130, 135)
+                keyLbl.TextXAlignment = Enum.TextXAlignment.Right
+                keyLbl.Size = UDim2.new(0, 45, 1, 0)
+                keyLbl.Position = UDim2.new(1, -45, 0, 0)
+                keyLbl.BackgroundTransparency = 1
+                keyLbl.Parent = item
+            end
+        end
+
+        if count == 0 then
+            local emptyLbl = Instance.new("TextLabel")
+            emptyLbl.Name = "Empty"
+            emptyLbl.Text = "Brak aktywnych bindów\n(Kliknij Scroll na moduł)"
+            emptyLbl.Font = Enum.Font.Gotham
+            emptyLbl.TextSize = 11
+            emptyLbl.TextColor3 = Color3.fromRGB(120, 120, 125)
+            emptyLbl.Size = UDim2.new(1, 0, 0, 30)
+            emptyLbl.BackgroundTransparency = 1
+            emptyLbl.Parent = OverlayList
+        end
+    end
+
+    function UI:SetKeybindsOverlayVisible(visible)
+        KeybindsOverlay.Visible = visible
+        if visible then UI:UpdateKeybindsOverlay() end
     end
 
     -- Modal wyjścia

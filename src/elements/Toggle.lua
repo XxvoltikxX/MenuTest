@@ -1,13 +1,6 @@
 return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local TweenService = game:GetService("TweenService")
 
-    local Colors = {
-        Stroke = Color3.fromRGB(31, 31, 38),
-        Accent = Color3.fromRGB(120, 100, 255),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(150, 150, 160)
-    }
-
     local ToggleFrame = Instance.new("TextButton")
     ToggleFrame.Name = options.Name or "Toggle"
     ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -19,25 +12,30 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Label.Text = options.Name or "Toggle"
     Label.Font = Enum.Font.GothamMedium
     Label.TextSize = 12
-    Label.TextColor3 = Colors.TextDim
+    Label.TextColor3 = Color3.fromRGB(160, 160, 165)
     Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Size = UDim2.new(1, -50, 1, 0)
+    Label.Size = UDim2.new(1, -45, 1, 0)
     Label.BackgroundTransparency = 1
     Label.Parent = ToggleFrame
 
     local Switch = Instance.new("Frame")
-    Switch.Size = UDim2.new(0, 36, 0, 20)
+    Switch.Size = UDim2.new(0, 36, 0, 18)
     Switch.Position = UDim2.new(1, 0, 0.5, 0)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.BackgroundColor3 = Colors.Stroke
+    Switch.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
     Switch.Parent = ToggleFrame
     Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
 
+    local SwitchStroke = Instance.new("UIStroke", Switch)
+    SwitchStroke.Color = Color3.fromRGB(55, 55, 62)
+    SwitchStroke.Thickness = 1
+    SwitchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
     local Knob = Instance.new("Frame")
-    Knob.Size = UDim2.new(0, 16, 0, 16)
+    Knob.Size = UDim2.new(0, 14, 0, 14)
     Knob.Position = UDim2.new(0, 2, 0.5, 0)
     Knob.AnchorPoint = Vector2.new(0, 0.5)
-    Knob.BackgroundColor3 = Colors.Text
+    Knob.BackgroundColor3 = Color3.fromRGB(150, 150, 160)
     Knob.Parent = Switch
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
@@ -48,13 +46,17 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
 
     local function Update()
         if Value then
-            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Accent}):Play()
-            Knob:TweenPosition(UDim2.new(1, -18, 0.5, 0), "Out", "Quart", 0.2, true)
-            Label.TextColor3 = Colors.Text
+            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+            TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 255, 255)}):Play()
+            TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 24)}):Play()
+            Knob:TweenPosition(UDim2.new(1, -16, 0.5, 0), "Out", "Quart", 0.2, true)
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Stroke}):Play()
+            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}):Play()
+            TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(55, 55, 62)}):Play()
+            TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(150, 150, 160)}):Play()
             Knob:TweenPosition(UDim2.new(0, 2, 0.5, 0), "Out", "Quart", 0.2, true)
-            Label.TextColor3 = Colors.TextDim
+            Label.TextColor3 = Color3.fromRGB(160, 160, 165)
         end
     end
 

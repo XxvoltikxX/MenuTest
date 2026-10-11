@@ -6,20 +6,57 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 
--- Ładowanie ikon
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
-local Icons = loadstring(game:HttpGet(baseUrl .. "Icons.lua"))()
 
-        function Settings:Render(UI, order, theme, mainFolder)
-            -- Ensure WindowAPI is available before creating Settings tab
-            local TabAPI
-            if UI.WindowAPI and typeof(UI.WindowAPI.CreateTab) == "function" then
-                TabAPI = UI.WindowAPI:CreateTab("Settings", "settings", order or 999)
-            else
-                warn("[Settings] UI.WindowAPI is unavailable; cannot create Settings tab.")
-                return
+local function safeLoadSub(relativePath, remoteUrl)
+    if typeof(readfile) == "function" then
+        local candidates = {
+            "MenuTest/src/" .. relativePath,
+            "src/" .. relativePath,
+            relativePath
+        }
+        for _, c in ipairs(candidates) do
+            if typeof(isfile) == "function" and isfile(c) then
+                local s, data = pcall(readfile, c)
+                if s and data and #data > 0 then
+                    local chunk = loadstring(data)
+                    if chunk then return chunk() end
+                end
             end
-            local Page = TabAPI.Page -- Pobieramy stronę z obiektu API
+        end
+    end
+    local ok, res = pcall(function() return game:HttpGet(remoteUrl) end)
+    if ok and res then
+        local chunk = loadstring(res)
+        if chunk then return chunk() end
+    end
+    return nil
+end
+
+function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons)
+    local Icons = passedIcons or (UI and UI.Icons) or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    if not Icons then
+        Icons = safeLoadSub("Icons.lua", baseUrl .. "Icons.lua")
+        if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
+        _G._MenuTestIconsModule = Icons
+    end
+
+    local ToggleElement = passedToggle or (typeof(getgenv) == "function" and getgenv()._MenuTestToggleElement) or _G._MenuTestToggleElement
+    if not ToggleElement then
+        ToggleElement = safeLoadSub("elements/Toggle.lua", baseUrl .. "elements/Toggle.lua")
+        if typeof(getgenv) == "function" then getgenv()._MenuTestToggleElement = ToggleElement end
+        _G._MenuTestToggleElement = ToggleElement
+    end
+
+    -- Ensure WindowAPI is available before creating Settings tab
+    local TabAPI
+    if UI.WindowAPI and typeof(UI.WindowAPI.CreateTab) == "function" then
+        TabAPI = UI.WindowAPI:CreateTab("Settings", "settings", order or 999)
+    else
+        warn("[Settings] UI.WindowAPI is unavailable; cannot create Settings tab.")
+        return
+    end
+    local Page = TabAPI.Page -- Pobieramy stronę z obiektu API
 
     local ThemeManager = UI.ThemeManager
 
@@ -272,12 +309,11 @@ local Icons = loadstring(game:HttpGet(baseUrl .. "Icons.lua"))()
     SettingsPadding.PaddingRight = UDim.new(0, 10)
     SettingsPadding.Parent = SettingsContainer
 
-    -- Anti-AFK Toggle
+    -- AntiAFK & Keybinds Overlay wewnątrz SettingsContainer
     local antiAfkConnection
 
-    -- // ZMIANA: Wywołujemy CreateToggle na obiekcie TabAPI (zwróconym przez UI.WindowAPI:CreateTab)
-    TabAPI:CreateToggle({
-        Name = "Anti-AFK",
+    ToggleElement({
+        Name = "AntiAFK",
         CurrentValue = false,
         Flag = "AntiAfk",
         Callback = function(Value)
@@ -294,7 +330,27 @@ local Icons = loadstring(game:HttpGet(baseUrl .. "Icons.lua"))()
                 end
             end
         end,
-    })
+    }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
+
+    -- Keybinds Overlay (Minecraft style)
+    local isOverlayActive = false
+    if UI.MenuConfig and UI.MenuConfig["KeybindsOverlay"] ~= nil then
+        isOverlayActive = UI.MenuConfig["KeybindsOverlay"]
+    end
+    if UI.SetKeybindsOverlayVisible then
+        UI:SetKeybindsOverlayVisible(isOverlayActive)
+    end
+
+    ToggleElement({
+        Name = "Keybinds",
+        CurrentValue = isOverlayActive,
+        Flag = "KeybindsOverlay",
+        Callback = function(Value)
+            if UI.SetKeybindsOverlayVisible then
+                UI:SetKeybindsOverlayVisible(Value)
+            end
+        end,
+    }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 end
 
 return Settings

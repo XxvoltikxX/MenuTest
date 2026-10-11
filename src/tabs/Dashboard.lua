@@ -1,8 +1,6 @@
 local Dashboard = {}
 
--- Ładowanie ikon
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
-local Icons = loadstring(game:HttpGet(baseUrl .. "Icons.lua"))()
 
 local function getLocalVersion()
     if typeof(readfile) == "function" then
@@ -18,7 +16,29 @@ local function getLocalVersion()
     return "0.0.1"
 end
 
-function Dashboard:Render(UI, order)
+function Dashboard:Render(UI, order, passedIcons)
+    local Icons = passedIcons or (UI and UI.Icons) or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    if not Icons then
+        if typeof(readfile) == "function" then
+            local s, d = pcall(readfile, "MenuTest/src/Icons.lua")
+            if s and d and #d > 0 then
+                local chunk = loadstring(d)
+                if chunk then Icons = chunk() end
+            end
+        end
+    end
+    if not Icons then
+        local ok, res = pcall(function() return game:HttpGet(baseUrl .. "Icons.lua") end)
+        if ok and res then
+            local chunk = loadstring(res)
+            if chunk then Icons = chunk() end
+        end
+    end
+    if Icons then
+        if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
+        _G._MenuTestIconsModule = Icons
+    end
+
     local TabElements = UI:CreateTab("Dashboard", "layout-dashboard", order or 1)
     local Page = TabElements.Page
     local ThemeManager = UI.ThemeManager

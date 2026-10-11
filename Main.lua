@@ -27,9 +27,50 @@ local function safeHttpGet(url, maxRetries, retryDelay)
     return false, nil
 end
 
--- Pobierz, skompiluj i uruchom skrypt z URL. Zwraca wynik lub fallbackValue przy błędzie.
+-- // WSPÓŁDZIELONA PAMIĘĆ PODRĘCZNA (Nigdy nie pobieraj tego samego pliku dwa razy)
+local GlobalCache = (typeof(getgenv) == "function" and getgenv()._MenuTestCache) or _G._MenuTestCache or {}
+if typeof(getgenv) == "function" then getgenv()._MenuTestCache = GlobalCache end
+_G._MenuTestCache = GlobalCache
+
+local GlobalModuleCache = (typeof(getgenv) == "function" and getgenv()._MenuTestModuleCache) or _G._MenuTestModuleCache or {}
+if typeof(getgenv) == "function" then getgenv()._MenuTestModuleCache = GlobalModuleCache end
+_G._MenuTestModuleCache = GlobalModuleCache
+
+-- Pobierz, skompiluj i uruchom skrypt z URL lub lokalnego pliku (z buforowaniem)
 local function safeLoadUrl(url, fallbackValue)
-    local ok, content = safeHttpGet(url)
+    if GlobalModuleCache[url] ~= nil then
+        return GlobalModuleCache[url]
+    end
+
+    local ok, content = false, GlobalCache[url]
+    if content and type(content) == "string" and #content > 0 then
+        ok = true
+    else
+        if typeof(readfile) == "function" then
+            local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
+            local candidates = {
+                "MenuTest/src/" .. localRel,
+                "src/" .. localRel,
+                localRel
+            }
+            for _, c in ipairs(candidates) do
+                if typeof(isfile) == "function" and isfile(c) then
+                    local s, data = pcall(readfile, c)
+                    if s and data and type(data) == "string" and #data > 0 then
+                        ok, content = true, data
+                        break
+                    end
+                end
+            end
+        end
+        if not ok or not content then
+            ok, content = safeHttpGet(url)
+        end
+        if ok and content then
+            GlobalCache[url] = content
+        end
+    end
+
     -- SPRAWDZENIE CZY TREŚĆ TO FAKTYCZNIE TEKST (zapobiega próbie kompilacji nil)
     if not ok or not content or type(content) ~= "string" or #content == 0 then
         warn("[MenuLib] Nie udało się pobrać lub treść jest pusta: " .. tostring(url))
@@ -48,6 +89,7 @@ local function safeLoadUrl(url, fallbackValue)
         return fallbackValue
     end
     
+    GlobalModuleCache[url] = result
     return result
 end
 
@@ -113,11 +155,122 @@ local function prettyEncode(tbl)
 end
 
 -- // ============================================================
+-- // WSKAŹNIK PROCESU ŁADOWANIA (Elegancki HUD Toast)
+-- // ============================================================
+local function createLoadingIndicator(title)
+    local screenParent
+    pcall(function() screenParent = CoreGui end)
+    if not screenParent then screenParent = PlayerGui end
+
+    local loaderGui = Instance.new("ScreenGui")
+    loaderGui.Name = "MenuLoader_" .. math.random(1000, 9999)
+    loaderGui.ResetOnSpawn = false
+    loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    pcall(function() loaderGui.Parent = screenParent end)
+
+    local Toast = Instance.new("Frame")
+    Toast.Name = "Toast"
+    Toast.Size = UDim2.new(0, 240, 0, 48)
+    Toast.Position = UDim2.new(0.5, -120, 0, -60)
+    Toast.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    Toast.BackgroundTransparency = 0.1
+    Toast.BorderSizePixel = 0
+    Toast.ClipsDescendants = true
+    Toast.Parent = loaderGui
+
+    Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 8)
+    local ToastStroke = Instance.new("UIStroke", Toast)
+    ToastStroke.Color = Color3.fromRGB(55, 55, 62)
+    ToastStroke.Thickness = 1.2
+    ToastStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local IconDot = Instance.new("Frame")
+    IconDot.Size = UDim2.new(0, 10, 0, 10)
+    IconDot.Position = UDim2.new(0, 14, 0, 15)
+    IconDot.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    IconDot.BorderSizePixel = 0
+    IconDot.Parent = Toast
+    Instance.new("UICorner", IconDot).CornerRadius = UDim.new(1, 0)
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Text = title or "Menu"
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 12
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Position = UDim2.new(0, 32, 0, 8)
+    TitleLabel.Size = UDim2.new(1, -40, 0, 14)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Parent = Toast
+
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Text = "Ładowanie modułów..."
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.TextSize = 10
+    StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
+    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    StatusLabel.Position = UDim2.new(0, 32, 0, 23)
+    StatusLabel.Size = UDim2.new(1, -40, 0, 14)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Parent = Toast
+
+    local BarBg = Instance.new("Frame")
+    BarBg.Size = UDim2.new(1, 0, 0, 3)
+    BarBg.Position = UDim2.new(0, 0, 1, -3)
+    BarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    BarBg.BorderSizePixel = 0
+    BarBg.Parent = Toast
+
+    local BarFill = Instance.new("Frame")
+    BarFill.Size = UDim2.new(0, 0, 1, 0)
+    BarFill.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    BarFill.BorderSizePixel = 0
+    BarFill.Parent = BarBg
+
+    TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -120, 0, 18)
+    }):Play()
+
+    local controller = {}
+    function controller:Update(progress, statusText)
+        progress = math.clamp(progress, 0, 1)
+        if statusText then StatusLabel.Text = statusText end
+        TweenService:Create(BarFill, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(progress, 0, 1, 0)
+        }):Play()
+    end
+
+    function controller:Done(timeText)
+        IconDot.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        BarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        StatusLabel.Text = "Załadowano w " .. (timeText or "0.2s")
+        TweenService:Create(BarFill, TweenInfo.new(0.08), { Size = UDim2.new(1, 0, 1, 0) }):Play()
+        task.delay(0.7, function()
+            local tw = TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, -120, 0, -60),
+                BackgroundTransparency = 1
+            })
+            tw:Play()
+            tw.Completed:Connect(function()
+                loaderGui:Destroy()
+            end)
+        end)
+    end
+
+    return controller
+end
+
+-- // ============================================================
 -- // GŁÓWNA FUNKCJA TWORZENIA OKNA
 -- // ============================================================
 function MenuLib:CreateWindow(options)
     local Config = options or {}
     local Name   = Config.Name or "Menu"
+    local startTime = os.clock()
+
+    -- Uruchomienie wskaźnika procesu ładowania
+    local loader = createLoadingIndicator(Name)
 
     -- CLEANUP
     local Connections = {}
@@ -126,6 +279,70 @@ function MenuLib:CreateWindow(options)
         for _, c in pairs(Connections) do if c then c:Disconnect() end end
         Connections = {}
     end
+
+    -- Szybkie współbieżne pobieranie brakujących plików w pamięci
+    local preloadList = {
+        baseUrl .. "Window.lua",
+        baseUrl .. "Icons.lua",
+        baseUrl .. "Interactions.lua",
+        baseUrl .. "Sidebar.lua",
+        baseUrl .. "icons/icons.lua",
+        baseUrl .. "elements/Button.lua",
+        baseUrl .. "elements/Toggle.lua",
+        baseUrl .. "elements/ColorPicker.lua",
+        baseUrl .. "elements/Slider.lua",
+        baseUrl .. "elements/Input.lua",
+        baseUrl .. "elements/Dropdown.lua",
+        baseUrl .. "elements/Module.lua",
+        baseUrl .. "tabs/Dashboard.lua",
+        baseUrl .. "tabs/Settings.lua",
+    }
+
+    local uncached = {}
+    for _, url in ipairs(preloadList) do
+        if not GlobalCache[url] then
+            table.insert(uncached, url)
+        end
+    end
+
+    if #uncached > 0 then
+        local finishedCount = 0
+        for _, url in ipairs(uncached) do
+            task.spawn(function()
+                local ok, content = false, nil
+                if typeof(readfile) == "function" then
+                    local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
+                    local candidates = {
+                        "MenuTest/src/" .. localRel,
+                        "src/" .. localRel,
+                        localRel
+                    }
+                    for _, c in ipairs(candidates) do
+                        if typeof(isfile) == "function" and isfile(c) then
+                            local s, data = pcall(readfile, c)
+                            if s and data and type(data) == "string" and #data > 0 then
+                                ok, content = true, data
+                                break
+                            end
+                        end
+                    end
+                end
+                if not ok or not content then
+                    ok, content = safeHttpGet(url, 2, 0.2)
+                end
+                if ok and content then
+                    GlobalCache[url] = content
+                end
+                finishedCount = finishedCount + 1
+                loader:Update((finishedCount / #uncached) * 0.8, string.format("Pobieranie (%d/%d)...", finishedCount, #uncached))
+            end)
+        end
+        local waitLimit = os.clock()
+        while finishedCount < #uncached and (os.clock() - waitLimit) < 2.5 do
+            task.wait(0.02)
+        end
+    end
+    loader:Update(0.9, "Inicjalizacja UI...")
 
     -- USUWANIE STAREGO MENU
     local menuId = "MenuInstance"
@@ -183,21 +400,8 @@ function MenuLib:CreateWindow(options)
         writefile(configFilePath, HttpService:JSONEncode(menuConfig))
     end
 
-    -- Asset cache for remote modules (url -> content/module)
-    local AssetCache = {}
-
-    -- Cached version of safeLoadUrl: first checks AssetCache, otherwise fetches and stores.
-    local function cachedLoadUrl(url, fallback)
-        if AssetCache[url] ~= nil then
-            return AssetCache[url]
-        end
-        local result = safeLoadUrl(url, fallback)
-        AssetCache[url] = result
-        return result
-    end
-
     -- TWORZENIE OKNA
-    local UI = cachedLoadUrl(baseUrl .. "Window.lua", WindowModuleFallback):Create({
+    local UI = safeLoadUrl(baseUrl .. "Window.lua", WindowModuleFallback):Create({
         Name           = Name,
         Tittle         = Config.Tittle   or "",
         TittlePos      = Config.TittlePos or "Left",
@@ -252,15 +456,25 @@ function MenuLib:CreateWindow(options)
     if UI.MobileToggle then UI.MobileToggle.MouseButton1Click:Connect(toggleMenu) end
 
     -- // ============================================================
-    -- // ŁADOWANIE ELEMENTÓW (bezpieczne, z fallbackiem)
+    -- // ŁADOWANIE ELEMENTÓW (bezpieczne, z pamięci podręcznej)
     -- // ============================================================
-    local ButtonElement       = cachedLoadUrl(baseUrl .. "elements/Button.lua",      dummyElementLoader)
-    local ToggleElement       = cachedLoadUrl(baseUrl .. "elements/Toggle.lua",      dummyElementLoader)
-    local ColorPickerElement  = cachedLoadUrl(baseUrl .. "elements/ColorPicker.lua", dummyElementLoader)
-    local SliderElement       = cachedLoadUrl(baseUrl .. "elements/Slider.lua",      dummyElementLoader)
-    local InputElement        = cachedLoadUrl(baseUrl .. "elements/Input.lua",       dummyElementLoader)
-    local DropdownElement     = cachedLoadUrl(baseUrl .. "elements/Dropdown.lua",    dummyElementLoader)
-    local ModuleElement       = cachedLoadUrl(baseUrl .. "elements/Module.lua",      dummyElementLoader)
+    local ButtonElement       = safeLoadUrl(baseUrl .. "elements/Button.lua",      dummyElementLoader)
+    local ToggleElement       = safeLoadUrl(baseUrl .. "elements/Toggle.lua",      dummyElementLoader)
+    local ColorPickerElement  = safeLoadUrl(baseUrl .. "elements/ColorPicker.lua", dummyElementLoader)
+    local SliderElement       = safeLoadUrl(baseUrl .. "elements/Slider.lua",      dummyElementLoader)
+    local InputElement        = safeLoadUrl(baseUrl .. "elements/Input.lua",       dummyElementLoader)
+    local DropdownElement     = safeLoadUrl(baseUrl .. "elements/Dropdown.lua",    dummyElementLoader)
+    local ModuleElement       = safeLoadUrl(baseUrl .. "elements/Module.lua",      dummyElementLoader)
+
+    local elementsTable = {
+        Button      = ButtonElement,
+        Toggle      = ToggleElement,
+        ColorPicker = ColorPickerElement,
+        Slider      = SliderElement,
+        Input       = InputElement,
+        Dropdown    = DropdownElement,
+        Icons       = UI.Icons,
+    }
 
     -- // ============================================================
     -- // PUBLICZNE API
@@ -279,40 +493,85 @@ function MenuLib:CreateWindow(options)
 
         local TabElements = UI:CreateTab(name, icon or "layers", tabOrder)
 
-        if not TabElements.Page:FindFirstChildOfClass("UIGridLayout") then
-            local GridLayout = Instance.new("UIGridLayout")
-            GridLayout.CellSize      = UDim2.new(0.48, 0, 0, 50)
-            GridLayout.CellPadding   = UDim2.new(0.02, 0, 0, 10)
-            GridLayout.SortOrder     = Enum.SortOrder.LayoutOrder
-            GridLayout.FillDirection = Enum.FillDirection.Horizontal
-            GridLayout.Parent        = TabElements.Page
-        end
+        -- Usuwamy stary UIGridLayout jeśli istnieje w Page
+        local oldGrid = TabElements.Page:FindFirstChildOfClass("UIGridLayout")
+        if oldGrid then oldGrid:Destroy() end
 
         TabElements.Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
+        -- Tworzymy 2-kolumnowy responsywny kontener obok siebie
+        local ColumnsContainer = Instance.new("Frame")
+        ColumnsContainer.Name = "ColumnsContainer"
+        ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
+        ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
+        ColumnsContainer.BackgroundTransparency = 1
+        ColumnsContainer.Parent = TabElements.Page
+
+        local ColumnsLayout = Instance.new("UIListLayout")
+        ColumnsLayout.FillDirection = Enum.FillDirection.Horizontal
+        ColumnsLayout.Padding = UDim.new(0, 12)
+        ColumnsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        ColumnsLayout.Parent = ColumnsContainer
+
+        local LeftColumn = Instance.new("Frame")
+        LeftColumn.Name = "LeftColumn"
+        LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
+        LeftColumn.BackgroundTransparency = 1
+        LeftColumn.LayoutOrder = 1
+        LeftColumn.Parent = ColumnsContainer
+
+        local LeftLayout = Instance.new("UIListLayout")
+        LeftLayout.FillDirection = Enum.FillDirection.Vertical
+        LeftLayout.Padding = UDim.new(0, 10)
+        LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        LeftLayout.Parent = LeftColumn
+
+        local RightColumn = Instance.new("Frame")
+        RightColumn.Name = "RightColumn"
+        RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        RightColumn.AutomaticSize = Enum.AutomaticSize.Y
+        RightColumn.BackgroundTransparency = 1
+        RightColumn.LayoutOrder = 2
+        RightColumn.Parent = ColumnsContainer
+
+        local RightLayout = Instance.new("UIListLayout")
+        RightLayout.FillDirection = Enum.FillDirection.Vertical
+        RightLayout.Padding = UDim.new(0, 10)
+        RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        RightLayout.Parent = RightColumn
+
         local TabAPI = {}
         TabAPI.Page  = TabElements.Page
+        TabAPI.LeftColumn = LeftColumn
+        TabAPI.RightColumn = RightColumn
+
+        local itemCounter = 0
+        local function getNextParent()
+            itemCounter = itemCounter + 1
+            return (itemCounter % 2 == 1) and LeftColumn or RightColumn
+        end
 
         function TabAPI:CreateButton(opts)
-            return ButtonElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return ButtonElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateToggle(opts)
-            return ToggleElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return ToggleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateColorPicker(opts)
-            return ColorPickerElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return ColorPickerElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateSlider(opts)
-            return SliderElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return SliderElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateInput(opts)
-            return InputElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return InputElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateDropdown(opts)
-            return DropdownElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return DropdownElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI.Icons)
         end
         function TabAPI:CreateModule(opts)
-            return ModuleElement(opts, UI.ThemeManager, TabElements.Page, UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            return ModuleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI, elementsTable)
         end
 
         return TabAPI
@@ -351,7 +610,7 @@ function MenuLib:CreateWindow(options)
         local dashOk, dashErr = pcall(function()
             local DashboardModule = safeLoadUrl(baseUrl .. "tabs/Dashboard.lua", nil)
             if DashboardModule and type(DashboardModule.Render) == "function" then
-                DashboardModule:Render(UI, 1)
+                DashboardModule:Render(UI, 1, UI.Icons)
             else
                 warn("[MenuLib] Dashboard.lua nie załadował się lub brak metody Render.")
             end
@@ -364,7 +623,7 @@ function MenuLib:CreateWindow(options)
         local settOk, settErr = pcall(function()
             local SettingsModule = safeLoadUrl(baseUrl .. "tabs/Settings.lua", nil)
             if SettingsModule and type(SettingsModule.Render) == "function" then
-                SettingsModule:Render(UI, 999, themeColors, mainFolder)
+                SettingsModule:Render(UI, 999, themeColors, mainFolder, ToggleElement, UI.Icons)
             else
                 warn("[MenuLib] Settings.lua nie załadował się lub brak metody Render.")
             end
@@ -389,6 +648,8 @@ function MenuLib:CreateWindow(options)
         for _, cb in ipairs(UI._readyCallbacks) do
             task.spawn(cb)
         end
+
+        loader:Done(string.format("%.2fs", os.clock() - startTime))
 
         -- 5. Wybierz Dashboard jako domyślną zakładkę.
         --    task.wait() daje Robloxowi czas na obliczenie AbsolutePosition.
