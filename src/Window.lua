@@ -166,6 +166,37 @@ function Window:Create(config)
         ProtectedLocation = Players.LocalPlayer:WaitForChild("PlayerGui")
     end
 
+    -- Usunięcie istniejącego ScreenGui przed stworzeniem nowego
+    if typeof(getgenv) == "function" and getgenv()._MenuTestGui then
+        pcall(function() getgenv()._MenuTestGui:Destroy() end)
+        getgenv()._MenuTestGui = nil
+    end
+
+    local searchContainers = {}
+    pcall(function() table.insert(searchContainers, CoreGui) end)
+    pcall(function()
+        local lp = Players.LocalPlayer
+        if lp and lp:FindFirstChild("PlayerGui") then
+            table.insert(searchContainers, lp.PlayerGui)
+        end
+    end)
+
+    for _, container in ipairs(searchContainers) do
+        if container then
+            for _, child in ipairs(container:GetChildren()) do
+                if child:IsA("ScreenGui") then
+                    if child:GetAttribute(config.MenuId or "MenuInstance")
+                        or child:GetAttribute("MenuInstance")
+                        or child.Name == "MenuScreen"
+                        or child.Name:find("Menu")
+                        or child:FindFirstChild("MainFrame") then
+                        pcall(function() child:Destroy() end)
+                    end
+                end
+            end
+        end
+    end
+
     -- ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = config.GenerateID and config.GenerateID() or "MenuScreen"
@@ -174,6 +205,10 @@ function Window:Create(config)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = ProtectedLocation
     UI.ScreenGui = ScreenGui
+
+    if typeof(getgenv) == "function" then
+        getgenv()._MenuTestGui = ScreenGui
+    end
 
     -- Cień
     local Shadow = Instance.new("ImageLabel")

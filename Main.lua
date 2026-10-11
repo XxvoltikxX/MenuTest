@@ -10,13 +10,15 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 
--- // SYSTEM BEZPIECZNEGO POBIERANIA (Safe HttpGet z retry)
+-- // SYSTEM BEZPIECZNEGO POBIERANIA (Safe HttpGet z retry oraz ominięciem cache CDN)
 local function safeHttpGet(url, maxRetries, retryDelay)
     maxRetries  = maxRetries  or 3
     retryDelay  = retryDelay  or 0.5
+    local cacheBuster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    local fetchUrl = url .. cacheBuster
     for attempt = 1, maxRetries do
         local ok, result = pcall(function()
-            return game:HttpGet(url)
+            return game:HttpGet(fetchUrl)
         end)
         if ok and type(result) == "string" and #result > 0 then
             return true, result
@@ -346,14 +348,35 @@ function MenuLib:CreateWindow(options)
     end
     loader:Update(0.9, "Inicjalizacja UI...")
 
-    -- USUWANIE STAREGO MENU
+    -- USUWANIE STAREGO MENU I ODŁĄCZANIE POPRZEDNICH ZDARZEŃ
     local menuId = "MenuInstance"
-    local ProtectedLocation
-    pcall(function() ProtectedLocation = CoreGui end)
-    if not ProtectedLocation then ProtectedLocation = PlayerGui end
+    if typeof(getgenv) == "function" and getgenv()._MenuTestCleanup then
+        pcall(getgenv()._MenuTestCleanup)
+    end
+    if _G._MenuTestCleanup then
+        pcall(_G._MenuTestCleanup)
+    end
 
-    for _, child in pairs(ProtectedLocation:GetChildren()) do
-        if child:IsA("ScreenGui") and child:GetAttribute(menuId) then child:Destroy() end
+    local searchContainers = {}
+    pcall(function() table.insert(searchContainers, CoreGui) end)
+    pcall(function() table.insert(searchContainers, PlayerGui) end)
+
+    for _, container in ipairs(searchContainers) do
+        if container then
+            for _, child in ipairs(container:GetChildren()) do
+                if child:IsA("ScreenGui") then
+                    if child:GetAttribute(menuId)
+                        or child:GetAttribute("MenuInstance")
+                        or child:GetAttribute("MenuId")
+                        or child.Name == "MenuScreen"
+                        or child.Name:find("Menu")
+                        or child:FindFirstChild("MainFrame")
+                        or child:FindFirstChild("Shadow") then
+                        pcall(function() child:Destroy() end)
+                    end
+                end
+            end
+        end
     end
 
     -- FOLDERY I MOTYWY
@@ -481,7 +504,9 @@ function MenuLib:CreateWindow(options)
     end
 
     AddConnection(UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == Enum.KeyCode[Config.ToggleUIKeybind or "Insert"] then
+        local bind = Config.ToggleUIKeybind or "K"
+        local targetKey = (typeof(bind) == "EnumItem" and bind) or Enum.KeyCode[tostring(bind)] or Enum.KeyCode.K
+        if not gpe and input.KeyCode == targetKey then
             toggleMenu()
         end
     end))

@@ -6,6 +6,14 @@
 
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/"
 
+-- Usunięcie istniejącego menu przed startem Loadera
+if typeof(getgenv) == "function" and getgenv()._MenuTestCleanup then
+    pcall(getgenv()._MenuTestCleanup)
+end
+if typeof(getgenv) == "function" and getgenv()._TycoonScriptCleanup then
+    pcall(getgenv()._TycoonScriptCleanup)
+end
+
 -- Funkcja bezpiecznego pobierania/ładowania kodu
 local function safeExecute(relativePath, remoteUrl)
     -- 1. Próba załadowania z lokalnego dysku (jeśli executor wspiera readfile)
@@ -29,9 +37,10 @@ local function safeExecute(relativePath, remoteUrl)
         end
     end
 
-    -- 2. Pobieranie z GitHub HttpGet
+    -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN
+    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
     local ok, res = pcall(function()
-        return game:HttpGet(remoteUrl)
+        return game:HttpGet(remoteUrl .. cacheBuster)
     end)
     if ok and res and #res > 0 then
         local chunk, err = loadstring(res)

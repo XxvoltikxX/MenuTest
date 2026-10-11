@@ -4,17 +4,56 @@
 -- // Categories: Player, AutoFarm, Render
 -- // ==========================================================================
 
+-- // ==========================================================================
+-- // CZYSZCZENIE POPRZEDNIEJ SESJI SKRYPTU (ZAPOBIEGA DUPLIKACJI I BUGOM)
+-- // ==========================================================================
+if typeof(getgenv) == "function" and getgenv()._TycoonScriptCleanup then
+    pcall(getgenv()._TycoonScriptCleanup)
+end
+
+-- Natychmiastowe usunięcie starych instancji GUI ze wszystkich kontenerów
+local function DestroyOldGuis()
+    if typeof(getgenv) == "function" and getgenv()._MenuTestGui then
+        pcall(function() getgenv()._MenuTestGui:Destroy() end)
+        getgenv()._MenuTestGui = nil
+    end
+    local containers = {}
+    pcall(function() table.insert(containers, game:GetService("CoreGui")) end)
+    pcall(function()
+        local lp = game:GetService("Players").LocalPlayer
+        if lp and lp:FindFirstChild("PlayerGui") then
+            table.insert(containers, lp.PlayerGui)
+        end
+    end)
+    for _, c in ipairs(containers) do
+        if c then
+            for _, child in ipairs(c:GetChildren()) do
+                if child:IsA("ScreenGui") and (child:GetAttribute("MenuInstance") or child.Name == "MenuScreen" or child.Name:find("Menu") or child:FindFirstChild("MainFrame")) then
+                    pcall(function() child:Destroy() end)
+                end
+            end
+        end
+    end
+end
+DestroyOldGuis()
+
 -- 1. Pobranie głównej biblioteki UI (MenuTest - obsługa pamięci podręcznej, offline oraz GitHub HttpGet)
-local MENU = (typeof(getgenv) == "function" and getgenv()._MenuTestLibrary) or _G._MenuTestLibrary
-if not MENU and typeof(readfile) == "function" then
-    local ok, content = pcall(readfile, "MenuTest/Main.lua")
-    if ok and content and #content > 0 then
-        local chunk = loadstring(content)
-        if chunk then MENU = chunk() end
+local MENU = nil
+if typeof(readfile) == "function" then
+    local candidates = {"MenuTest/Main.lua", "Main.lua"}
+    for _, c in ipairs(candidates) do
+        if typeof(isfile) == "function" and isfile(c) then
+            local ok, content = pcall(readfile, c)
+            if ok and content and #content > 0 then
+                local chunk = loadstring(content)
+                if chunk then MENU = chunk(); break end
+            end
+        end
     end
 end
 if not MENU then
-    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
+    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster))()
 end
 if MENU then
     if typeof(getgenv) == "function" then getgenv()._MenuTestLibrary = MENU end
@@ -26,7 +65,7 @@ local Window = MENU:CreateWindow({
     Name = "Menu Xeno UwU",
     Tittle = "[UPD 3.1] Tycoon, but one dropper",
     TittlePos = "Center",
-    ToggleUIKeybind = "Insert",
+    ToggleUIKeybind = "K",
     TestMobile = false,
     GameId = "109949693269081"
 })
@@ -2208,8 +2247,31 @@ LocalPlayer.CharacterAdded:Connect(function()
     if trailEnabled then SetTrailState(true) end
 end)
 
+-- Rejestracja globalnego czyszczenia wątków i GUI dla kolejnych uruchomień
+if typeof(getgenv) == "function" then
+    getgenv()._TycoonScriptCleanup = function()
+        autoBuyEnabled = false
+        autoRebirthEnabled = false
+        autoSpinEnabled = false
+        autoPrizeEnabled = false
+        autoQuestsEnabled = false
+        flyEnabled = false
+        speedEnabled = false
+        infJumpEnabled = false
+        orbitingStarsEnabled = false
+        orbitingRingsEnabled = false
+        auraEnabled = false
+        trailEnabled = false
+        esp3DEnabled = false
+        tracersEnabled = false
+        obbyEspEnabled = false
+        plotRenderEnabled = false
+        pcall(DestroyOldGuis)
+    end
+end
+
 print("==================================================")
 print("✅ [UPD 3.1] Tycoon, but one dropper")
 print("🚀 Menu załadowane pomyślnie z biblioteki MenuTest!")
-print("📌 Klawisz menu: INSERT")
+print("📌 Klawisz menu: K")
 print("==================================================")
