@@ -113,6 +113,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         Icons:Apply(Icon, options.Icon)
     end
 
+    local hasDesc = options.Description and #tostring(options.Description) > 0
+
     local Label = Instance.new("TextLabel")
     Label.Text = options.Name or "Module"
     Label.Font = Enum.Font.GothamMedium
@@ -120,11 +122,32 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.TextColor3 = Colors.TextDim
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.TextTruncate = Enum.TextTruncate.AtEnd
-    Label.Size = UDim2.new(1, (options.Icon and -100 or -75), 1, 0)
-    Label.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 0)
+    if hasDesc then
+        Label.Size = UDim2.new(1, (options.Icon and -100 or -75), 0, 18)
+        Label.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 7)
+    else
+        Label.Size = UDim2.new(1, (options.Icon and -100 or -75), 1, 0)
+        Label.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 0)
+    end
     Label.BackgroundTransparency = 1
     Label.ZIndex = 11
     Label.Parent = Header
+
+    if hasDesc then
+        local DescLabel = Instance.new("TextLabel")
+        DescLabel.Name = "Description"
+        DescLabel.Text = tostring(options.Description)
+        DescLabel.Font = Enum.Font.Gotham
+        DescLabel.TextSize = 10
+        DescLabel.TextColor3 = Color3.fromRGB(120, 120, 128)
+        DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+        DescLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        DescLabel.Size = UDim2.new(1, (options.Icon and -100 or -75), 0, 16)
+        DescLabel.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 26)
+        DescLabel.BackgroundTransparency = 1
+        DescLabel.ZIndex = 11
+        DescLabel.Parent = Header
+    end
 
     -- Keybind Badge na prawym brzegu
     local BindBadge = Instance.new("TextButton")
@@ -179,11 +202,29 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local Keybind = nil
     local Binding = false
 
+    -- Automatyczne generowanie Flag jeśli użytkownik go nie zdefiniował
+    if not options.Flag then
+        options.Flag = (options.Name and options.Name:gsub("%s+", "_")) or "Module"
+    end
+
     -- Zachowujemy jedynie zbindowany klawisz (np. [R]), aby gracz nie tracił swoich bindów
     if options.Flag and menuConfig and menuConfig[options.Flag .. "_Bind"] then
         local bindName = menuConfig[options.Flag .. "_Bind"]
         if bindName then pcall(function() Keybind = Enum.KeyCode[bindName] end) end
         if Keybind then BindBadge.Text = "[" .. Keybind.Name:sub(1, 3) .. "]" end
+    end
+
+    -- Domyślny klawisz (DefaultKeybind / Keybind) jeśli brak zapisanego w profilu
+    if not Keybind and (options.DefaultKeybind or options.Keybind) then
+        local def = options.DefaultKeybind or options.Keybind
+        if typeof(def) == "EnumItem" then
+            Keybind = def
+        elseif type(def) == "string" and #def > 0 then
+            pcall(function() Keybind = Enum.KeyCode[def] end)
+        end
+        if Keybind then
+            BindBadge.Text = "[" .. Keybind.Name:sub(1, 3) .. "]"
+        end
     end
 
     local function UpdateVisuals(instant)

@@ -4,40 +4,8 @@
 -- // Category: Render (Player ESP, Chams, Billboards, Tracers)
 -- // ==========================================================================
 
--- 1. Pobranie biblioteki UI (MenuTest)
-if typeof(getgenv) == "function" then
-    getgenv()._MenuTestLibrary = nil
-    getgenv()._MenuTestModuleCache = nil
-    getgenv()._MenuTestCache = nil
-end
-_G._MenuTestLibrary = nil
-_G._MenuTestModuleCache = nil
-_G._MenuTestCache = nil
-
-local MENU = nil
-local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
-if isDev and typeof(readfile) == "function" then
-    local candidates = {"MenuTest/Main.lua", "Main.lua"}
-    for _, c in ipairs(candidates) do
-        if typeof(isfile) == "function" and isfile(c) then
-            local ok, content = pcall(readfile, c)
-            if ok and content and #content > 0 then
-                local chunk = loadstring(content)
-                if chunk then MENU = chunk(); break end
-            end
-        end
-    end
-end
-if not MENU then
-    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
-    local src = game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster)
-    local chunk, err = loadstring(src)
-    if chunk then
-        MENU = chunk()
-    else
-        error("[Universal] Blad kompilacji Main.lua: " .. tostring(err))
-    end
-end
+-- 1. Pobranie biblioteki UI
+local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
 
 -- 2. Stworzenie okna
 local Window = MENU:CreateWindow({

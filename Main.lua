@@ -14,6 +14,13 @@ if not ProtectedLocation then
     ProtectedLocation = PlayerGui
 end
 
+-- Automatyczne czyszczenie poprzedniej sesji menu i skryptów
+if typeof(getgenv) == "function" then
+    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup); getgenv()._MenuTestCleanup = nil end
+    if getgenv()._MenuTestGui then pcall(function() getgenv()._MenuTestGui:Destroy() end); getgenv()._MenuTestGui = nil end
+end
+if _G._MenuTestCleanup then pcall(_G._MenuTestCleanup); _G._MenuTestCleanup = nil end
+
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 
 -- // SYSTEM BEZPIECZNEGO POBIERANIA (Safe HttpGet z retry oraz ominięciem cache CDN)
@@ -359,11 +366,19 @@ function MenuLib:CreateWindow(options)
 
     -- CLEANUP
     local Connections = {}
+    local CustomCleanups = {}
     local function AddConnection(conn) table.insert(Connections, conn); return conn end
     local function Cleanup()
-        for _, c in pairs(Connections) do if c then c:Disconnect() end end
+        for _, c in pairs(Connections) do if c then pcall(function() c:Disconnect() end) end end
         Connections = {}
+        for _, fn in ipairs(CustomCleanups) do pcall(fn) end
+        CustomCleanups = {}
     end
+
+    if typeof(getgenv) == "function" then
+        getgenv()._MenuTestCleanup = Cleanup
+    end
+    _G._MenuTestCleanup = Cleanup
 
     -- Szybkie współbieżne pobieranie brakujących plików w pamięci
     local preloadList = {
@@ -681,6 +696,12 @@ function MenuLib:CreateWindow(options)
     local WindowAPI = {}
     WindowAPI.Flags = UI.Flags
     function WindowAPI:ApplyConfig(cfg) UI:ApplyConfig(cfg) end
+    function WindowAPI:OnCleanup(callback)
+        if type(callback) == "function" then
+            table.insert(CustomCleanups, callback)
+        end
+        return WindowAPI
+    end
     UI.WindowAPI    = WindowAPI
 
     UI._userTabCounter   = 2

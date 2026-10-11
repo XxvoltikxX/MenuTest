@@ -4,80 +4,8 @@
 -- // Categories: Player, AutoFarm, Render
 -- // ==========================================================================
 
--- // ==========================================================================
--- // CZYSZCZENIE POPRZEDNIEJ SESJI SKRYPTU (ZAPOBIEGA DUPLIKACJI I BUGOM)
--- // ==========================================================================
-if typeof(getgenv) == "function" then
-    if getgenv()._TycoonScriptCleanup then pcall(getgenv()._TycoonScriptCleanup) end
-    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup) end
-    getgenv()._TycoonScriptCleanup = nil
-    getgenv()._MenuTestModuleCache = nil
-    getgenv()._MenuTestCache = nil
-    getgenv()._MenuTestToggleElement = nil
-    getgenv()._MenuTestLibrary = nil
-    getgenv()._MenuTestIconsModule = nil
-    getgenv()._MenuTestIconsData = nil
-end
-if _G._TycoonScriptCleanup then pcall(_G._TycoonScriptCleanup); _G._TycoonScriptCleanup = nil end
-if _G._MenuTestCleanup then pcall(_G._MenuTestCleanup); _G._MenuTestCleanup = nil end
-_G._MenuTestModuleCache = nil
-_G._MenuTestCache = nil
-_G._MenuTestToggleElement = nil
-_G._MenuTestLibrary = nil
-_G._MenuTestIconsModule = nil
-_G._MenuTestIconsData = nil
-
--- Natychmiastowe usunięcie starych instancji GUI ze wszystkich kontenerów
-local function DestroyOldGuis()
-    if typeof(getgenv) == "function" and getgenv()._MenuTestGui then
-        pcall(function() getgenv()._MenuTestGui:Destroy() end)
-        getgenv()._MenuTestGui = nil
-    end
-    local containers = {}
-    pcall(function() table.insert(containers, game:GetService("CoreGui")) end)
-    pcall(function()
-        local lp = game:GetService("Players").LocalPlayer
-        if lp and lp:FindFirstChild("PlayerGui") then
-            table.insert(containers, lp.PlayerGui)
-        end
-    end)
-    for _, c in ipairs(containers) do
-        if c then
-            for _, child in ipairs(c:GetChildren()) do
-                if child:IsA("ScreenGui") and not child:GetAttribute("MenuLoaderIndicator") and (child:GetAttribute("MenuInstance") or child.Name == "MenuScreen" or child:FindFirstChild("MainFrame")) then
-                    pcall(function() child:Destroy() end)
-                end
-            end
-        end
-    end
-end
-DestroyOldGuis()
-
--- 1. Pobranie głównej biblioteki UI (MenuTest - pobieranie z GitHub z ominięciem cache)
-local MENU = nil
-local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
-if isDev and typeof(readfile) == "function" then
-    local candidates = {"MenuTest/Main.lua", "Main.lua"}
-    for _, c in ipairs(candidates) do
-        if typeof(isfile) == "function" and isfile(c) then
-            local ok, content = pcall(readfile, c)
-            if ok and content and #content > 0 then
-                local chunk = loadstring(content)
-                if chunk then MENU = chunk(); break end
-            end
-        end
-    end
-end
-if not MENU then
-    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
-    local src = game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster)
-    local chunk, err = loadstring(src)
-    if chunk then
-        MENU = chunk()
-    else
-        error("[Tycoon] Blad kompilacji Main.lua: " .. tostring(err))
-    end
-end
+-- 1. Pobranie głównej biblioteki UI
+local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
 
 -- 2. Stworzenie okna menu
 local Window = MENU:CreateWindow({
@@ -2368,12 +2296,8 @@ local function FullCleanupSession()
             end
         end
     end)
-    pcall(DestroyOldGuis)
 end
 
-if typeof(getgenv) == "function" then
-    getgenv()._TycoonScriptCleanup = FullCleanupSession
+if Window and Window.OnCleanup then
+    Window:OnCleanup(FullCleanupSession)
 end
-_G._TycoonScriptCleanup = FullCleanupSession
-
-print("Loading...")
