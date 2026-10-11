@@ -74,7 +74,7 @@ end
 -- // ==========================================================================
 local Games = {
     [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
-    -- [INNE_ID] = "Nazwa Gry",
+    ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
 }
 
 -- // ==========================================================================
@@ -83,31 +83,37 @@ local Games = {
 local placeId = game.PlaceId
 local gameId  = game.GameId
 
-local matchedId = nil
-local matchedName = nil
+local function findGameMatch(id)
+    if not id then return nil, nil end
+    local numId = tonumber(id)
+    local strId = tostring(id)
+    if numId and Games[numId] then return numId, Games[numId] end
+    if strId and Games[strId] then return numId or strId, Games[strId] end
+    return nil, nil
+end
 
-if Games[placeId] or Games[tonumber(placeId)] or Games[tostring(placeId)] then
-    matchedId = placeId
-    matchedName = Games[placeId] or Games[tonumber(placeId)] or Games[tostring(placeId)]
-elseif Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)] then
-    matchedId = gameId
-    matchedName = Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)]
+local matchedId, matchedName = findGameMatch(placeId)
+if not matchedId then
+    matchedId, matchedName = findGameMatch(gameId)
 end
 
 print("Loading...")
 
 if matchedId then
+    print("[Loader] Wykryto gre: " .. tostring(matchedName) .. " (" .. tostring(matchedId) .. ")")
     local relPath = "Games/" .. tostring(matchedId) .. "/Script.lua"
     local fullUrl = baseUrl .. relPath
     local success, _ = safeExecute(relPath, fullUrl)
 
     if not success then
+        print("[Loader] Ladowanie awaryjne Universal Suite...")
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
+    print("[Loader] Brak dedykowanego skryptu, uruchamiam Universal Suite...")
     local success, _ = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
-        warn("[Loader] KRYTYCZNY BŁĄD: Nie udało się uruchomić Universal Suite!")
+        warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic Universal Suite!")
     end
 end
 

@@ -180,11 +180,10 @@ function Window:Create(config)
     for _, container in ipairs(searchContainers) do
         if container then
             for _, child in ipairs(container:GetChildren()) do
-                if child:IsA("ScreenGui") then
+                if child:IsA("ScreenGui") and not child:GetAttribute("MenuLoaderIndicator") then
                     if child:GetAttribute(config.MenuId or "MenuInstance")
                         or child:GetAttribute("MenuInstance")
                         or child.Name == "MenuScreen"
-                        or child.Name:find("Menu")
                         or child:FindFirstChild("MainFrame") then
                         pcall(function() child:Destroy() end)
                     end

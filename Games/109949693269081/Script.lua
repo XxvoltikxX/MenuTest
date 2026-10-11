@@ -41,7 +41,7 @@ local function DestroyOldGuis()
     for _, c in ipairs(containers) do
         if c then
             for _, child in ipairs(c:GetChildren()) do
-                if child:IsA("ScreenGui") and (child:GetAttribute("MenuInstance") or child.Name == "MenuScreen" or child.Name:find("Menu") or child:FindFirstChild("MainFrame")) then
+                if child:IsA("ScreenGui") and not child:GetAttribute("MenuLoaderIndicator") and (child:GetAttribute("MenuInstance") or child.Name == "MenuScreen" or child:FindFirstChild("MainFrame")) then
                     pcall(function() child:Destroy() end)
                 end
             end

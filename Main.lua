@@ -8,6 +8,12 @@ local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
+local ProtectedLocation = nil
+pcall(function() ProtectedLocation = CoreGui end)
+if not ProtectedLocation then
+    ProtectedLocation = PlayerGui
+end
+
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 
 -- // SYSTEM BEZPIECZNEGO POBIERANIA (Safe HttpGet z retry oraz ominięciem cache CDN)
@@ -161,7 +167,8 @@ local function createLoadingIndicator(title)
     if not screenParent then screenParent = PlayerGui end
 
     local loaderGui = Instance.new("ScreenGui")
-    loaderGui.Name = "MenuLoader_" .. math.random(1000, 9999)
+    loaderGui.Name = "MenuLoaderToast_" .. math.random(1000, 9999)
+    loaderGui:SetAttribute("MenuLoaderIndicator", true)
     loaderGui.ResetOnSpawn = false
     loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     pcall(function() loaderGui.Parent = screenParent end)
@@ -364,7 +371,6 @@ function MenuLib:CreateWindow(options)
         baseUrl .. "Icons.lua",
         baseUrl .. "Interactions.lua",
         baseUrl .. "Sidebar.lua",
-        baseUrl .. "icons/icons.lua",
         baseUrl .. "elements/Button.lua",
         baseUrl .. "elements/Toggle.lua",
         baseUrl .. "elements/ColorPicker.lua",
@@ -376,7 +382,7 @@ function MenuLib:CreateWindow(options)
         baseUrl .. "tabs/Settings.lua",
     }
 
-    local uncached = {}
+    local uncached = {}x
     for _, url in ipairs(preloadList) do
         if not SessionCache[url] then
             table.insert(uncached, url)
@@ -433,18 +439,18 @@ function MenuLib:CreateWindow(options)
     end
 
     local searchContainers = {}
+    if ProtectedLocation then table.insert(searchContainers, ProtectedLocation) end
     pcall(function() table.insert(searchContainers, CoreGui) end)
     pcall(function() table.insert(searchContainers, PlayerGui) end)
 
     for _, container in ipairs(searchContainers) do
         if container then
             for _, child in ipairs(container:GetChildren()) do
-                if child:IsA("ScreenGui") then
+                if child:IsA("ScreenGui") and child ~= loaderGui and not child:GetAttribute("MenuLoaderIndicator") then
                     if child:GetAttribute(menuId)
                         or child:GetAttribute("MenuInstance")
                         or child:GetAttribute("MenuId")
                         or child.Name == "MenuScreen"
-                        or child.Name:find("Menu")
                         or child:FindFirstChild("MainFrame")
                         or child:FindFirstChild("Shadow") then
                         pcall(function() child:Destroy() end)
@@ -460,13 +466,17 @@ function MenuLib:CreateWindow(options)
     local configsFolder     = mainFolder .. "/configs"
     local gameConfigsFolder = configsFolder .. "/" .. GameId
 
-    if not isfolder(mainFolder)          then makefolder(mainFolder) end
-    if not isfolder(configsFolder)       then makefolder(configsFolder) end
-    if not isfolder(gameConfigsFolder)   then makefolder(gameConfigsFolder) end
-    if not isfolder(mainFolder.."/emotes") then makefolder(mainFolder.."/emotes") end
-    if not isfolder(themesFolder)        then makefolder(themesFolder) end
-    if not isfile(mainFolder.."/emotes/favorites.json") then
-        writefile(mainFolder.."/emotes/favorites.json", "{}")
+    if typeof(isfolder) == "function" and typeof(makefolder) == "function" then
+        if not isfolder(mainFolder)          then pcall(makefolder, mainFolder) end
+        if not isfolder(configsFolder)       then pcall(makefolder, configsFolder) end
+        if not isfolder(gameConfigsFolder)   then pcall(makefolder, gameConfigsFolder) end
+        if not isfolder(mainFolder.."/emotes") then pcall(makefolder, mainFolder.."/emotes") end
+        if not isfolder(themesFolder)        then pcall(makefolder, themesFolder) end
+    end
+    if typeof(isfile) == "function" and typeof(writefile) == "function" then
+        if not isfile(mainFolder.."/emotes/favorites.json") then
+            pcall(writefile, mainFolder.."/emotes/favorites.json", "{}")
+        end
     end
 
     local defaultThemes = {
@@ -514,8 +524,8 @@ function MenuLib:CreateWindow(options)
 
     for themeName, themeData in pairs(defaultThemes) do
         local path = themesFolder .. "/" .. themeName .. ".json"
-        if not isfile(path) then
-            writefile(path, prettyEncode(themeData))
+        if typeof(isfile) == "function" and typeof(writefile) == "function" and not isfile(path) then
+            pcall(function() writefile(path, prettyEncode(themeData)) end)
         end
     end
 
@@ -524,7 +534,7 @@ function MenuLib:CreateWindow(options)
     local menuConfig     = {}
     local configFilePath = configsFolder .. "/settings.json"
     local function loadMenuConfig()
-        if isfile(configFilePath) then
+        if typeof(isfile) == "function" and typeof(readfile) == "function" and isfile(configFilePath) then
             local s, d = pcall(function() return HttpService:JSONDecode(readfile(configFilePath)) end)
             if s and type(d) == "table" then menuConfig = d end
         end
@@ -533,7 +543,9 @@ function MenuLib:CreateWindow(options)
 
     local function saveMenuConfig(flag, value)
         menuConfig[flag] = value
-        writefile(configFilePath, HttpService:JSONEncode(menuConfig))
+        if typeof(writefile) == "function" then
+            pcall(function() writefile(configFilePath, HttpService:JSONEncode(menuConfig)) end)
+        end
     end
 
     -- TWORZENIE OKNA
@@ -549,9 +561,9 @@ function MenuLib:CreateWindow(options)
         SaveMenuConfig = saveMenuConfig,
     })
 
-    -- Upewnij się, że ScreenGui jest w odpowiednim miejscu (Window.lua może już to ustawić)
-    if UI.ScreenGui.Parent ~= ProtectedLocation then
-        UI.ScreenGui.Parent = ProtectedLocation
+    -- Upewnij się, że ScreenGui jest bezpiecznie podpięty do ProtectedLocation
+    if not UI.ScreenGui.Parent or UI.ScreenGui.Parent ~= ProtectedLocation then
+        pcall(function() UI.ScreenGui.Parent = ProtectedLocation end)
     end
     UI.ScreenGui.Destroying:Connect(Cleanup)
 
