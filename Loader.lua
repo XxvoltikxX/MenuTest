@@ -48,34 +48,14 @@ local function safeExecute(relativePath, remoteUrl)
 end
 
 -- // ==========================================================================
--- // REJESTR OBSŁUGIWANYCH GIER
--- // Tutaj możesz bezpośrednio dodawać kolejne ID gier!
+-- // LISTA OBSŁUGIWANYCH GIER
+-- // Aby dodać grę, wpisz: [ID_GRY] = "Nazwa Gry"
+-- // Loader automatycznie załaduje: Games/<ID_GRY>/Script.lua
 -- // ==========================================================================
 local Games = {
-    -- [UPD 3.1] Tycoon, but one dropper
-    [109949693269081] = {
-        Name = "[UPD 3.1] Tycoon, but one dropper",
-        Path = "Games/109949693269081/Script.lua",
-        Url  = baseUrl .. "Games/109949693269081/Script.lua"
-    },
-
-    -- Kolejne gry dodawaj według wzoru:
-    -- [ID_GRY] = {
-    --     Name = "Nazwa Gry",
-    --     Path = "Games/ID_GRY/Script.lua",
-    --     Url  = baseUrl .. "Games/ID_GRY/Script.lua"
-    -- },
+    [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
+    -- [INNE_ID] = "Nazwa Gry",
 }
-
--- Próba załadowania zewnętrznego pliku Games/Games.lua (jeśli istnieje)
-pcall(function()
-    local ok, externalGames = safeExecute("Games/Games.lua", baseUrl .. "Games/Games.lua")
-    if ok and type(externalGames) == "table" then
-        for id, info in pairs(externalGames) do
-            Games[id] = info
-        end
-    end
-end)
 
 -- // ==========================================================================
 -- // DETEKCJA GRY I URUCHOMIENIE SKRYPTU
@@ -83,19 +63,30 @@ end)
 local placeId = game.PlaceId
 local gameId  = game.GameId
 
--- Sprawdzenie czy ID jest obsługiwane (zarówno jako liczba jak i string)
-local matchedEntry = Games[placeId] or Games[gameId] or Games[tonumber(placeId)] or Games[tostring(placeId)]
+local matchedId = nil
+local matchedName = nil
+
+if Games[placeId] or Games[tonumber(placeId)] or Games[tostring(placeId)] then
+    matchedId = placeId
+    matchedName = Games[placeId] or Games[tonumber(placeId)] or Games[tostring(placeId)]
+elseif Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)] then
+    matchedId = gameId
+    matchedName = Games[gameId] or Games[tonumber(gameId)] or Games[tostring(gameId)]
+end
 
 print("==================================================")
 print("🚀 [MenuTest Loader] Inicjalizacja...")
 print(string.format("📌 Aktualny PlaceId: %s | GameId: %s", tostring(placeId), tostring(gameId)))
 
-if matchedEntry then
-    print(string.format("✅ Wykryto dedykowany skrypt dla gry: %s", matchedEntry.Name))
+if matchedId then
+    print(string.format("✅ Wykryto dedykowany skrypt dla gry: %s (ID: %s)", tostring(matchedName), tostring(matchedId)))
     print("⏳ Ładowanie modułów gry...")
     print("==================================================")
 
-    local success, _ = safeExecute(matchedEntry.Path, matchedEntry.Url)
+    local relPath = "Games/" .. tostring(matchedId) .. "/Script.lua"
+    local fullUrl = baseUrl .. relPath
+    local success, _ = safeExecute(relPath, fullUrl)
+
     if not success then
         warn("[Loader] Nie udało się załadować dedykowanego skryptu! Przełączanie na Universal...")
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
@@ -110,3 +101,4 @@ else
         warn("[Loader] KRYTYCZNY BŁĄD: Nie udało się uruchomić Universal Suite!")
     end
 end
+
