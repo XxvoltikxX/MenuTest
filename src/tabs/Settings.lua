@@ -5,6 +5,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 
@@ -423,6 +424,88 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                 enableAntiAfk()
             else
                 disableAntiAfk()
+            end
+        end,
+    }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
+
+    -- AntiFling & Unfling (ochrona przed wyrzuceniem w stylu Infinite Yield)
+    local antiFlingConnection = nil
+    local function enableAntiFling()
+        if antiFlingConnection then
+            antiFlingConnection:Disconnect()
+            antiFlingConnection = nil
+        end
+
+        antiFlingConnection = RunService.Stepped:Connect(function()
+            local lp = Players.LocalPlayer
+            if not lp then return end
+            local myChar = lp.Character
+
+            -- 1. Wyłącz kolizje CanCollide u wszystkich innych graczy (metoda z Infinite Yield antifling)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= lp and player.Character then
+                    for _, v in ipairs(player.Character:GetDescendants()) do
+                        if v:IsA("BasePart") and v.CanCollide then
+                            v.CanCollide = false
+                        end
+                    end
+                end
+            end
+
+            -- 2. Zabezpieczenie przed ekstremalną prędkością fizyki i obrotu (unfling guard)
+            if myChar then
+                local hrp = myChar:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local linVel = hrp.AssemblyLinearVelocity
+                    local angVel = hrp.AssemblyAngularVelocity
+                    if linVel and linVel.Magnitude > 150 then
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                    end
+                    if angVel and angVel.Magnitude > 100 then
+                        hrp.AssemblyAngularVelocity = Vector3.zero
+                    end
+                end
+            end
+        end)
+    end
+
+    local function disableAntiFling()
+        if antiFlingConnection then
+            antiFlingConnection:Disconnect()
+            antiFlingConnection = nil
+        end
+        -- Unfling reset fizyki postaci
+        local lp = Players.LocalPlayer
+        local char = lp and lp.Character
+        if char then
+            for _, v in ipairs(char:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+                    v.Massless = false
+                    v.Velocity = Vector3.zero
+                elseif v:IsA("BodyAngularVelocity") or v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyThrust") then
+                    pcall(function() v:Destroy() end)
+                end
+            end
+        end
+    end
+
+    -- Włącz AntiFling natychmiast od startu sesji (domyślnie włączone w bibliotece)
+    enableAntiFling()
+    if UI.MenuConfig then
+        UI.MenuConfig["AntiFling"] = true
+    end
+
+    ToggleElement({
+        Name = "AntiFling",
+        CurrentValue = true,
+        Default = true,
+        Flag = "AntiFling",
+        Callback = function(Value)
+            if Value then
+                enableAntiFling()
+            else
+                disableAntiFling()
             end
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)

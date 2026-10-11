@@ -299,6 +299,7 @@ Na dole paska bocznego (Sidebar) znajduje się panel profilu użytkownika:
    - Przycisk `Refresh Themes` z animacją obrotu.
 2. **OPTIONS**:
    - `AntiAFK`: Domyślnie **automatycznie włączony** przy załadowaniu, chroni przed błędem 20 minut bezczynności Roblox.
+   - `AntiFling`: Domyślnie **automatycznie włączony** przy załadowaniu (wzorowany na Infinite Yield `antifling` & `unfling`). Wyłącza kolizje fizyczne (`CanCollide = false`) u innych graczy na każdym kroku symulacji fizyki (`Stepped`) oraz stabilizuje prędkość Twojej postaci, uniemożliwiając innym graczom wyrzucenie Cię z mapy.
    - `Keybinds`: Włączanie/wyłączanie nakładki HUD ze zbindowanymi modułami.
    - `Menu Keybind`: Wizualny widget zmiany klawisza otwierania menu (kliknij, wciśnij klawisz, domyślnie `[K]`).
 3. **CONFIGS**:
