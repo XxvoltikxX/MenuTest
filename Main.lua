@@ -266,7 +266,8 @@ end
 -- // ============================================================
 function MenuLib:CreateWindow(options)
     local Config = options or {}
-    local Name   = Config.Name or "Menu"
+    local rawName = tostring(Config.Name or "Menu")
+    local Name   = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
     local startTime = os.clock()
 
     -- Uruchomienie wskaźnika procesu ładowania
@@ -367,23 +368,57 @@ function MenuLib:CreateWindow(options)
         writefile(mainFolder.."/emotes/favorites.json", "{}")
     end
 
-    local darkTheme = {
-        Main          = {15,  15,  15},
-        Secondary     = {25,  25,  25},
-        Accent        = {60,  60,  60},
-        Accent2       = {40,  40,  40},
-        Success       = {100, 255, 100},
-        Text          = {255, 255, 255},
-        Text_Secondary= {160, 160, 160},
-        Close         = {200, 50,  50},
+    local defaultThemes = {
+        ["dark"] = {
+            Main          = {15,  15,  15},
+            Secondary     = {25,  25,  25},
+            Accent        = {60,  60,  60},
+            Accent2       = {40,  40,  40},
+            Success       = {100, 255, 100},
+            Text          = {255, 255, 255},
+            Text_Secondary= {160, 160, 160},
+            Close         = {200, 50,  50},
+        },
+        ["light"] = {
+            Main          = {245, 245, 248},
+            Secondary     = {232, 232, 238},
+            Accent        = {195, 195, 205},
+            Accent2       = {215, 215, 225},
+            Success       = {45,  175, 75},
+            Text          = {20,  20,  25},
+            Text_Secondary= {110, 110, 125},
+            Close         = {220, 55,  55},
+        },
+        ["midnight"] = {
+            Main          = {10,  13,  20},
+            Secondary     = {16,  21,  32},
+            Accent        = {42,  54,  78},
+            Accent2       = {25,  34,  50},
+            Success       = {80,  230, 160},
+            Text          = {240, 246, 255},
+            Text_Secondary= {130, 148, 178},
+            Close         = {235, 70,  85},
+        },
+        ["amethyst"] = {
+            Main          = {16,  12,  24},
+            Secondary     = {26,  20,  38},
+            Accent        = {68,  50,  98},
+            Accent2       = {40,  28,  58},
+            Success       = {130, 245, 160},
+            Text          = {250, 244, 255},
+            Text_Secondary= {172, 150, 198},
+            Close         = {235, 60,  90},
+        }
     }
-    writefile(themesFolder .. "/dark.json", prettyEncode(darkTheme))
 
-    local themeColors = darkTheme
-    local sData, dData = pcall(function()
-        return HttpService:JSONDecode(readfile(themesFolder .. "/dark.json"))
-    end)
-    if sData and type(dData) == "table" then themeColors = dData end
+    for themeName, themeData in pairs(defaultThemes) do
+        local path = themesFolder .. "/" .. themeName .. ".json"
+        if not isfile(path) then
+            writefile(path, prettyEncode(themeData))
+        end
+    end
+
+    local themeColors = defaultThemes["dark"]
 
     local menuConfig     = {}
     local configFilePath = configsFolder .. "/settings.json"
@@ -479,7 +514,23 @@ function MenuLib:CreateWindow(options)
     -- // ============================================================
     -- // PUBLICZNE API
     -- // ============================================================
+    UI.Flags = {}
+    function UI:ApplyConfig(cfg)
+        if type(cfg) ~= "table" then return end
+        for flag, val in pairs(cfg) do
+            UI.MenuConfig[flag] = val
+            if UI.SaveMenuConfig then
+                pcall(function() UI.SaveMenuConfig(flag, val) end)
+            end
+            if UI.Flags and UI.Flags[flag] and UI.Flags[flag].Set then
+                pcall(function() UI.Flags[flag]:Set(val) end)
+            end
+        end
+    end
+
     local WindowAPI = {}
+    WindowAPI.Flags = UI.Flags
+    function WindowAPI:ApplyConfig(cfg) UI:ApplyConfig(cfg) end
     UI.WindowAPI    = WindowAPI
 
     UI._userTabCounter   = 2
@@ -556,22 +607,34 @@ function MenuLib:CreateWindow(options)
             return ButtonElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
         end
         function TabAPI:CreateToggle(opts)
-            return ToggleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            local inst = ToggleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
         function TabAPI:CreateColorPicker(opts)
-            return ColorPickerElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            local inst = ColorPickerElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
         function TabAPI:CreateSlider(opts)
-            return SliderElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            local inst = SliderElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
         function TabAPI:CreateInput(opts)
-            return InputElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            local inst = InputElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
         function TabAPI:CreateDropdown(opts)
-            return DropdownElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI.Icons)
+            local inst = DropdownElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI.Icons)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
         function TabAPI:CreateModule(opts)
-            return ModuleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI, elementsTable)
+            local inst = ModuleElement(opts, UI.ThemeManager, getNextParent(), UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI, elementsTable)
+            if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
+            return inst
         end
 
         return TabAPI

@@ -70,6 +70,11 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Update()
 
     local API = {}
-    function API:Set(val) Value = val Update() end
+    function API:Set(val)
+        Value = (val == true)
+        Update()
+        if options.Callback then options.Callback(Value) end
+        if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, Value) end
+    end
     return API
 end

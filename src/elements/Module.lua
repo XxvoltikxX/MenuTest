@@ -305,11 +305,31 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     end
 
     local API = {}
-    function API:AddSlider(opts) return SliderElement(opts, themeManager, Content, menuConfig, saveMenuConfig) end
-    function API:AddToggle(opts) return ToggleElement(opts, themeManager, Content, menuConfig, saveMenuConfig) end
-    function API:AddDropdown(opts) return DropdownElement(opts, themeManager, Content, menuConfig, saveMenuConfig, addConnection, Icons) end
-    function API:AddInput(opts) return InputElement(opts, themeManager, Content, menuConfig, saveMenuConfig) end
-    function API:AddColorPicker(opts) return ColorPickerElement(opts, themeManager, Content, menuConfig, saveMenuConfig) end
+    function API:AddSlider(opts)
+        local inst = SliderElement(opts, themeManager, Content, menuConfig, saveMenuConfig)
+        if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
+        return inst
+    end
+    function API:AddToggle(opts)
+        local inst = ToggleElement(opts, themeManager, Content, menuConfig, saveMenuConfig)
+        if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
+        return inst
+    end
+    function API:AddDropdown(opts)
+        local inst = DropdownElement(opts, themeManager, Content, menuConfig, saveMenuConfig, addConnection, Icons)
+        if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
+        return inst
+    end
+    function API:AddInput(opts)
+        local inst = InputElement(opts, themeManager, Content, menuConfig, saveMenuConfig)
+        if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
+        return inst
+    end
+    function API:AddColorPicker(opts)
+        local inst = ColorPickerElement(opts, themeManager, Content, menuConfig, saveMenuConfig)
+        if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
+        return inst
+    end
     function API:AddButton(opts) return ButtonElement(opts, themeManager, Content, menuConfig, saveMenuConfig, addConnection) end
     function API:Set(val) ToggleModule(val) end
 

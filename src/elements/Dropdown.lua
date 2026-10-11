@@ -169,6 +169,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local API = {}
     function API:Refresh(newOptions) Options = newOptions RefreshList() end
-    function API:Set(newOption) CurrentOption = newOption UpdateLabel() RefreshList() end
+    function API:Set(newOption)
+        CurrentOption = type(newOption) == "table" and newOption or {newOption}
+        UpdateLabel()
+        RefreshList()
+        if options.Callback then options.Callback(CurrentOption) end
+        if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, CurrentOption) end
+    end
     return API
 end

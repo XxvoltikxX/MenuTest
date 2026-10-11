@@ -115,6 +115,12 @@ local SidebarModule= safeLoadUrl(baseUrl .. "Sidebar.lua",      SidebarFallback)
 -- // Window:Create
 -- // ============================================================
 function Window:Create(config)
+    config = config or {}
+    if config.Name then
+        local rawName = tostring(config.Name)
+        config.Name = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
+    end
+
     local UI = {}
     UI.Icons      = Icons
     UI.Tabs       = {}

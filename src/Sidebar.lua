@@ -12,7 +12,8 @@ function Sidebar:Create(UI, theme, config)
     -- // GÓRNA CZĘŚĆ (Tytuł i Linia)
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Text = config.Name or "X HUB"
+    local rawName = tostring(config.Name or "X HUB")
+    Title.Text = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 16
     Title.Size = UDim2.new(1, 0, 0, 45)
