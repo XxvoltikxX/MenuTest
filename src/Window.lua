@@ -722,6 +722,23 @@ function Window:Create(config)
     function UI:SelectTab(targetButton, immediate)
         if not targetButton then return end
 
+        -- Jeśli otwarte były Ustawienia, zresetuj ich stan
+        if UI.IsSettingsOpen then
+            UI.IsSettingsOpen = false
+            if UI.SettingsBtn then
+                TweenService:Create(UI.SettingsBtn, TweenInfo.new(0.2), {
+                    BackgroundTransparency = 1
+                }):Play()
+            end
+            if UI.SettingsIcon then
+                local dimTxt = getColor(ThemeManager.CurrentTheme.Text_Secondary)
+                TweenService:Create(UI.SettingsIcon, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    ImageColor3 = dimTxt,
+                    Rotation = 0
+                }):Play()
+            end
+        end
+
         -- Znajdź stronę powiązaną z przyciskiem
         local targetPage = nil
         for _, tabObj in ipairs(UI.TabObjects) do
@@ -808,6 +825,53 @@ function Window:Create(config)
             UI:SelectTab(dashButton, true)
         else
             warn("[Window] SelectDashboard: nie znaleziono przycisku Dashboard!")
+        end
+    end
+
+    -- // ============================================================
+    -- // UI:OpenSettings – otwiera stronę Ustawień w stylu Discord
+    -- // ============================================================
+    function UI:OpenSettings()
+        if not UI.SettingsPage then return end
+        UI.IsSettingsOpen = true
+
+        -- Zdezaktywuj poprzednio wybraną zakładkę w sidebarze
+        if UI.SelectedTab then
+            UI.PreviousTab = UI.SelectedTab
+            local prevIcon  = UI.SelectedTab:FindFirstChild("Icon")
+            local prevLabel = UI.SelectedTab:FindFirstChild("Label")
+            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2),
+                {ImageColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
+            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2),
+                {TextColor3  = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
+            UI.SelectedTab = nil
+        end
+
+        -- Ukryj wszystkie strony i pokaż SettingsPage
+        for _, page in ipairs(UI.Pages) do
+            page.Visible = false
+        end
+        UI.SettingsPage.Visible = true
+
+        -- Ukryj wskaźnik zakładek w sidebarze
+        if UI.GlobalIndicator then
+            UI.GlobalIndicator.Visible = false
+        end
+
+        -- Podświetl ikonę ustawień w profilu gracza
+        if UI.SettingsBtn then
+            local activeBg = ThemeManager:GetColor("Accent2") or Color3.fromRGB(45, 45, 55)
+            TweenService:Create(UI.SettingsBtn, TweenInfo.new(0.2), {
+                BackgroundColor3 = activeBg,
+                BackgroundTransparency = 0
+            }):Play()
+        end
+        if UI.SettingsIcon then
+            local activeTxt = ThemeManager:GetColor("Text") or Color3.fromRGB(255, 255, 255)
+            TweenService:Create(UI.SettingsIcon, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                ImageColor3 = activeTxt,
+                Rotation = 60
+            }):Play()
         end
     end
 

@@ -92,8 +92,8 @@ function Sidebar:Create(UI, theme, config)
 
     local NameFrame = Instance.new("Frame")
     NameFrame.Name = "NameFrame"
-    NameFrame.Size = UDim2.new(1, -70, 1, 0) -- full height for proper vertical centering
-    NameFrame.Position = UDim2.new(0, 65, 0.5, 0) -- centered vertically in profile
+    NameFrame.Size = UDim2.new(1, -112, 1, 0) -- leaves space for settings button
+    NameFrame.Position = UDim2.new(0, 65, 0.5, 0)
     NameFrame.AnchorPoint = Vector2.new(0, 0.5)
     NameFrame.BackgroundTransparency = 1
     NameFrame.Parent = ProfileFrame
@@ -110,15 +110,90 @@ function Sidebar:Create(UI, theme, config)
     DisplayName.Text = nameToShow
     DisplayName.Font = Enum.Font.GothamBold
     DisplayName.TextSize = 12
-    DisplayName.TextScaled = false -- Wyłączone TextScaled, żeby tekst trzymał stabilny rozmiar
+    DisplayName.TextScaled = false
+    DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
     DisplayName.Size = UDim2.new(1, 0, 1, 0)
     DisplayName.Position = UDim2.new(0, 0, 0, 0)
     DisplayName.AnchorPoint = Vector2.new(0, 0)
     DisplayName.BackgroundTransparency = 1
     DisplayName.TextXAlignment = Enum.TextXAlignment.Left
-    DisplayName.TextYAlignment = Enum.TextYAlignment.Center -- Idealne wyśrodkowanie w pionie obok awatara
+    DisplayName.TextYAlignment = Enum.TextYAlignment.Center
     DisplayName.Parent = NameFrame
     UI.ThemeManager:Register(DisplayName, "TextColor3", "Text")
+
+    -- // Przycisk Ustawień w stylu Discord (Zębatka Lucide)
+    local TweenService = game:GetService("TweenService")
+    local Icons = UI.Icons or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+
+    local SettingsBtn = Instance.new("TextButton")
+    SettingsBtn.Name = "SettingsBtn"
+    SettingsBtn.Size = UDim2.new(0, 32, 0, 32)
+    SettingsBtn.Position = UDim2.new(1, -10, 0.5, 0)
+    SettingsBtn.AnchorPoint = Vector2.new(1, 0.5)
+    SettingsBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    SettingsBtn.BackgroundTransparency = 1
+    SettingsBtn.Text = ""
+    SettingsBtn.AutoButtonColor = false
+    SettingsBtn.Parent = ProfileFrame
+
+    Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 6)
+
+    local SettingsIcon = Instance.new("ImageLabel")
+    SettingsIcon.Name = "Icon"
+    SettingsIcon.Size = UDim2.new(0, 18, 0, 18)
+    SettingsIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+    SettingsIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    SettingsIcon.BackgroundTransparency = 1
+    SettingsIcon.ImageColor3 = Color3.fromRGB(160, 160, 170)
+    SettingsIcon.Parent = SettingsBtn
+
+    if Icons and Icons.Apply then
+        Icons:Apply(SettingsIcon, "settings")
+    end
+    UI.ThemeManager:Register(SettingsIcon, "ImageColor3", "Text_Secondary")
+
+    SettingsBtn.MouseEnter:Connect(function()
+        if not UI.IsSettingsOpen then
+            local hoverBg = UI.ThemeManager:GetColor("Accent2") or Color3.fromRGB(40, 40, 50)
+            local hoverTxt = UI.ThemeManager:GetColor("Text") or Color3.fromRGB(255, 255, 255)
+            TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {
+                BackgroundColor3 = hoverBg,
+                BackgroundTransparency = 0
+            }):Play()
+            TweenService:Create(SettingsIcon, TweenInfo.new(0.2), {
+                ImageColor3 = hoverTxt,
+                Rotation = 25
+            }):Play()
+        end
+    end)
+
+    SettingsBtn.MouseLeave:Connect(function()
+        if not UI.IsSettingsOpen then
+            local dimTxt = UI.ThemeManager:GetColor("Text_Secondary") or Color3.fromRGB(160, 160, 170)
+            TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {
+                BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(SettingsIcon, TweenInfo.new(0.2), {
+                ImageColor3 = dimTxt,
+                Rotation = 0
+            }):Play()
+        end
+    end)
+
+    SettingsBtn.MouseButton1Click:Connect(function()
+        if UI.IsSettingsOpen then
+            if UI.PreviousTab and UI.SelectTab then
+                UI:SelectTab(UI.PreviousTab)
+            elseif UI.SelectDashboard then
+                UI:SelectDashboard()
+            end
+        else
+            if UI.OpenSettings then UI:OpenSettings() end
+        end
+    end)
+
+    UI.SettingsBtn = SettingsBtn
+    UI.SettingsIcon = SettingsIcon
 
     return SidebarFrame, TabList
 end

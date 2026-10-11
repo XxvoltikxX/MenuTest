@@ -47,15 +47,17 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         ToggleElement = safeLoadSub("elements/Toggle.lua", baseUrl .. "elements/Toggle.lua")
     end
 
-    -- Ensure WindowAPI is available before creating Settings tab
-    local TabAPI
-    if UI.WindowAPI and typeof(UI.WindowAPI.CreateTab) == "function" then
-        TabAPI = UI.WindowAPI:CreateTab("Settings", "settings", order or 999)
-    else
-        warn("[Settings] UI.WindowAPI is unavailable; cannot create Settings tab.")
-        return
-    end
-    local Page = TabAPI.Page -- Pobieramy stronę z obiektu API
+    -- Tworzymy dedykowaną stronę Settings bezpośrednio w PagesContainer
+    -- (Settings nie pojawia się w liście zakładek sidebara, lecz otwiera się z ikonki zębatki w profilu Discord-style)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = "SettingsPage"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.Visible = false
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.ScrollBarThickness = 4
+    Page.Parent = UI.PagesContainer
 
     local ThemeManager = UI.ThemeManager
 
@@ -63,25 +65,27 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         return Color3.fromRGB(unpack(colorTable))
     end
 
-    local PageLayout = Page:FindFirstChildOfClass("UIListLayout")
-    if PageLayout then
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        PageLayout.Padding = UDim.new(0, 20)
-    end
+    local PageLayout = Instance.new("UIListLayout", Page)
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 20)
 
-    local PagePadding = Instance.new("UIPadding")
+    local PagePadding = Instance.new("UIPadding", Page)
     PagePadding.PaddingTop = UDim.new(0, 20)
     PagePadding.PaddingRight = UDim.new(0, 20)
-    PagePadding.Parent = Page
+    PagePadding.PaddingLeft = UDim.new(0, 20)
 
-    -- Sekcja: Themes (LayoutOrder = 1)
+    table.insert(UI.Pages, Page)
+    UI.SettingsPage = Page
+
+    -- Sekcja: Themes (LayoutOrder = 1) - stała wysokość, aby nie przesuwać sekcji OPTIONS przy rozwijaniu listy!
     local ThemesSection = Instance.new("Frame")
     ThemesSection.Name = "ThemesSection"
-    ThemesSection.Size = UDim2.new(1, -40, 0, 0)
-    ThemesSection.AutomaticSize = Enum.AutomaticSize.Y
+    ThemesSection.Size = UDim2.new(1, -40, 0, 75)
+    ThemesSection.AutomaticSize = Enum.AutomaticSize.None
     ThemesSection.BackgroundTransparency = 1
     ThemesSection.LayoutOrder = 1
-    ThemesSection.ZIndex = 10
+    ThemesSection.ZIndex = 50
+    ThemesSection.ClipsDescendants = false
     ThemesSection.Parent = Page
 
     local ThemesHeader = Instance.new("TextLabel")
@@ -99,7 +103,8 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     ThemesContainer.Size = UDim2.new(1, 0, 0, 50)
     ThemesContainer.Position = UDim2.new(0, 0, 0, 25)
     ThemesContainer.Parent = ThemesSection
-    ThemesContainer.ZIndex = 10
+    ThemesContainer.ZIndex = 50
+    ThemesContainer.ClipsDescendants = false
     ThemeManager:Register(ThemesContainer, "BackgroundColor3", "Secondary")
 
     Instance.new("UICorner", ThemesContainer).CornerRadius = UDim.new(0, 6)
@@ -109,13 +114,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     ThemeManager:Register(ThemesStroke, "Color", "Accent")
 
     local RefreshBtn = Instance.new("TextButton")
-    RefreshBtn.Size = UDim2.new(0, 140, 0, 30)
+    RefreshBtn.Size = UDim2.new(0, 140, 0, 32)
     RefreshBtn.Position = UDim2.new(0, 10, 0.5, 0)
     RefreshBtn.AnchorPoint = Vector2.new(0, 0.5)
     RefreshBtn.Text = "   Refresh Themes"
     RefreshBtn.Font = Enum.Font.GothamMedium
-    RefreshBtn.TextSize = 14
+    RefreshBtn.TextSize = 13
     RefreshBtn.TextXAlignment = Enum.TextXAlignment.Left
+    RefreshBtn.ZIndex = 51
     RefreshBtn.Parent = ThemesContainer
     ThemeManager:Register(RefreshBtn, "BackgroundColor3", "Accent")
     ThemeManager:Register(RefreshBtn, "TextColor3", "Text")
@@ -126,27 +132,33 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     RefreshIcon.Position = UDim2.new(1, -10, 0.5, 0)
     RefreshIcon.AnchorPoint = Vector2.new(1, 0.5)
     RefreshIcon.BackgroundTransparency = 1
+    RefreshIcon.ZIndex = 52
     RefreshIcon.Parent = RefreshBtn
     ThemeManager:Register(RefreshIcon, "ImageColor3", "Text")
     Icons:Apply(RefreshIcon, "refresh-cw")
 
     local Dropdown = Instance.new("Frame")
-    Dropdown.Size = UDim2.new(1, -170, 0, 30)
+    Dropdown.Size = UDim2.new(1, -170, 0, 32)
     Dropdown.Position = UDim2.new(0, 160, 0.5, 0)
     Dropdown.AnchorPoint = Vector2.new(0, 0.5)
-    Dropdown.ZIndex = 20
+    Dropdown.ZIndex = 60
+    Dropdown.ClipsDescendants = false
     Dropdown.Parent = ThemesContainer
     ThemeManager:Register(Dropdown, "BackgroundColor3", "Main")
     Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 6)
+    local DropdownStroke = Instance.new("UIStroke", Dropdown)
+    DropdownStroke.Thickness = 1
+    DropdownStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    ThemeManager:Register(DropdownStroke, "Color", "Accent")
 
     local DropdownBtn = Instance.new("TextButton")
     DropdownBtn.Size = UDim2.new(1, 0, 1, 0)
     DropdownBtn.BackgroundTransparency = 1
     DropdownBtn.Text = "   dark"
-    DropdownBtn.Font = Enum.Font.Gotham
-    DropdownBtn.TextSize = 14
+    DropdownBtn.Font = Enum.Font.GothamMedium
+    DropdownBtn.TextSize = 13
     DropdownBtn.TextXAlignment = Enum.TextXAlignment.Left
-    DropdownBtn.ZIndex = 21
+    DropdownBtn.ZIndex = 61
     DropdownBtn.Parent = Dropdown
     ThemeManager:Register(DropdownBtn, "TextColor3", "Text")
 
@@ -155,30 +167,19 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     DropdownIcon.Position = UDim2.new(1, -10, 0.5, 0)
     DropdownIcon.AnchorPoint = Vector2.new(1, 0.5)
     DropdownIcon.BackgroundTransparency = 1
-    DropdownIcon.ZIndex = 21
+    DropdownIcon.ZIndex = 61
     DropdownIcon.Parent = Dropdown
     ThemeManager:Register(DropdownIcon, "ImageColor3", "Text_Secondary")
     Icons:Apply(DropdownIcon, "chevron-down")
 
-    ThemesSection.ClipsDescendants = false
-    ThemesContainer.ClipsDescendants = false
-    Dropdown.ClipsDescendants = false
-
-    local DropdownList = Instance.new("ScrollingFrame")
-    DropdownList.Size = UDim2.new(1, 0, 0, 0)
-    DropdownList.Position = UDim2.new(0, 0, 1, 5)
-    DropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
-    DropdownList.ScrollBarThickness = 2
-    DropdownList.BackgroundTransparency = 1
-    DropdownList.Visible = false
-    DropdownList.ZIndex = 30
-    DropdownList.Parent = Dropdown
-
+    -- Pływające menu rozwijane motywów (popover o wysokim ZIndex, z płynną animacją)
     local ListBg = Instance.new("Frame")
+    ListBg.Name = "DropdownListBg"
     ListBg.Size = UDim2.new(1, 0, 0, 0)
-    ListBg.Position = UDim2.new(0, 0, 1, 5)
+    ListBg.Position = UDim2.new(0, 0, 1, 4)
     ListBg.Visible = false
-    ListBg.ZIndex = 29
+    ListBg.ClipsDescendants = true
+    ListBg.ZIndex = 80
     ListBg.Parent = Dropdown
     ThemeManager:Register(ListBg, "BackgroundColor3", "Main")
     Instance.new("UICorner", ListBg).CornerRadius = UDim.new(0, 6)
@@ -187,26 +188,61 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     ListStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     ThemeManager:Register(ListStroke, "Color", "Accent")
 
-    local ListLayout = Instance.new("UIListLayout")
+    local DropdownList = Instance.new("ScrollingFrame")
+    DropdownList.Name = "List"
+    DropdownList.Size = UDim2.new(1, 0, 1, 0)
+    DropdownList.Position = UDim2.new(0, 0, 0, 0)
+    DropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    DropdownList.ScrollBarThickness = 3
+    DropdownList.BackgroundTransparency = 1
+    DropdownList.ZIndex = 81
+    DropdownList.Parent = ListBg
+
+    local ListPadding = Instance.new("UIPadding", DropdownList)
+    ListPadding.PaddingTop = UDim.new(0, 4)
+    ListPadding.PaddingBottom = UDim.new(0, 4)
+    ListPadding.PaddingLeft = UDim.new(0, 4)
+    ListPadding.PaddingRight = UDim.new(0, 4)
+
+    local ListLayout = Instance.new("UIListLayout", DropdownList)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.Parent = DropdownList
+    ListLayout.Padding = UDim.new(0, 2)
 
     local isDropdownOpen = false
 
     local function ToggleDropdown()
         isDropdownOpen = not isDropdownOpen
-        DropdownList.Visible = isDropdownOpen
-        ListBg.Visible = isDropdownOpen
+
+        local count = 0
+        for _, ch in ipairs(DropdownList:GetChildren()) do
+            if ch:IsA("TextButton") then count = count + 1 end
+        end
+        local targetHeight = math.min(count * 28 + (count > 0 and 8 or 0), 160)
 
         if isDropdownOpen then
-            local count = #DropdownList:GetChildren() - 1
-            local height = math.min(count * 30, 150)
-            DropdownList.Size = UDim2.new(1, 0, 0, height)
-            ListBg.Size = UDim2.new(1, 0, 0, height)
-            DropdownList.CanvasSize = UDim2.new(0, 0, 0, count * 30)
-            Icons:Apply(DropdownIcon, "chevron-up")
+            ListBg.Visible = true
+            ListBg.Size = UDim2.new(1, 0, 0, 0)
+            DropdownList.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 8)
+
+            TweenService:Create(ListBg, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, targetHeight)
+            }):Play()
+            TweenService:Create(DropdownIcon, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Rotation = 180
+            }):Play()
         else
-            Icons:Apply(DropdownIcon, "chevron-down")
+            local tw = TweenService:Create(ListBg, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Size = UDim2.new(1, 0, 0, 0)
+            })
+            tw:Play()
+            TweenService:Create(DropdownIcon, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Rotation = 0
+            }):Play()
+            tw.Completed:Connect(function()
+                if not isDropdownOpen then
+                    ListBg.Visible = false
+                end
+            end)
         end
     end
 
@@ -217,25 +253,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             if child:IsA("TextButton") then child:Destroy() end
         end
 
-        local count = 0
-        local function addThemeItem(themeName, callback)
-            count = count + 1
-            local Item = Instance.new("TextButton")
-            Item.Size = UDim2.new(1, 0, 0, 30)
-            Item.BackgroundTransparency = 1
-            Item.Text = "   " .. themeName
-            Item.Font = Enum.Font.Gotham
-            Item.TextSize = 14
-            Item.TextXAlignment = Enum.TextXAlignment.Left
-            Item.ZIndex = 31
-            Item.Parent = DropdownList
-            ThemeManager:Register(Item, "TextColor3", "Text")
+        local themes = {}
+        local seen = {}
 
-            Item.MouseButton1Click:Connect(function()
-                DropdownBtn.Text = "   " .. themeName
-                ToggleDropdown()
-                callback()
-            end)
+        local function registerTheme(tName, loadFn)
+            if not seen[tName] then
+                seen[tName] = true
+                table.insert(themes, { name = tName, load = loadFn })
+            end
         end
 
         local themesFolder = mainFolder .. "/themes"
@@ -243,30 +268,60 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             for _, file in pairs(listfiles(themesFolder)) do
                 if file:sub(-5) == ".json" then
                     local themeName = file:match("([^/\\]+)%.json$") or file:match("([^/\\]+)$")
-                    addThemeItem(themeName, function()
-                        local success, data = pcall(function()
-                            return HttpService:JSONDecode(readfile(file))
+                    if themeName then
+                        registerTheme(themeName, function()
+                            local success, data = pcall(function()
+                                return HttpService:JSONDecode(readfile(file))
+                            end)
+                            if success and type(data) == "table" then
+                                ThemeManager:Apply(data)
+                            end
                         end)
-                        if success and type(data) == "table" then
-                            ThemeManager:Apply(data)
-                        end
-                    end)
+                    end
                 end
             end
         end
 
-        if count == 0 then
-            local builtins = {
-                ["dark"] = { Main = {15, 15, 15}, Secondary = {25, 25, 25}, Accent = {60, 60, 60}, Accent2 = {40, 40, 40}, Success = {100, 255, 100}, Text = {255, 255, 255}, Text_Secondary = {160, 160, 160}, Close = {200, 50, 50} },
-                ["light"] = { Main = {245, 245, 248}, Secondary = {232, 232, 238}, Accent = {195, 195, 205}, Accent2 = {215, 215, 225}, Success = {45, 175, 75}, Text = {20, 20, 25}, Text_Secondary = {110, 110, 125}, Close = {220, 55, 55} },
-                ["midnight"] = { Main = {10, 13, 20}, Secondary = {16, 21, 32}, Accent = {42, 54, 78}, Accent2 = {25, 34, 50}, Success = {80, 230, 160}, Text = {240, 246, 255}, Text_Secondary = {130, 148, 178}, Close = {235, 70, 85} },
-                ["amethyst"] = { Main = {16, 12, 24}, Secondary = {26, 20, 38}, Accent = {68, 50, 98}, Accent2 = {40, 28, 58}, Success = {130, 245, 160}, Text = {250, 244, 255}, Text_Secondary = {172, 150, 198}, Close = {235, 60, 90} }
-            }
-            for _, tName in ipairs({"dark", "light", "midnight", "amethyst"}) do
-                addThemeItem(tName, function()
-                    if builtins[tName] then ThemeManager:Apply(builtins[tName]) end
-                end)
-            end
+        local builtins = {
+            ["dark"] = { Main = {15, 15, 15}, Secondary = {25, 25, 25}, Accent = {60, 60, 60}, Accent2 = {40, 40, 40}, Success = {100, 255, 100}, Text = {255, 255, 255}, Text_Secondary = {160, 160, 160}, Close = {200, 50, 50} },
+            ["light"] = { Main = {245, 245, 248}, Secondary = {232, 232, 238}, Accent = {195, 195, 205}, Accent2 = {215, 215, 225}, Success = {45, 175, 75}, Text = {20, 20, 25}, Text_Secondary = {110, 110, 125}, Close = {220, 55, 55} },
+            ["midnight"] = { Main = {10, 13, 20}, Secondary = {16, 21, 32}, Accent = {42, 54, 78}, Accent2 = {25, 34, 50}, Success = {80, 230, 160}, Text = {240, 246, 255}, Text_Secondary = {130, 148, 178}, Close = {235, 70, 85} },
+            ["amethyst"] = { Main = {16, 12, 24}, Secondary = {26, 20, 38}, Accent = {68, 50, 98}, Accent2 = {40, 28, 58}, Success = {130, 245, 160}, Text = {250, 244, 255}, Text_Secondary = {172, 150, 198}, Close = {235, 60, 90} }
+        }
+
+        for _, tName in ipairs({"dark", "light", "midnight", "amethyst"}) do
+            registerTheme(tName, function()
+                if builtins[tName] then ThemeManager:Apply(builtins[tName]) end
+            end)
+        end
+
+        for _, t in ipairs(themes) do
+            local Item = Instance.new("TextButton")
+            Item.Size = UDim2.new(1, 0, 0, 28)
+            Item.BackgroundTransparency = 1
+            Item.BackgroundColor3 = ThemeManager:GetColor("Accent2") or Color3.fromRGB(40, 40, 50)
+            Item.Text = "   " .. t.name
+            Item.Font = Enum.Font.GothamMedium
+            Item.TextSize = 13
+            Item.TextXAlignment = Enum.TextXAlignment.Left
+            Item.ZIndex = 82
+            Item.Parent = DropdownList
+            Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 4)
+            ThemeManager:Register(Item, "TextColor3", "Text")
+            ThemeManager:Register(Item, "BackgroundColor3", "Accent2")
+
+            Item.MouseEnter:Connect(function()
+                TweenService:Create(Item, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+            end)
+            Item.MouseLeave:Connect(function()
+                TweenService:Create(Item, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+            end)
+
+            Item.MouseButton1Click:Connect(function()
+                DropdownBtn.Text = "   " .. t.name
+                ToggleDropdown()
+                t.load()
+            end)
         end
     end
 

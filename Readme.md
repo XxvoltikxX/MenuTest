@@ -1,34 +1,63 @@
 # 💎 MenuTest UI Library
 
-Nowoczesna, wysokowydajna i w pełni responsywna biblioteka interfejsu użytkownika dla środowiska **Roblox**. Zaprojektowana z myślą o maksymalnej płynności (błyskawiczne ładowanie z pamięci cache), estetyce dark-mode, systemie dynamicznych kart (modułów) oraz inteligentnym Master Loaderze z automatycznym wykrywaniem gier.
+Nowoczesna, ultra-szybka i w pełni responsywna biblioteka interfejsu użytkownika dla środowiska **Roblox**. Zaprojektowana z myślą o maksymalnej płynności (pamięć podręczna modułów, zerowe zacięcia), dark-mode, systemie dynamicznych modułów (inspirowanych klientami PvP), dolnym pasku profilu w stylu **Discord** z dedykowaną zębatką ustawień oraz inteligentnym Master Loaderze z automatyczną detekcją gier.
+
+---
+
+> [!IMPORTANT]
+> ### 🤖 INSTRUKCJE DLA AGENTÓW AI I DEWELOPERÓW (PRZECZYTAJ ZANIM NAPISZESZ KOD!)
+> 
+> Jeżeli jesteś **Agentem AI** lub tworzysz nowy skrypt gry pod `MenuTest`:
+> 
+> 1. **100% AUTOMATYCZNE KEYBINDY DLA MODUŁÓW**:
+>    - **NIGDY NIE IMPLEMENTUJ WŁASNEGO KODU NA KEYBINDY DLA MODUŁÓW!**
+>    - Nie twórz żadnych listenerów `UserInputService.InputBegan` ani nie rejestruj manualnie modułów w HUD.
+>    - Każdy moduł stworzony przez `Tab:CreateModule({ Name = "...", DefaultKeybind = "X", ... })` **automatycznie i natywnie**:
+>      - Przypisuje klawisz skrótu (`DefaultKeybind`).
+>      - Reaguje na wciśnięcie klawisza w grze, zmienia stan i wywołuje `Callback(state)`.
+>      - Rejestruje się w pływającym HUD (`Keybinds Overlay`) ze statusem `[ON]` / `[OFF]`.
+>      - Zapisuje i wczytuje zbindowany klawisz w konfiguracjach pod kluczem `<Flag>_Bind`.
+>      - Umożliwia graczowi zmianę bindu bezpośrednio z poziomu UI (kliknięcie kółkiem myszy `MouseButton3` lub kliknięcie w plakietkę `[...]`).
+> 
+> 2. **BRAK RĘCZNEGO NISZCZENIA / CZYSZCZENIA GUI**:
+>    - Nie twórz w skryptach gier własnych funkcji usuwania starego GUI ani szukania `ScreenGui` w `CoreGui`/`PlayerGui`.
+>    - Biblioteka `MenuTest` automatycznie i bezpiecznie niszczy poprzednie instancje okna, rozłącza zdarzenia i zapobiega wyciekom pamięci przy każdym załadowaniu skryptu.
+> 
+> 3. **USTAWIENIA W PASKU PROFILU W STYLU DISCORD**:
+>    - Zakładka `Settings` **NIE znajduje się na liście zakładek sidebara**.
+>    - Obok awatara i nazwy gracza na dole sidebara znajduje się dedykowany przycisk zębatki Lucide (`settings`).
+>    - Kliknięcie zębatki płynnie otwiera panel Ustawień (Motywy, AntiAFK, Keybinds Overlay, Configi). Ponowne kliknięcie lub wybranie dowolnej zakładki płynnie przywraca poprzednią zakładkę.
+> 
+> 4. **CZYSTY, MODUŁOWY KOD**:
+>    - Skrypt gry powinien składać się wyłącznie z:
+>      1. Załadowania biblioteki (`loadstring(...)`).
+>      2. Wywołania `MENU:CreateWindow({...})`.
+>      3. Stworzenia zakładek (`Window:CreateTab(...)`).
+>      4. Stworzenia modułów (`Tab:CreateModule({...})`) z ich opcjami (`AddToggle`, `AddSlider`, itp.).
 
 ---
 
 ## 📑 Spis Treści
 1. [Szybki Start (Quick Start)](#-szybki-start-quick-start)
-2. [Główne Cechy Biblioteki](#-główne-cechy-biblioteki)
+2. [Architektura Biblioteki](#-architektura-biblioteki)
 3. [Inicjalizacja Okna (CreateWindow)](#-inicjalizacja-okna-createwindow)
-4. [Tworzenie Zakładek (Tabs & Ikony)](#-tworzenie-zakładek-tabs--ikony)
-5. [System Modułów (Modules)](#-system-modułów-modules)
-   - [Sterowanie Modułem (Myszka & Keybindy)](#sterowanie-modułem-myszka--keybindy)
-   - [Dodawanie Opcji do Modułu](#dodawanie-opcji-do-modułu)
-6. [Elementy Interfejsu (Kontrolki)](#-elementy-interfejsu-kontrolki)
-   - [Toggle (Przełącznik)](#1-toggle-przełącznik)
-   - [Slider (Suwak)](#2-slider-suwak)
-   - [Dropdown (Lista rozwijana)](#3-dropdown-lista-rozwijana)
-   - [ColorPicker (Wybór koloru)](#4-colorpicker-wybór-koloru)
-   - [Input (Pole tekstowe)](#5-input-pole-tekstowe)
-   - [Button (Przycisk)](#6-button-przycisk)
-7. [System Dashboard, Motywy i Konfiguracje](#-system-dashboard-motywy-i-konfiguracje)
-8. [Architektura Master Loadera i Dodawanie Gier](#-architektura-master-loadera-i-dodawanie-gier)
-9. [Kompletny Przykładowy Skrypt](#-kompletny-przykładowy-skrypt)
-10. [👑 Skrypt Autora](#-skrypt-autora)
+4. [Tworzenie Zakładek (Tabs)](#-tworzenie-zakładek-tabs)
+5. [System Modułów (Modules & Automatyczne Keybindy)](#-system-modułów-modules--automatyczne-keybindy)
+   - [Struktura modułu](#struktura-modułu)
+   - [Kontrola modułu przez użytkownika](#kontrola-modułu-przez-użytkownika)
+   - [Dodawanie opcji wewnątrz modułu](#dodawanie-opcji-wewnątrz-modułu)
+6. [Niezależne Kontrolki Zakładki (Stand-alone Controls)](#-niezależne-kontrolki-zakładki-stand-alone-controls)
+7. [Pasek Profilu i Ustawienia (Discord-Style Settings)](#-pasek-profilu-i-ustawienia-discord-style-settings)
+8. [System Motywów (Themes)](#-system-motywów-themes)
+9. [System Konfiguracji (Configs)](#-system-konfiguracji-configs)
+10. [Master Loader i Dodawanie Nowych Gier](#-master-loader-i-dodawanie-nowych-gier)
+11. [Wzorcowy Skrypt Gry dla Agenta AI](#-wzorcowy-skrypt-gry-dla-agenta-ai)
 
 ---
 
 ## ⚡ Szybki Start (Quick Start)
 
-Aby załadować bibliotekę bezpośrednio w swoim skrypcie:
+Podstawowy skrypt uruchomieniowy:
 
 ```lua
 local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
@@ -39,33 +68,64 @@ local Window = MENU:CreateWindow({
     TittlePos = "Center",
     ToggleUIKeybind = "Insert",
     TestMobile = false,
-    GameId = "109949693269081"
+    GameId = tostring(game.PlaceId)
 })
 
-local Tab = Window:CreateTab("Main", "zap")
-local MyModule = Tab:CreateModule({
+local Tab = Window:CreateTab("Player", "user")
+
+local SpeedModule = Tab:CreateModule({
     Name = "Speed",
     Description = "Zwiększa prędkość poruszania się",
     Default = false,
-    DefaultKeybind = "X",
+    DefaultKeybind = "X", -- Automatyczny bind! Zero dodatkowego kodu!
+    Flag = "Player_Speed",
     Callback = function(state)
-        print("Moduł Speed:", state)
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = state and 50 or 16
+        end
+    end
+})
+
+SpeedModule:AddSlider({
+    Name = "Prędkość",
+    Min = 16,
+    Max = 200,
+    Default = 50,
+    Suffix = " studs/s",
+    Flag = "Player_SpeedValue",
+    Callback = function(val)
+        -- Logika suwaka
     end
 })
 ```
 
 ---
 
-## 🌟 Główne Cechy Biblioteki
+## 🏗️ Architektura Biblioteki
 
-- **Błyskawiczny czas ładowania**: Współdzielona pamięć podręczna modułów eliminuje powtarzające się zapytania HTTP.
-- **Responsywny 2-kolumnowy Grid**: Moduły i elementy automatycznie układają się w dwóch estetycznych kolumnach obok siebie.
-- **Dynamiczne Karty (Moduły)**: Styl inspirowany nowoczesnymi klientami – karta posiada własny stan aktywności, animowane rozwijanie opcji oraz wbudowany system bindowania klawiszy.
-- **Keybinds Overlay**: Pływający panel HUD pokazujący aktualnie zbindowane moduły i ich status (ON/OFF).
-- **Zarządzanie Konfiguracjami**:
-  - **Local Configs**: Zapisywane i wczytywane bezpośrednio z dysku użytkownika (`workspace/MenuTest_Configs/...`).
-  - **Public Configs**: Konfiguracje online pobierane z repozytorium GitHub pod dane ID gry.
-- **System Motywów**: Wbudowane wsparcie dla stylów `Dark` oraz `Light`.
+```
+┌────────────────────────────────────────────────────────┐
+│                      MAIN WINDOW                       │
+├──────────────┬─────────────────────────────────────────┤
+│   SIDEBAR    │              PAGES AREA                 │
+│              │                                         │
+│ [Dashboard]  │  ┌─────────────────┐ ┌────────────────┐ │
+│ [Player]     │  │  Module 1 (LPM) │ │ Module 2 (LPM) │ │
+│ [Combat]     │  │  - Sub-Toggle   │ │ - Sub-Slider   │ │
+│ [Render]     │  │  - Sub-Dropdown │ │ - Sub-Color    │ │
+│              │  └─────────────────┘ └────────────────┘ │
+│              │  [2-Kolumnowy Responsywny Układ Kart]   │
+├──────────────┤                                         │
+│ DISCORD BAR  │                                         │
+│ [Avatar]     │                                         │
+│ [Nick]  [⚙]  │                                         │
+└───────┴──┴───┴─────────────────────────────────────────┘
+```
+
+- **Pasek boczny (Sidebar)**: Lista zakładek użytkownika oraz dolny panel profilu z awatarem Roblox i przyciskiem Ustawień `[⚙]`.
+- **Pages Area**: 2-kolumnowy grid modułów w danej zakładce, układający się automatycznie.
+- **Discord-Style User Bar**: Wzorowany na Discordzie – awatar, nick i dedykowana zębatka ustawień.
 
 ---
 
@@ -73,312 +133,302 @@ local MyModule = Tab:CreateModule({
 
 ```lua
 local Window = MENU:CreateWindow({
-    Name = "NazwaMenu",               -- Krótki identyfikator wyświetlany w lewym górnym rogu (max 16 znaków)
-    Tittle = "Pełny Tytuł Hubu",      -- Główny tytuł widoczny na pasku okna
-    TittlePos = "Center",             -- Pozycja tytułu: "Left", "Center", "Right"
-    ToggleUIKeybind = "Insert",       -- Klawisz otwierania/zamykania okna ("Insert", "RightShift", etc.)
-    TestMobile = false,               -- Włącza pływający przycisk toggle dla urządzeń mobilnych
-    GameId = "109949693269081"        -- Identyfikator gry używany m.in. do profilowania konfiguracji
+    Name = "NazwaMenu",         -- Identyfikator w lewym górnym rogu (max 16 znaków)
+    Tittle = "Tytuł Okna",      -- Główny tytuł wyświetlany na pasku okna
+    TittlePos = "Center",       -- Pozycja tytułu: "Left", "Center", "Right"
+    ToggleUIKeybind = "Insert", -- Klawisz otwierania/ukrywania menu (np. "Insert", "RightShift", "K")
+    TestMobile = false,         -- Włącza pływający przycisk toggle dla urządzeń mobilnych
+    GameId = tostring(game.PlaceId) -- ID gry do profilowania konfiguracji
 })
 ```
 
 ---
 
-## 📑 Tworzenie Zakładek (`Tabs` & Ikony)
+## 📑 Tworzenie Zakładek (`Tabs`)
 
-Zakładki tworzy się wywołując metodę `Window:CreateTab(name, icon, order)`.
+Zakładki tworzy się przy użyciu metody `Window:CreateTab(name, icon, order)`:
 
 ```lua
 local TabPlayer   = Window:CreateTab("Player", "user")
+local TabCombat   = Window:CreateTab("Combat", "crosshair")
 local TabAutoFarm = Window:CreateTab("AutoFarm", "zap")
 local TabRender   = Window:CreateTab("Render", "eye")
-local TabMisc     = Window:CreateTab("Misc", "wrench")
 ```
 
 ### Dostępne ikony (Lucide Icons):
-Biblioteka posiada wbudowany moduł `Icons.lua`. Możesz używać popularnych nazw ikon, np.:
-`"user"`, `"zap"`, `"eye"`, `"settings"`, `"layout-dashboard"`, `"shield"`, `"layers"`, `"wrench"`, `"crosshair"`, `"palette"`, `"chevron-down"`, `"check"`, itp.
+Możesz używać dowolnej popularnej ikony z rodziny Lucide, m.in.:
+- `"user"`, `"zap"`, `"eye"`, `"crosshair"`, `"shield"`, `"layers"`, `"wrench"`, `"palette"`, `"layout-dashboard"`, `"settings"`, `"refresh-cw"`, `"folder"`, `"save"`, `"trash"`, `"check"`, itp.
 
 ---
 
-## 📦 System Modułów (`Modules`)
+## 📦 System Modułów (`Modules` & Automatyczne Keybindy)
 
-Moduły są głównym budulcem funkcjonalności w menu (np. Fly, Speed, AutoFarm, ESP).
+Moduł to podstawowa jednostka funkcyjna w `MenuTest`. Idealna do opcji typu `KillAura`, `Fly`, `AutoFarm`, `ESP`.
+
+### Struktura modułu:
 
 ```lua
-local FlyModule = TabPlayer:CreateModule({
-    Name = "Fly",                      -- Zwięzła, czytelna nazwa modułu
-    Description = "Latanie w powietrzu",-- Krótki opis działania
-    Default = false,                   -- Domyślny stan (true = włączony, false = wyłączony)
-    DefaultKeybind = "F",              -- Domyślny klawisz (opcjonalny)
-    Flag = "Player_Fly",               -- Unikalna flaga do automatycznego zapisu konfiguracji
-    Callback = function(state)         -- Callback wywoływany przy zmianie stanu (true / false)
+local MyModule = TabPlayer:CreateModule({
+    Name = "Fly",                      -- Czytelna nazwa modułu
+    Description = "Latanie w powietrzu",-- Krótki opis wyświetlany pod nazwą
+    Default = false,                   -- Stan początkowy (true/false)
+    DefaultKeybind = "F",              -- DOMYŚLNY KLAWISZ (np. "F", "X", "V")
+    Flag = "Player_Fly",               -- Unikalna flaga do zapisu konfiguracji
+    Callback = function(state)         -- Funkcja uruchamiana przy zmianie stanu (true / false)
         if state then
-            print("Fly aktywowane!")
+            -- Kod włączenia
         else
-            print("Fly wyłączone!")
+            -- Kod wyłączenia
         end
     end
 })
 ```
 
-### Sterowanie Modułem (Myszka & Keybindy):
-- **LPM (Lewy Przycisk Myszy)**: Włącza / Wyłącza moduł (aktywuje animację akcentu i uruchamia `Callback(state)`).
-- **PPM (Prawy Przycisk Myszy)**: Rozwija / Zwija dodatkowe opcje modułu (sub-kontrolki).
-- **MouseButton3 (Kółko myszy / Scroll Click)** lub kliknięcie w **`[...]`**: Uruchamia tryb przypisywania klawisza.
-  - Wciśnij dowolny klawisz, aby przypisać bind.
-  - Wciśnij **Backspace** lub **Delete**, aby usunąć bind.
+### Kontrola modułu przez użytkownika:
+- **LPM (Lewy Przycisk Myszy)**: Włącza / Wyłącza moduł.
+- **PPM (Prawy Przycisk Myszy)**: Rozwija / Zwija dodatkowe opcje modułu.
+- **MouseButton3 (Środkowy Przycisk Myszy / Rolka)** lub kliknięcie w **`[...]`**:
+  - Aktywuje tryb bindowania klawisza.
+  - Wciśnij dowolny klawisz, aby przypisać go do modułu.
+  - Wciśnij **Backspace** lub **Delete**, aby skasować bind.
+- **Pływający HUD (`Keybinds Overlay`)**: Moduł natychmiast pojawia się na ekranie HUD z aktualnym statusem.
 
----
+### Dodawanie opcji wewnątrz modułu:
 
-### Dodawanie Opcji do Modułu
-
-Do każdego modułu można przypisać suwaki, przełączniki, listy wyboru czy próbniki kolorów:
+Do każdego modułu możesz dopiąć kontrolki podrzędne (rozwijane PPM):
 
 ```lua
 -- 1. Suwak w module
-FlyModule:AddSlider({
-    Name = "Speed",
+MyModule:AddSlider({
+    Name = "Prędkość",
     Min = 10,
-    Max = 300,
+    Max = 200,
     Default = 50,
-    Suffix = " studs",
+    Suffix = " studs/s",
     Flag = "Fly_Speed",
     Callback = function(val)
-        flySpeed = val
+        speedValue = val
     end
 })
 
 -- 2. Przełącznik w module
-FlyModule:AddToggle({
+MyModule:AddToggle({
     Name = "Noclip",
     Default = false,
     Flag = "Fly_Noclip",
-    Callback = function(val)
-        noclipEnabled = val
+    Callback = function(state)
+        noclipActive = state
     end
 })
 
 -- 3. Lista wyboru w module
-FlyModule:AddDropdown({
-    Name = "Method",
+MyModule:AddDropdown({
+    Name = "Tryb",
     Options = {"Velocity", "CFrame", "BodyGyro"},
     Default = "Velocity",
-    Flag = "Fly_Method",
+    Flag = "Fly_Mode",
     Callback = function(selected)
-        flyMethod = selected
+        currentMode = selected
     end
 })
 
--- 4. Wybór koloru w module
-FlyModule:AddColorPicker({
-    Name = "Glow Color",
+-- 4. Próbnik koloru w module (płynny z paletą SV, suwakiem Hue i Alpha)
+MyModule:AddColorPicker({
+    Name = "Kolor Aury",
     Default = Color3.fromRGB(0, 255, 170),
-    Flag = "Fly_GlowColor",
+    Flag = "Fly_AuraColor",
     Callback = function(color)
-        updateGlow(color)
+        updateAura(color)
     end
 })
 
 -- 5. Pole tekstowe w module
-FlyModule:AddInput({
-    Name = "Custom Tag",
-    Placeholder = "Wpisz tag...",
+MyModule:AddInput({
+    Name = "Własny Tag",
+    Placeholder = "Wpisz tag gracza...",
     Default = "",
     Flag = "Fly_Tag",
     Callback = function(text)
-        print("Tag:", text)
+        print("Wpisano:", text)
     end
 })
 
 -- 6. Przycisk w module
-FlyModule:AddButton({
-    Name = "Reset Flight",
+MyModule:AddButton({
+    Name = "Zresetuj Pozycję",
     Callback = function()
-        resetVelocity()
+        resetPos()
     end
 })
 
 -- Programowe ustawienie stanu modułu:
-FlyModule:Set(true) -- Włącza moduł i wywołuje callback
+MyModule:Set(true) -- Włącza moduł i odpala Callback(true)
 ```
 
 ---
 
-## 🎛️ Elementy Interfejsu (Kontrolki)
+## 🎛️ Niezależne Kontrolki Zakładki (Stand-alone Controls)
 
-Możesz także dodawać kontrolki bezpośrednio do zakładki (`Tab`), poza modułami:
+Jeśli chcesz dodać kontrolkę bezpośrednio do strony zakładki (poza modułami), użyj metod `Tab:Create...`:
 
-### 1. Toggle (Przełącznik)
 ```lua
-Tab:CreateToggle({
-    Name = "Auto Collect",
-    Default = false,
-    Flag = "AutoCollect_Flag",
-    Callback = function(state)
-        print("Toggle:", state)
-    end
-})
-```
-
-### 2. Slider (Suwak)
-```lua
-Tab:CreateSlider({
-    Name = "FOV",
-    Min = 70,
-    Max = 120,
-    Default = 90,
-    Suffix = "°",
-    Flag = "Camera_FOV",
-    Callback = function(val)
-        workspace.CurrentCamera.FieldOfView = val
-    end
-})
-```
-
-### 3. Dropdown (Lista rozwijana)
-```lua
-Tab:CreateDropdown({
-    Name = "Target Priority",
-    Options = {"Najbliższy", "Najmniej HP", "Najwięcej Kasy"},
-    Default = "Najbliższy",
-    Flag = "Target_Priority",
-    Callback = function(selected)
-        print("Wybrano:", selected)
-    end
-})
-```
-
-### 4. ColorPicker (Wybór koloru)
-```lua
-Tab:CreateColorPicker({
-    Name = "ESP Color",
-    Default = Color3.fromRGB(255, 50, 50),
-    Flag = "ESP_Color",
-    Callback = function(color)
-        espColor = color
-    end
-})
-```
-
-### 5. Input (Pole tekstowe)
-```lua
-Tab:CreateInput({
-    Name = "Webhook URL",
-    Placeholder = "https://discord.com/api/webhooks/...",
-    Default = "",
-    Flag = "Webhook_URL",
-    Callback = function(text)
-        webhook = text
-    end
-})
-```
-
-### 6. Button (Przycisk)
-```lua
-Tab:CreateButton({
-    Name = "Teleport do Spawn",
-    Callback = function()
-        game.Players.LocalPlayer.Character:MoveTo(Vector3.new(0, 50, 0))
-    end
-})
+Tab:CreateToggle({ Name = "Auto Collect", Default = false, Flag = "Auto_Collect", Callback = function(v) end })
+Tab:CreateSlider({ Name = "Zasięg", Min = 5, Max = 100, Default = 20, Suffix = "m", Flag = "Range", Callback = function(v) end })
+Tab:CreateDropdown({ Name = "Cel", Options = {"Najbliższy", "Najsłabszy"}, Default = "Najbliższy", Flag = "Target", Callback = function(v) end })
+Tab:CreateColorPicker({ Name = "ESP Kolor", Default = Color3.fromRGB(255, 50, 50), Flag = "ESP_Color", Callback = function(v) end })
+Tab:CreateInput({ Name = "Webhook", Placeholder = "URL...", Default = "", Flag = "Webhook", Callback = function(v) end })
+Tab:CreateButton({ Name = "Teleport", Callback = function() end })
 ```
 
 ---
 
-## 📊 System Dashboard, Motywy i Konfiguracje
+## ⚙️ Pasek Profilu i Ustawienia (Discord-Style Settings)
 
-Menu automatycznie generuje dwie zakładki systemowe:
+Na dole paska bocznego (Sidebar) znajduje się panel profilu użytkownika:
+- **Awatar**: Pobrany z miniaturki Roblox gracza (`rbxthumb://type=AvatarHeadShot`).
+- **Nazwa Gracza**: Inteligentne wyświetlanie DisplayName / Username.
+- **Zębatka Ustawień (`settings`)**:
+  - Dedykowany przycisk po prawej stronie paska profilu.
+  - Hover: subtelny obrót ikony o 25°.
+  - Kliknięcie: płynnie otwiera pełną stronę **Settings** w głównym obszarze okna z obrotem zębatki do 60° i wyróżnieniem akcentu.
+  - Ponowne kliknięcie zębatki lub kliknięcie w dowolną zakładkę (Dashboard, Player, Render) płynnie zamyka Ustawienia i przywraca aktywną zakładkę.
 
-### 1. Dashboard (`Dashboard.lua`)
-- **Profil Gracza**: Awatar, nazwa użytkownika, DisplayName, wiek konta.
-- **Diagnostyka na żywo**: Wykryty executor (np. Synapse, Wave, Solara, Krnl), aktualny Ping (ms) oraz FPS.
-- **Statystyki**: Czas trwania bieżącej sesji, licznik aktywnych modułów.
-- **Szybkie Akcje**: Bezpieczne zamykanie UI, przełączniki pomocnicze.
-
-### 2. Settings (`Settings.lua`)
-- **Opcje Główne**:
-  - `AntiAFK`: Wbudowane zabezpieczenie przed rozłączeniem z serwerem po 20 minutach bezczynności.
-  - `Keybinds Overlay`: Włączanie/wyłączanie HUD-u ze zbindowanymi klawiszami.
-  - `Watermark`: Wyświetlanie znaku wodnego w rogu ekranu.
-  - `Theme`: Wybór motywu wizualnego (`Dark` / `Light`).
-- **Menedżer Konfiguracji (Configs)**:
-  - **Local Configs**: Tworzenie nowych profili, zapisywanie, wczytywanie i usuwanie plików `.json`.
-  - **Public Configs**: Przeglądanie i pobieranie gotowych profili z GitHuba pod dedykowane ID gry.
+### Zawartość Panelu Ustawień:
+1. **THEMES**:
+   - Płynna lista rozwijana motywów (popover o wysokim ZIndex, który **nie przesuwa sekcji OPTIONS w dół** i animuje się z obrotem strzałki chevron).
+   - Przycisk `Refresh Themes` z animacją obrotu.
+2. **OPTIONS**:
+   - `AntiAFK`: Domyślnie **automatycznie włączony** przy załadowaniu, chroni przed błędem 20 minut bezczynności Roblox.
+   - `Keybinds`: Włączanie/wyłączanie nakładki HUD ze zbindowanymi modułami.
+   - `Menu Keybind`: Wizualny widget zmiany klawisza otwierania menu (kliknij, wciśnij klawisz, domyślnie `[K]`).
+3. **CONFIGS**:
+   - Zapisywanie i wczytywanie konfiguracji lokalnych (`Local Configs`) oraz przeglądanie gotowych konfiguracji publicznych z GitHuba (`Public Configs`).
 
 ---
 
-## 🚀 Architektura Master Loadera i Dodawanie Gier
+## 🎨 System Motywów (Themes)
 
-Plik [Loader.lua](file:///C:/Users/kubak/Desktop/githubMenu/MenuTest/Loader.lua) to inteligentny skrypt startowy.
+Biblioteka posiada wbudowany silnik `ThemeManager`, który natychmiast i bez przeładowania UI aktualizuje kolory wszystkich zarejestrowanych elementów (teksty, tła, ramki, moduły, kontrolki).
+
+Wbudowane motywy:
+- **`dark`**: Ciemny, grafitowy motyw z białymi akcentami (domyślny).
+- **`light`**: Nowoczesny, czysty jasny motyw.
+- **`midnight`**: Głęboki granat z neonowo-morskim akcentem.
+- **`amethyst`**: Elegancki fioletowo-ametystowy styl.
+
+---
+
+## 📁 System Konfiguracji (Configs)
+
+Konfiguracje są zapisywane w formacie JSON w folderze:
+`MenuTest/configs/<GameId>/<NazwaConfigu>.json`
+
+- **Automatyczny Zapis**: Wszystkie flagi modułów (`Flag`), ich stany (`state`), bindy (`<Flag>_Bind`) oraz wartości suwaków, dropdownów i kolorów zapisują się w wybranym configu.
+- **Public Configs**: Automatycznie pobierane z repozytorium GitHub pod identyfikator gry.
+
+---
+
+## 🚀 Master Loader i Dodawanie Nowych Gier
+
+Plik [Loader.lua](file:///C:/Users/kubak/Desktop/githubMenu/MenuTest/Loader.lua) to inteligentny punkt wejścia skryptu.
 
 ### Jak działa detekcja gier:
-1. Pobiera identyfikator gry: `game.PlaceId` oraz `game.GameId`.
-2. Sprawdza, czy ID znajduje się w tabeli `Games` w pliku `Loader.lua`.
-3. **Jeśli gra jest zarejestrowana**: Uruchamia dedykowany skrypt z `Games/<ID_GRY>/Script.lua`.
-4. **Jeśli gra NIE jest zarejestrowana**: Automatycznie uruchamia uniwersalny zestaw [Games/Universal.lua](file:///C:/Users/kubak/Desktop/githubMenu/MenuTest/Games/Universal.lua) (zawierający moduł **Render**: Player ESP, Boxy, Chams, Tracers).
+1. Sprawdza `game.PlaceId` oraz `game.GameId`.
+2. Jeśli gra jest na liście w `Loader.lua`: uruchamia `Games/<PlaceId>/Script.lua`.
+3. Jeśli gra nie jest zarejestrowana: uruchamia `Games/Universal.lua` (z kompletnym modułem Visuals & ESP).
 
-### Jak dodać nową grę (w 2 prostych krokach):
-1. Utwórz folder `Games/<ID_GRY>/` i umieść w nim `Script.lua`.
-2. W pliku `Loader.lua` dopisz jedną linijkę do tabeli `Games`:
+### Jak dodać wsparcie dla nowej gry:
+1. W pliku `Loader.lua` dodaj wpis do tabeli `Games`:
 ```lua
 local Games = {
     [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
-    [TWÓJ_NOWY_ID]    = "Nazwa Nowej Gry", -- <- tylko tyle!
+    [TWÓJ_PLACE_ID]   = "Nazwa Twojej Gry", -- <- tylko jedna linijka!
 }
 ```
+2. Utwórz folder `Games/<TWÓJ_PLACE_ID>/Script.lua`.
 
 ---
 
-## 💻 Kompletny Przykładowy Skrypt
+## 💻 Wzorcowy Skrypt Gry dla Agenta AI
+
+Skopiuj poniższy szablon przy tworzeniu skryptu dla dowolnej nowej gry:
 
 ```lua
--- Pobranie biblioteki MenuTest
+-- // ==========================================================================
+-- // SKRYPT GRY DLA MENUTEST UI LIBRARY
+-- // ==========================================================================
+
+-- 1. Pobranie biblioteki
 local MENU = (typeof(getgenv) == "function" and getgenv()._MenuTestLibrary) or _G._MenuTestLibrary
 if not MENU then
     MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
 end
 
--- Tworzenie okna
+-- 2. Utworzenie okna
 local Window = MENU:CreateWindow({
-    Name = "Cheats",
-    Tittle = "Awesome Script Hub",
+    Name = "CheatHub",
+    Tittle = "My Game Automation",
     TittlePos = "Center",
-    ToggleUIKeybind = "Insert",
+    ToggleUIKeybind = "K",
     TestMobile = false,
     GameId = tostring(game.PlaceId)
 })
 
--- Zakładka Player
-local TabPlayer = Window:CreateTab("Player", "user")
+-- 3. Utworzenie zakładek
+local TabPlayer   = Window:CreateTab("Player", "user")
+local TabAutoFarm = Window:CreateTab("AutoFarm", "zap")
+local TabRender   = Window:CreateTab("Render", "eye")
 
--- Moduł WalkSpeed
-local speedEnabled = false
-local speedValue = 16
+-- 4. Moduły z automatycznymi keybindami (BRAK WŁASNEGO KODU NA BINDY!)
+local speedActive = false
+local speedValue = 50
 
 local SpeedModule = TabPlayer:CreateModule({
     Name = "Speed",
-    Description = "Zmienia prędkość gracza",
+    Description = "Zwiększa prędkość poruszania się",
     Default = false,
-    DefaultKeybind = "V",
+    DefaultKeybind = "Z", -- <- Biblioteka sama obsługuje klawisz 'Z' i HUD!
+    Flag = "Player_Speed",
     Callback = function(state)
-        speedEnabled = state
+        speedActive = state
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = state and speedValue or 16 end
     end
 })
 
 SpeedModule:AddSlider({
-    Name = "WalkSpeed",
+    Name = "Wartość Prędkości",
     Min = 16,
     Max = 250,
     Default = 50,
     Suffix = " studs/s",
+    Flag = "Player_SpeedSlider",
     Callback = function(val)
         speedValue = val
-        if speedEnabled then
+        if speedActive then
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = val end
+        end
+    end
+})
+
+-- 5. Moduł AutoFarm
+local autoFarmActive = false
+local FarmModule = TabAutoFarm:CreateModule({
+    Name = "Auto Collect",
+    Description = "Automatycznie zbiera przedmioty",
+    Default = false,
+    DefaultKeybind = "X", -- <- Automatyczny bind 'X'!
+    Flag = "Farm_AutoCollect",
+    Callback = function(state)
+        autoFarmActive = state
+        if state then
+            task.spawn(function()
+                while autoFarmActive do
+                    -- Logika zbierania
+                    task.wait(0.1)
+                end
+            end)
         end
     end
 })
@@ -386,9 +436,9 @@ SpeedModule:AddSlider({
 
 ---
 
-## 👑 Skrypt Autora
+## 👑 Uruchomienie (Master Loader)
 
-Aby uruchomić skrypt z automatyczną detekcją gry i uniwersalnym wsparciem, wklej poniższy kod do swojego executora:
+Aby uruchomić skrypt z automatyczną detekcją gry w swoim executorze:
 
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Loader.lua?t=" .. tostring(tick())))()
