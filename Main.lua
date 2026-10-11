@@ -242,19 +242,97 @@ local function createLoadingIndicator(title)
         }):Play()
     end
 
-    function controller:Done(timeText)
+    function controller:Done(timeText, keybindName)
+        keybindName = tostring(keybindName or "K")
         IconDot.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         BarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         StatusLabel.Text = "Załadowano w " .. (timeText or "0.2s")
         TweenService:Create(BarFill, TweenInfo.new(0.08), { Size = UDim2.new(1, 0, 1, 0) }):Play()
-        task.delay(0.7, function()
-            local tw = TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+
+        -- Center Splash Modal: "Loaded - Keybind For Open: keybind"
+        local Splash = Instance.new("Frame")
+        Splash.Name = "Splash"
+        Splash.Size = UDim2.new(0, 360, 0, 115)
+        Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
+        Splash.AnchorPoint = Vector2.new(0.5, 0.5)
+        Splash.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+        Splash.BackgroundTransparency = 1
+        Splash.ClipsDescendants = true
+        Splash.ZIndex = 100
+        Splash.Parent = loaderGui
+
+        Instance.new("UICorner", Splash).CornerRadius = UDim.new(0, 10)
+        local SplashStroke = Instance.new("UIStroke", Splash)
+        SplashStroke.Color = Color3.fromRGB(65, 140, 255)
+        SplashStroke.Thickness = 1.5
+        SplashStroke.Transparency = 1
+        SplashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        local SplashHeader = Instance.new("TextLabel")
+        SplashHeader.Text = "✓ LOADED SUCCESSFULLY"
+        SplashHeader.Font = Enum.Font.GothamBold
+        SplashHeader.TextSize = 12
+        SplashHeader.TextColor3 = Color3.fromRGB(100, 255, 140)
+        SplashHeader.TextTransparency = 1
+        SplashHeader.Size = UDim2.new(1, 0, 0, 22)
+        SplashHeader.Position = UDim2.new(0, 0, 0, 14)
+        SplashHeader.BackgroundTransparency = 1
+        SplashHeader.ZIndex = 101
+        SplashHeader.Parent = Splash
+
+        local KeybindText = Instance.new("TextLabel")
+        KeybindText.Text = "Keybind For Open: \"" .. keybindName .. "\""
+        KeybindText.Font = Enum.Font.GothamBold
+        KeybindText.TextSize = 16
+        KeybindText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        KeybindText.TextTransparency = 1
+        KeybindText.Size = UDim2.new(1, -20, 0, 26)
+        KeybindText.Position = UDim2.new(0, 10, 0, 40)
+        KeybindText.BackgroundTransparency = 1
+        KeybindText.ZIndex = 101
+        KeybindText.Parent = Splash
+
+        local HintText = Instance.new("TextLabel")
+        HintText.Text = "Press [" .. keybindName .. "] to toggle Menu | Change in Settings"
+        HintText.Font = Enum.Font.Gotham
+        HintText.TextSize = 11
+        HintText.TextColor3 = Color3.fromRGB(160, 165, 180)
+        HintText.TextTransparency = 1
+        HintText.Size = UDim2.new(1, 0, 0, 20)
+        HintText.Position = UDim2.new(0, 0, 0, 74)
+        HintText.BackgroundTransparency = 1
+        HintText.ZIndex = 101
+        HintText.Parent = Splash
+
+        -- Animacja wejścia
+        TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 0.05
+        }):Play()
+        TweenService:Create(SplashStroke, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Transparency = 0
+        }):Play()
+        TweenService:Create(SplashHeader, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
+        TweenService:Create(KeybindText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
+        TweenService:Create(HintText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
+
+        -- Po 1.8 sekundy płynne zniknięcie i usunięcie GUI
+        task.delay(1.8, function()
+            local tw1 = TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, 0, 0.47, 0),
+                BackgroundTransparency = 1
+            })
+            local tw2 = TweenService:Create(SplashStroke, TweenInfo.new(0.35), { Transparency = 1 })
+            local twH = TweenService:Create(SplashHeader, TweenInfo.new(0.3), { TextTransparency = 1 })
+            local twK = TweenService:Create(KeybindText, TweenInfo.new(0.3), { TextTransparency = 1 })
+            local twHint = TweenService:Create(HintText, TweenInfo.new(0.3), { TextTransparency = 1 })
+            local twToast = TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                 Position = UDim2.new(0.5, -120, 0, -60),
                 BackgroundTransparency = 1
             })
-            tw:Play()
-            tw.Completed:Connect(function()
+            tw1:Play(); tw2:Play(); twH:Play(); twK:Play(); twHint:Play(); twToast:Play()
+            tw1.Completed:Connect(function()
                 loaderGui:Destroy()
             end)
         end)
@@ -480,12 +558,48 @@ function MenuLib:CreateWindow(options)
     end
     UI.ScreenGui.Destroying:Connect(Cleanup)
 
-    -- LOGIKA TOGGLE MENU
+    -- LOGIKA TOGGLE MENU I KEYBINDU
     local isVisible  = true
     local isTweening = false
     local MainFrame  = UI.MainFrame
     local CenterPos  = UDim2.new(0.5, 0, 0.5, 0)
     local HiddenPos  = UDim2.new(0, -750, 1, 20)
+
+    -- Upewnij się, że menu jest natychmiast wyśrodkowane i widoczne
+    MainFrame.Position = CenterPos
+    MainFrame.Visible  = true
+
+    local function resolveKeyCode(bind)
+        if typeof(bind) == "EnumItem" then
+            return bind, bind.Name
+        elseif type(bind) == "string" and #bind > 0 then
+            local s, res = pcall(function() return Enum.KeyCode[bind] end)
+            if s and res then return res, bind end
+        end
+        return Enum.KeyCode.K, "K"
+    end
+
+    local initialBind = (menuConfig and menuConfig["MenuKeybind"]) or Config.ToggleUIKeybind or "K"
+    local currentKeyCode, currentKeyName = resolveKeyCode(initialBind)
+
+    UI.CurrentMenuKey     = currentKeyCode
+    UI.CurrentMenuKeyName = currentKeyName
+
+    function UI:SetMenuKeybind(newKey)
+        local code, name = resolveKeyCode(newKey)
+        currentKeyCode = code
+        currentKeyName = name
+        UI.CurrentMenuKey     = code
+        UI.CurrentMenuKeyName = name
+        if saveMenuConfig then
+            saveMenuConfig("MenuKeybind", name)
+        elseif menuConfig then
+            menuConfig["MenuKeybind"] = name
+        end
+        if UI.OnMenuKeybindChanged then
+            pcall(UI.OnMenuKeybindChanged, code)
+        end
+    end
 
     local function toggleMenu()
         if isTweening then return end
@@ -504,9 +618,7 @@ function MenuLib:CreateWindow(options)
     end
 
     AddConnection(UserInputService.InputBegan:Connect(function(input, gpe)
-        local bind = Config.ToggleUIKeybind or "K"
-        local targetKey = (typeof(bind) == "EnumItem" and bind) or Enum.KeyCode[tostring(bind)] or Enum.KeyCode.K
-        if not gpe and input.KeyCode == targetKey then
+        if not gpe and input.KeyCode == currentKeyCode then
             toggleMenu()
         end
     end))
@@ -741,7 +853,12 @@ function MenuLib:CreateWindow(options)
             task.spawn(cb)
         end
 
-        loader:Done(string.format("%.2fs", os.clock() - startTime))
+        -- Upewnij się, że menu jest od razu otwarte i widoczne na środku ekranu
+        MainFrame.Position = CenterPos
+        MainFrame.Visible  = true
+        isVisible          = true
+
+        loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName)
 
         -- 5. Wybierz Dashboard jako domyślną zakładkę.
         --    task.wait() daje Robloxowi czas na obliczenie AbsolutePosition.

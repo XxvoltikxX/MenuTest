@@ -358,12 +358,22 @@ function Window:Create(config)
         if not maximized then
             lastSize = MainFrame.Size
             lastPos  = MainFrame.Position
-            MainFrame:TweenSizeAndPosition(UDim2.new(1,0,1,0), UDim2.new(0.5,0,0.5,0), "Out","Quart",0.3,true)
+            pcall(function()
+                TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0)
+                }):Play()
+            end)
             maximized = true
             Icons:Apply(UI.MaxBtn:FindFirstChild("Icon"), "square")
             if UI.ResizeHandle then UI.ResizeHandle.Visible = false end
         else
-            MainFrame:TweenSizeAndPosition(lastSize, lastPos, "Out","Quart",0.3,true)
+            pcall(function()
+                TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = lastSize or UDim2.new(0, 700, 0, 400),
+                    Position = lastPos or UDim2.new(0.5, 0, 0.5, 0)
+                }):Play()
+            end)
             maximized = false
             Icons:Apply(UI.MaxBtn:FindFirstChild("Icon"), "maximize-2")
             if UI.ResizeHandle then UI.ResizeHandle.Visible = true end

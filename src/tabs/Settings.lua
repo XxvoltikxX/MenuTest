@@ -372,6 +372,87 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 
+    -- Przycisk konfiguracji klawisza otwierania Menu (Menu Keybind)
+    local KeybindWidget = Instance.new("TextButton")
+    KeybindWidget.Name = "MenuKeybindWidget"
+    KeybindWidget.Size = UDim2.new(0.5, -5, 0, 35)
+    KeybindWidget.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    KeybindWidget.BackgroundTransparency = 0.2
+    KeybindWidget.Text = ""
+    KeybindWidget.Parent = SettingsContainer
+    Instance.new("UICorner", KeybindWidget).CornerRadius = UDim.new(0, 6)
+
+    local KeybindStroke = Instance.new("UIStroke", KeybindWidget)
+    KeybindStroke.Color = Color3.fromRGB(50, 50, 60)
+    KeybindStroke.Thickness = 1
+    KeybindStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local KeybindLabel = Instance.new("TextLabel")
+    KeybindLabel.Name = "Label"
+    KeybindLabel.Text = "Menu Keybind"
+    KeybindLabel.Font = Enum.Font.GothamMedium
+    KeybindLabel.TextSize = 12
+    KeybindLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
+    KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+    KeybindLabel.Size = UDim2.new(1, -90, 1, 0)
+    KeybindLabel.Position = UDim2.new(0, 10, 0, 0)
+    KeybindLabel.BackgroundTransparency = 1
+    KeybindLabel.Parent = KeybindWidget
+
+    local KeybindBadge = Instance.new("TextLabel")
+    KeybindBadge.Name = "Badge"
+    local initialKey = (UI and UI.CurrentMenuKeyName) or "K"
+    KeybindBadge.Text = "[" .. initialKey .. "]"
+    KeybindBadge.Font = Enum.Font.GothamBold
+    KeybindBadge.TextSize = 11
+    KeybindBadge.TextColor3 = Color3.fromRGB(100, 180, 255)
+    KeybindBadge.Size = UDim2.new(0, 36, 0, 22)
+    KeybindBadge.AutomaticSize = Enum.AutomaticSize.X
+    KeybindBadge.Position = UDim2.new(1, -10, 0.5, 0)
+    KeybindBadge.AnchorPoint = Vector2.new(1, 0.5)
+    KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 42, 56)
+    KeybindBadge.Parent = KeybindWidget
+    Instance.new("UICorner", KeybindBadge).CornerRadius = UDim.new(0, 4)
+
+    local BadgePad = Instance.new("UIPadding")
+    BadgePad.PaddingLeft = UDim.new(0, 6)
+    BadgePad.PaddingRight = UDim.new(0, 6)
+    BadgePad.Parent = KeybindBadge
+
+    local isBinding = false
+    KeybindWidget.MouseButton1Click:Connect(function()
+        if isBinding then return end
+        isBinding = true
+        KeybindBadge.Text = "[...]"
+        KeybindBadge.TextColor3 = Color3.fromRGB(255, 220, 80)
+        KeybindBadge.BackgroundColor3 = Color3.fromRGB(55, 50, 30)
+
+        local bindConn
+        bindConn = game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                bindConn:Disconnect()
+                isBinding = false
+                local newKey = input.KeyCode
+                if newKey == Enum.KeyCode.Backspace or newKey == Enum.KeyCode.Delete then
+                    newKey = Enum.KeyCode.K
+                end
+                KeybindBadge.Text = "[" .. newKey.Name .. "]"
+                KeybindBadge.TextColor3 = Color3.fromRGB(100, 180, 255)
+                KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 42, 56)
+                if UI and UI.SetMenuKeybind then
+                    UI:SetMenuKeybind(newKey)
+                end
+            end
+        end)
+    end)
+
+    if UI then
+        UI.OnMenuKeybindChanged = function(newKey)
+            local kName = (typeof(newKey) == "EnumItem" and newKey.Name) or tostring(newKey)
+            KeybindBadge.Text = "[" .. kName .. "]"
+        end
+    end
+
     -- ============================================================
     -- Sekcja: Configs (LayoutOrder = 3)
     -- ============================================================

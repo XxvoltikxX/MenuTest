@@ -40,39 +40,50 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
     local Value = options.CurrentValue or false
-    if options.Flag and menuConfig[options.Flag] ~= nil then
+    if options.Default ~= nil then
+        Value = options.Default
+    end
+    if options.Flag and menuConfig and menuConfig[options.Flag] ~= nil then
         Value = menuConfig[options.Flag]
     end
 
-    local function Update()
-        if Value then
-            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-            TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 255, 255)}):Play()
-            TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 24)}):Play()
-            Knob:TweenPosition(UDim2.new(1, -16, 0.5, 0), "Out", "Quart", 0.2, true)
-            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    local function Update(animate)
+        local targetPos = Value and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+        local targetSwitchBg = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(35, 35, 42)
+        local targetSwitchStroke = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(55, 55, 62)
+        local targetKnobBg = Value and Color3.fromRGB(20, 20, 24) or Color3.fromRGB(150, 150, 160)
+        local targetTextColor = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 165)
+
+        if animate then
+            pcall(function()
+                TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetSwitchBg}):Play()
+                TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = targetSwitchStroke}):Play()
+                TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = targetKnobBg, Position = targetPos}):Play()
+            end)
+            Label.TextColor3 = targetTextColor
         else
-            TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}):Play()
-            TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(55, 55, 62)}):Play()
-            TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(150, 150, 160)}):Play()
-            Knob:TweenPosition(UDim2.new(0, 2, 0.5, 0), "Out", "Quart", 0.2, true)
-            Label.TextColor3 = Color3.fromRGB(160, 160, 165)
+            Switch.BackgroundColor3 = targetSwitchBg
+            SwitchStroke.Color = targetSwitchStroke
+            Knob.BackgroundColor3 = targetKnobBg
+            Knob.Position = targetPos
+            Label.TextColor3 = targetTextColor
         end
     end
 
     ToggleFrame.MouseButton1Click:Connect(function()
         Value = not Value
-        Update()
+        Update(true)
         if options.Callback then options.Callback(Value) end
-        if options.Flag then saveMenuConfig(options.Flag, Value) end
+        if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, Value) end
     end)
 
-    Update()
+    -- Inicjalizacja bez animacji (zero błędów tweenowania)
+    Update(false)
 
     local API = {}
     function API:Set(val)
         Value = (val == true)
-        Update()
+        Update(true)
         if options.Callback then options.Callback(Value) end
         if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, Value) end
     end
