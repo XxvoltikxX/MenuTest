@@ -128,27 +128,70 @@ function Window:Create(config)
     UI.GameId         = tostring(config.GameId or "109949693269081")
 
     -- // THEME MANAGER
-    local ThemeManager = { Elements = {}, CurrentTheme = config.Theme or {} }
+    local ThemeManager = { Elements = {}, CurrentTheme = config.Theme or {}, _callbacks = {} }
 
     local function getColor(t)
         if not t then return Color3.fromRGB(255, 0, 255) end
         return Color3.fromRGB(unpack(t))
     end
 
+    function ThemeManager:GetColor(colorName)
+        if self.CurrentTheme and self.CurrentTheme[colorName] then
+            return getColor(self.CurrentTheme[colorName])
+        end
+        return Color3.fromRGB(255, 255, 255)
+    end
+
+    function ThemeManager:OnThemeChanged(cb)
+        if type(cb) == "function" then
+            table.insert(self._callbacks, cb)
+        end
+    end
+
     function ThemeManager:Register(element, property, colorName)
         table.insert(self.Elements, {Element = element, Property = property, ColorName = colorName})
         if self.CurrentTheme and self.CurrentTheme[colorName] then
-            element[property] = getColor(self.CurrentTheme[colorName])
+            pcall(function()
+                element[property] = getColor(self.CurrentTheme[colorName])
+            end)
         end
     end
 
     function ThemeManager:Apply(newTheme)
         self.CurrentTheme = newTheme
+        local valid = {}
         for _, item in pairs(self.Elements) do
-            if self.CurrentTheme and self.CurrentTheme[item.ColorName] then
-                TweenService:Create(item.Element, TweenInfo.new(0.2),
-                    {[item.Property] = getColor(self.CurrentTheme[item.ColorName])}):Play()
+            if item.Element and item.Element.Parent then
+                table.insert(valid, item)
+                if self.CurrentTheme and self.CurrentTheme[item.ColorName] then
+                    pcall(function()
+                        TweenService:Create(item.Element, TweenInfo.new(0.25),
+                            {[item.Property] = getColor(self.CurrentTheme[item.ColorName])}):Play()
+                    end)
+                end
             end
+        end
+        self.Elements = valid
+
+        if UI.SelectedTab then
+            local activeIcon = UI.SelectedTab:FindFirstChild("Icon")
+            local activeLabel = UI.SelectedTab:FindFirstChild("Label")
+            if activeIcon and self.CurrentTheme and self.CurrentTheme.Text then
+                pcall(function()
+                    TweenService:Create(activeIcon, TweenInfo.new(0.25),
+                        {ImageColor3 = getColor(self.CurrentTheme.Text)}):Play()
+                end)
+            end
+            if activeLabel and self.CurrentTheme and self.CurrentTheme.Text then
+                pcall(function()
+                    TweenService:Create(activeLabel, TweenInfo.new(0.25),
+                        {TextColor3 = getColor(self.CurrentTheme.Text)}):Play()
+                end)
+            end
+        end
+
+        for _, cb in ipairs(self._callbacks) do
+            pcall(cb, newTheme)
         end
     end
     UI.ThemeManager = ThemeManager
@@ -516,6 +559,12 @@ function Window:Create(config)
     OverlayTitle.BackgroundTransparency = 1
     OverlayTitle.Parent = OverlayHeader
 
+    ThemeManager:Register(KeybindsOverlay, "BackgroundColor3", "Main")
+    ThemeManager:Register(OverlayStroke, "Color", "Accent")
+    ThemeManager:Register(OverlayHeader, "BackgroundColor3", "Secondary")
+    ThemeManager:Register(HeaderBottomSquare, "BackgroundColor3", "Secondary")
+    ThemeManager:Register(OverlayTitle, "TextColor3", "Text")
+
     local OverlayList = Instance.new("Frame")
     OverlayList.Name = "List"
     OverlayList.Size = UDim2.new(1, 0, 0, 0)
@@ -569,7 +618,7 @@ function Window:Create(config)
                 nameLbl.Text = mod.Name:gsub("%s*%b()", "")
                 nameLbl.Font = isEnabled and Enum.Font.GothamBold or Enum.Font.GothamMedium
                 nameLbl.TextSize = 12
-                nameLbl.TextColor3 = isEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 155)
+                nameLbl.TextColor3 = isEnabled and ThemeManager:GetColor("Text") or ThemeManager:GetColor("Text_Secondary")
                 nameLbl.TextXAlignment = Enum.TextXAlignment.Left
                 nameLbl.Size = UDim2.new(1, -45, 1, 0)
                 nameLbl.BackgroundTransparency = 1
@@ -580,7 +629,7 @@ function Window:Create(config)
                 keyLbl.Text = key and ("[" .. tostring(key):sub(1, 3) .. "]") or "[ON]"
                 keyLbl.Font = Enum.Font.GothamBold
                 keyLbl.TextSize = 11
-                keyLbl.TextColor3 = isEnabled and Color3.fromRGB(160, 255, 180) or Color3.fromRGB(130, 130, 135)
+                keyLbl.TextColor3 = isEnabled and ThemeManager:GetColor("Success") or ThemeManager:GetColor("Text_Secondary")
                 keyLbl.TextXAlignment = Enum.TextXAlignment.Right
                 keyLbl.Size = UDim2.new(0, 45, 1, 0)
                 keyLbl.Position = UDim2.new(1, -45, 0, 0)
@@ -595,12 +644,18 @@ function Window:Create(config)
             emptyLbl.Text = "Brak aktywnych bindów\n(Kliknij Scroll na moduł)"
             emptyLbl.Font = Enum.Font.Gotham
             emptyLbl.TextSize = 11
-            emptyLbl.TextColor3 = Color3.fromRGB(120, 120, 125)
+            emptyLbl.TextColor3 = ThemeManager:GetColor("Text_Secondary")
             emptyLbl.Size = UDim2.new(1, 0, 0, 30)
             emptyLbl.BackgroundTransparency = 1
             emptyLbl.Parent = OverlayList
         end
     end
+
+    ThemeManager:OnThemeChanged(function()
+        if KeybindsOverlay.Visible then
+            UI:UpdateKeybindsOverlay()
+        end
+    end)
 
     function UI:SetKeybindsOverlayVisible(visible)
         KeybindsOverlay.Visible = visible

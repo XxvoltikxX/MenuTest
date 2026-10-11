@@ -386,7 +386,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 
     -- Przycisk konfiguracji klawisza otwierania Menu (Menu Keybind)
-    -- Stylizowany w 100% identycznie jak moduły (ciemne tło, szary badge jak np. [R])
+    -- Stylizowany spójnie z motywem (dynamiczne kolory ThemeManager)
     local KeybindWidget = Instance.new("TextButton")
     KeybindWidget.Name = "MenuKeybindWidget"
     KeybindWidget.Size = UDim2.new(0.5, -5, 0, 35)
@@ -438,14 +438,30 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     BadgePad.PaddingRight = UDim.new(0, 6)
     BadgePad.Parent = KeybindBadge
 
+    ThemeManager:Register(KeybindWidget, "BackgroundColor3", "Main")
+    ThemeManager:Register(KeybindStroke, "Color", "Accent")
+    ThemeManager:Register(KeybindLabel, "TextColor3", "Text")
+    ThemeManager:Register(KeybindBadge, "BackgroundColor3", "Secondary")
+    ThemeManager:Register(KeybindBadge, "TextColor3", "Text_Secondary")
+    ThemeManager:Register(BadgeStroke, "Color", "Accent")
+
+    local function updateBadgeNormal()
+        KeybindBadge.TextColor3 = ThemeManager:GetColor("Text_Secondary") or Color3.fromRGB(160, 160, 165)
+        KeybindBadge.BackgroundColor3 = ThemeManager:GetColor("Secondary") or Color3.fromRGB(35, 35, 42)
+        BadgeStroke.Color = ThemeManager:GetColor("Accent") or Color3.fromRGB(55, 55, 62)
+    end
+    local function updateBadgeBinding()
+        KeybindBadge.TextColor3 = ThemeManager:GetColor("Text") or Color3.fromRGB(255, 255, 255)
+        KeybindBadge.BackgroundColor3 = ThemeManager:GetColor("Accent2") or Color3.fromRGB(45, 45, 55)
+        BadgeStroke.Color = ThemeManager:GetColor("Text") or Color3.fromRGB(100, 100, 110)
+    end
+
     local isBinding = false
     KeybindWidget.MouseButton1Click:Connect(function()
         if isBinding then return end
         isBinding = true
         KeybindBadge.Text = "[...]"
-        KeybindBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
-        KeybindBadge.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        BadgeStroke.Color = Color3.fromRGB(100, 100, 110)
+        updateBadgeBinding()
 
         local bindConn
         bindConn = game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
@@ -457,9 +473,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                     newKey = Enum.KeyCode.K
                 end
                 KeybindBadge.Text = "[" .. newKey.Name .. "]"
-                KeybindBadge.TextColor3 = Color3.fromRGB(160, 160, 165)
-                KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-                BadgeStroke.Color = Color3.fromRGB(55, 55, 62)
+                updateBadgeNormal()
                 if UI and UI.SetMenuKeybind then
                     UI:SetMenuKeybind(newKey)
                 end
@@ -471,10 +485,16 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         UI.OnMenuKeybindChanged = function(newKey)
             local kName = (typeof(newKey) == "EnumItem" and newKey.Name) or tostring(newKey)
             KeybindBadge.Text = "[" .. kName .. "]"
-            KeybindBadge.TextColor3 = Color3.fromRGB(160, 160, 165)
-            KeybindBadge.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-            BadgeStroke.Color = Color3.fromRGB(55, 55, 62)
+            updateBadgeNormal()
         end
+    end
+
+    if ThemeManager and ThemeManager.OnThemeChanged then
+        ThemeManager:OnThemeChanged(function()
+            if not isBinding then
+                updateBadgeNormal()
+            end
+        end)
     end
 
     -- ============================================================

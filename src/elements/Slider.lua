@@ -2,6 +2,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
 
+    local function getThemeColor(colorKey, fallback)
+        if themeManager and themeManager.GetColor then
+            local c = themeManager:GetColor(colorKey)
+            if c then return c end
+        end
+        return fallback
+    end
+
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Name = options.Name or "Slider"
     SliderFrame.Size = UDim2.new(1, 0, 0, 46)
@@ -13,7 +21,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Label.Text = options.Name or "Slider"
     Label.Font = Enum.Font.GothamMedium
     Label.TextSize = 12
-    Label.TextColor3 = Color3.fromRGB(160, 160, 165)
+    Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165))
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Size = UDim2.new(0.6, 0, 0, 20)
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -24,7 +32,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local ValueLabel = Instance.new("TextLabel")
     ValueLabel.Font = Enum.Font.GothamBold
     ValueLabel.TextSize = 12
-    ValueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValueLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
     ValueLabel.Size = UDim2.new(0.4, 0, 0, 20)
     ValueLabel.Position = UDim2.new(0.6, 0, 0, 0)
@@ -35,19 +43,19 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local SliderBar = Instance.new("Frame")
     SliderBar.Size = UDim2.new(1, 0, 0, 8)
     SliderBar.Position = UDim2.new(0, 0, 0, 26)
-    SliderBar.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+    SliderBar.BackgroundColor3 = getThemeColor("Main", Color3.fromRGB(16, 16, 20))
     SliderBar.Parent = SliderFrame
     Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(1, 0)
 
     local BarStroke = Instance.new("UIStroke", SliderBar)
-    BarStroke.Color = Color3.fromRGB(45, 45, 52)
+    BarStroke.Color = getThemeColor("Accent", Color3.fromRGB(45, 45, 52))
     BarStroke.Thickness = 1
     BarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- Wypełnienie (Biały akcent pasujący do Dashboardu)
+    -- Wypełnienie (Akcent tekstowy pasujący do motywu)
     local Fill = Instance.new("Frame")
     Fill.Size = UDim2.new(0, 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Fill.BackgroundColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
     Fill.Parent = SliderBar
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
 
@@ -56,13 +64,29 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Knob.Size = UDim2.new(0, 14, 0, 14)
     Knob.Position = UDim2.new(1, 0, 0.5, 0)
     Knob.AnchorPoint = Vector2.new(0.5, 0.5)
-    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.BackgroundColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
     Knob.Parent = Fill
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
     local KnobStroke = Instance.new("UIStroke", Knob)
-    KnobStroke.Color = Color3.fromRGB(35, 35, 40)
+    KnobStroke.Color = getThemeColor("Main", Color3.fromRGB(35, 35, 40))
     KnobStroke.Thickness = 1.5
+
+    local function updateThemeColors()
+        Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165))
+        ValueLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+        SliderBar.BackgroundColor3 = getThemeColor("Main", Color3.fromRGB(16, 16, 20))
+        BarStroke.Color = getThemeColor("Accent", Color3.fromRGB(45, 45, 52))
+        Fill.BackgroundColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+        Knob.BackgroundColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+        KnobStroke.Color = getThemeColor("Main", Color3.fromRGB(35, 35, 40))
+    end
+
+    if themeManager and themeManager.OnThemeChanged then
+        themeManager:OnThemeChanged(function()
+            updateThemeColors()
+        end)
+    end
 
     -- Logika
     local Min = options.Range[1]

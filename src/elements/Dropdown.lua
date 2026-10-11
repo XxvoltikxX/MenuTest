@@ -26,13 +26,13 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         _G._MenuTestIconsModule = Icons
     end
 
-    local Colors = {
-        Background = Color3.fromRGB(18, 18, 22),
-        Stroke = Color3.fromRGB(45, 45, 52),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(150, 150, 160),
-        Accent = Color3.fromRGB(255, 255, 255)
-    }
+    local function getThemeColor(colorKey, fallback)
+        if themeManager and themeManager.GetColor then
+            local c = themeManager:GetColor(colorKey)
+            if c then return c end
+        end
+        return fallback
+    end
 
     local DropdownFrame = Instance.new("Frame")
     DropdownFrame.Name = options.Name or "Dropdown"
@@ -43,20 +43,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local Main = Instance.new("TextButton")
     Main.Size = UDim2.new(1, 0, 0, 35)
-    Main.BackgroundColor3 = Colors.Background
+    Main.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(18, 18, 22))
     Main.Text = ""
     Main.Parent = DropdownFrame
 
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
     local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Color = Colors.Stroke
+    Stroke.Color = getThemeColor("Accent", Color3.fromRGB(45, 45, 52))
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local Label = Instance.new("TextLabel")
     Label.Text = options.Name
     Label.Font = Enum.Font.GothamMedium
     Label.TextSize = 12
-    Label.TextColor3 = Colors.TextDim
+    Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 160))
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Size = UDim2.new(1, -30, 1, 0)
     Label.Position = UDim2.new(0, 10, 0, 0)
@@ -68,13 +68,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Icon.Position = UDim2.new(1, -26, 0.5, 0)
     Icon.AnchorPoint = Vector2.new(0, 0.5)
     Icon.BackgroundTransparency = 1
-    Icon.ImageColor3 = Colors.TextDim
+    Icon.ImageColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 160))
     Icon.Parent = Main
     if Icons then Icons:Apply(Icon, "chevron-down") end
 
+    if themeManager and themeManager.Register then
+        themeManager:Register(Main, "BackgroundColor3", "Secondary")
+        themeManager:Register(Stroke, "Color", "Accent")
+        themeManager:Register(Label, "TextColor3", "Text_Secondary")
+        themeManager:Register(Icon, "ImageColor3", "Text_Secondary")
+    end
+
     local Options = options.Options or {}
     local CurrentOption = options.CurrentOption or {Options[1]}
-    if options.Flag and menuConfig[options.Flag] ~= nil then
+    if options.Flag and menuConfig and menuConfig[options.Flag] ~= nil then
         CurrentOption = menuConfig[options.Flag]
     end
 
@@ -87,15 +94,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui")
     local List = Instance.new("Frame")
     List.Size = UDim2.new(1, 0, 0, 0)
-    List.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    List.BackgroundColor3 = getThemeColor("Main", Color3.fromRGB(24, 24, 28))
     List.Visible = false
     List.ZIndex = 100
     List.ClipsDescendants = true
     List.Parent = ScreenGui
     Instance.new("UICorner", List).CornerRadius = UDim.new(0, 6)
     local ListStroke = Instance.new("UIStroke", List)
-    ListStroke.Color = Colors.Stroke
+    ListStroke.Color = getThemeColor("Accent", Color3.fromRGB(45, 45, 52))
     ListStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    if themeManager and themeManager.Register then
+        themeManager:Register(List, "BackgroundColor3", "Main")
+        themeManager:Register(ListStroke, "Color", "Accent")
+    end
 
     local Scroll = Instance.new("ScrollingFrame")
     Scroll.Size = UDim2.new(1, 0, 1, 0)
@@ -145,13 +157,13 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             Item.Text = "   " .. opt
             Item.Font = Enum.Font.Gotham
             Item.TextSize = 12
-            Item.TextColor3 = Colors.TextDim
+            Item.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 160))
             Item.TextXAlignment = Enum.TextXAlignment.Left
             Item.Parent = Scroll
 
             local isSelected = false
             for _, s in ipairs(CurrentOption) do if s == opt then isSelected = true break end end
-            if isSelected then Item.TextColor3 = Colors.Accent end
+            if isSelected then Item.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255)) end
 
             Item.MouseButton1Click:Connect(function()
                 if not options.MultipleOptions then
@@ -159,13 +171,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
                     UpdateLabel()
                     Toggle()
                     if options.Callback then options.Callback(CurrentOption) end
-                    if options.Flag then saveMenuConfig(options.Flag, CurrentOption) end
+                    if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, CurrentOption) end
                 end
                 RefreshList()
             end)
         end
     end
     RefreshList()
+
+    if themeManager and themeManager.OnThemeChanged then
+        themeManager:OnThemeChanged(function()
+            UpdateLabel()
+            RefreshList()
+        end)
+    end
 
     local API = {}
     function API:Refresh(newOptions) Options = newOptions RefreshList() end

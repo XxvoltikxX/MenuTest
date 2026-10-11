@@ -60,16 +60,28 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         end
     end
 
-    local Colors = {
-        Background      = Color3.fromRGB(25, 25, 25),
-        BackgroundActive= Color3.fromRGB(32, 32, 38),
-        Stroke          = Color3.fromRGB(55, 55, 60),
-        StrokeActive    = Color3.fromRGB(255, 255, 255),
-        Text            = Color3.fromRGB(255, 255, 255),
-        TextDim         = Color3.fromRGB(160, 160, 165),
-        BadgeBg         = Color3.fromRGB(35, 35, 42),
-        BadgeStroke     = Color3.fromRGB(55, 55, 62)
-    }
+    local function getThemeColor(colorKey, fallback)
+        if themeManager and themeManager.GetColor then
+            local c = themeManager:GetColor(colorKey)
+            if c then return c end
+        end
+        return fallback
+    end
+
+    local function getColors()
+        return {
+            Background       = getThemeColor("Secondary", Color3.fromRGB(25, 25, 25)),
+            BackgroundActive = getThemeColor("Accent2", Color3.fromRGB(32, 32, 38)),
+            Stroke           = getThemeColor("Accent", Color3.fromRGB(55, 55, 60)),
+            StrokeActive     = getThemeColor("Text", Color3.fromRGB(255, 255, 255)),
+            Text             = getThemeColor("Text", Color3.fromRGB(255, 255, 255)),
+            TextDim          = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165)),
+            BadgeBg          = getThemeColor("Main", Color3.fromRGB(35, 35, 42)),
+            BadgeStroke      = getThemeColor("Accent", Color3.fromRGB(55, 55, 62))
+        }
+    end
+
+    local Colors = getColors()
 
     local ModuleFrame = Instance.new("Frame")
     ModuleFrame.Name = options.Name or "Module"
@@ -133,13 +145,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.ZIndex = 11
     Label.Parent = Header
 
+    local DescLabel = nil
     if hasDesc then
-        local DescLabel = Instance.new("TextLabel")
+        DescLabel = Instance.new("TextLabel")
         DescLabel.Name = "Description"
         DescLabel.Text = tostring(options.Description)
         DescLabel.Font = Enum.Font.Gotham
         DescLabel.TextSize = 10
-        DescLabel.TextColor3 = Color3.fromRGB(120, 120, 128)
+        DescLabel.TextColor3 = Colors.TextDim
         DescLabel.TextXAlignment = Enum.TextXAlignment.Left
         DescLabel.TextTruncate = Enum.TextTruncate.AtEnd
         DescLabel.Size = UDim2.new(1, (options.Icon and -100 or -75), 0, 16)
@@ -228,42 +241,53 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     end
 
     local function UpdateVisuals(instant)
+        local cur = getColors()
         if Enabled then
             if instant then
-                MainStroke.Color = Colors.StrokeActive
+                MainStroke.Color = cur.StrokeActive
                 MainStroke.Thickness = 1.6
-                Label.TextColor3 = Colors.Text
+                Label.TextColor3 = cur.Text
                 Label.Font = Enum.Font.GothamBold
-                if Icon then Icon.ImageColor3 = Colors.Text end
-                ModuleFrame.BackgroundColor3 = Colors.BackgroundActive
+                if Icon then Icon.ImageColor3 = cur.Text end
+                ModuleFrame.BackgroundColor3 = cur.BackgroundActive
             else
                 TweenService:Create(MainStroke, TweenInfo.new(0.25), {
-                    Color = Colors.StrokeActive,
+                    Color = cur.StrokeActive,
                     Thickness = 1.6
                 }):Play()
-                TweenService:Create(Label, TweenInfo.new(0.2), {TextColor3 = Colors.Text}):Play()
+                TweenService:Create(Label, TweenInfo.new(0.2), {TextColor3 = cur.Text}):Play()
                 Label.Font = Enum.Font.GothamBold
-                if Icon then TweenService:Create(Icon, TweenInfo.new(0.2), {ImageColor3 = Colors.Text}):Play() end
-                TweenService:Create(ModuleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.BackgroundActive}):Play()
+                if Icon then TweenService:Create(Icon, TweenInfo.new(0.2), {ImageColor3 = cur.Text}):Play() end
+                TweenService:Create(ModuleFrame, TweenInfo.new(0.2), {BackgroundColor3 = cur.BackgroundActive}):Play()
             end
         else
             if instant then
-                MainStroke.Color = Colors.Stroke
+                MainStroke.Color = cur.Stroke
                 MainStroke.Thickness = 1
-                Label.TextColor3 = Colors.TextDim
+                Label.TextColor3 = cur.TextDim
                 Label.Font = Enum.Font.GothamMedium
-                if Icon then Icon.ImageColor3 = Colors.TextDim end
-                ModuleFrame.BackgroundColor3 = Colors.Background
+                if Icon then Icon.ImageColor3 = cur.TextDim end
+                ModuleFrame.BackgroundColor3 = cur.Background
             else
                 TweenService:Create(MainStroke, TweenInfo.new(0.25), {
-                    Color = Colors.Stroke,
+                    Color = cur.Stroke,
                     Thickness = 1
                 }):Play()
-                TweenService:Create(Label, TweenInfo.new(0.2), {TextColor3 = Colors.TextDim}):Play()
+                TweenService:Create(Label, TweenInfo.new(0.2), {TextColor3 = cur.TextDim}):Play()
                 Label.Font = Enum.Font.GothamMedium
-                if Icon then TweenService:Create(Icon, TweenInfo.new(0.2), {ImageColor3 = Colors.TextDim}):Play() end
-                TweenService:Create(ModuleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Background}):Play()
+                if Icon then TweenService:Create(Icon, TweenInfo.new(0.2), {ImageColor3 = cur.TextDim}):Play() end
+                TweenService:Create(ModuleFrame, TweenInfo.new(0.2), {BackgroundColor3 = cur.Background}):Play()
             end
+        end
+
+        if DescLabel then
+            DescLabel.TextColor3 = cur.TextDim
+        end
+
+        if not Binding then
+            BindBadge.BackgroundColor3 = cur.BadgeBg
+            BindBadge.TextColor3 = Enabled and cur.Text or cur.TextDim
+            BadgeStroke.Color = cur.BadgeStroke
         end
 
         if UI and UI.UpdateKeybindsOverlay then
@@ -282,9 +306,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local function StartBinding()
         Binding = true
+        local cur = getColors()
         BindBadge.Text = "[?]"
-        BindBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
-        BadgeStroke.Color = Color3.fromRGB(255, 255, 255)
+        BindBadge.TextColor3 = cur.Text
+        BadgeStroke.Color = cur.Text
     end
 
     -- Obsługa kliknięć:
@@ -322,14 +347,21 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
                     BindBadge.Text = "[" .. input.KeyCode.Name:sub(1, 3) .. "]"
                 end
                 Binding = false
-                BindBadge.TextColor3 = Colors.TextDim
-                BadgeStroke.Color = Colors.BadgeStroke
+                local cur = getColors()
+                BindBadge.TextColor3 = Enabled and cur.Text or cur.TextDim
+                BadgeStroke.Color = cur.BadgeStroke
                 if options.Flag then saveMenuConfig(options.Flag .. "_Bind", Keybind and Keybind.Name or nil) end
                 if UI and UI.UpdateKeybindsOverlay then UI:UpdateKeybindsOverlay() end
             elseif not gpe and Keybind and input.KeyCode == Keybind then
                 ToggleModule()
             end
         end))
+    end
+
+    if themeManager and themeManager.OnThemeChanged then
+        themeManager:OnThemeChanged(function()
+            UpdateVisuals(false)
+        end)
     end
 
     ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -373,7 +405,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         return inst
     end
     function API:AddColorPicker(opts)
-        local inst = ColorPickerElement(opts, themeManager, Content, menuConfig, saveMenuConfig)
+        local inst = ColorPickerElement(opts, themeManager, Content, menuConfig, saveMenuConfig, addConnection)
         if opts and opts.Flag and UI and UI.Flags then UI.Flags[opts.Flag] = inst end
         return inst
     end
