@@ -382,7 +382,7 @@ function MenuLib:CreateWindow(options)
         baseUrl .. "tabs/Settings.lua",
     }
 
-    local uncached = {}x
+    local uncached = {}
     for _, url in ipairs(preloadList) do
         if not SessionCache[url] then
             table.insert(uncached, url)

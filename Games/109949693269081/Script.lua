@@ -67,7 +67,13 @@ if isDev and typeof(readfile) == "function" then
 end
 if not MENU then
     local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
-    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster))()
+    local src = game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster)
+    local chunk, err = loadstring(src)
+    if chunk then
+        MENU = chunk()
+    else
+        error("[Tycoon] Blad kompilacji Main.lua: " .. tostring(err))
+    end
 end
 
 -- 2. Stworzenie okna menu
