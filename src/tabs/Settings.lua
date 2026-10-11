@@ -9,7 +9,8 @@ local TweenService = game:GetService("TweenService")
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
 
 local function safeLoadSub(relativePath, remoteUrl)
-    if typeof(readfile) == "function" then
+    local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+    if isDev and typeof(readfile) == "function" then
         local candidates = {
             "MenuTest/src/" .. relativePath,
             "src/" .. relativePath,
@@ -25,7 +26,8 @@ local function safeLoadSub(relativePath, remoteUrl)
             end
         end
     end
-    local ok, res = pcall(function() return game:HttpGet(remoteUrl) end)
+    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    local ok, res = pcall(function() return game:HttpGet(remoteUrl .. cacheBuster) end)
     if ok and res then
         local chunk = loadstring(res)
         if chunk then return chunk() end
@@ -35,18 +37,14 @@ end
 
 function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons, passedGameId)
     local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "109949693269081")
-    local Icons = passedIcons or (UI and UI.Icons) or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    local Icons = passedIcons or (UI and UI.Icons)
     if not Icons then
         Icons = safeLoadSub("Icons.lua", baseUrl .. "Icons.lua")
-        if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
-        _G._MenuTestIconsModule = Icons
     end
 
-    local ToggleElement = passedToggle or (typeof(getgenv) == "function" and getgenv()._MenuTestToggleElement) or _G._MenuTestToggleElement
+    local ToggleElement = passedToggle
     if not ToggleElement then
         ToggleElement = safeLoadSub("elements/Toggle.lua", baseUrl .. "elements/Toggle.lua")
-        if typeof(getgenv) == "function" then getgenv()._MenuTestToggleElement = ToggleElement end
-        _G._MenuTestToggleElement = ToggleElement
     end
 
     -- Ensure WindowAPI is available before creating Settings tab

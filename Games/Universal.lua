@@ -5,8 +5,18 @@
 -- // ==========================================================================
 
 -- 1. Pobranie biblioteki UI (MenuTest)
-local MENU = (typeof(getgenv) == "function" and getgenv()._MenuTestLibrary) or _G._MenuTestLibrary
-if not MENU and typeof(readfile) == "function" then
+if typeof(getgenv) == "function" then
+    getgenv()._MenuTestLibrary = nil
+    getgenv()._MenuTestModuleCache = nil
+    getgenv()._MenuTestCache = nil
+end
+_G._MenuTestLibrary = nil
+_G._MenuTestModuleCache = nil
+_G._MenuTestCache = nil
+
+local MENU = nil
+local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+if isDev and typeof(readfile) == "function" then
     local candidates = {"MenuTest/Main.lua", "Main.lua"}
     for _, c in ipairs(candidates) do
         if typeof(isfile) == "function" and isfile(c) then
@@ -19,11 +29,8 @@ if not MENU and typeof(readfile) == "function" then
     end
 end
 if not MENU then
-    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
-end
-if MENU then
-    if typeof(getgenv) == "function" then getgenv()._MenuTestLibrary = MENU end
-    _G._MenuTestLibrary = MENU
+    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster))()
 end
 
 -- 2. Stworzenie okna

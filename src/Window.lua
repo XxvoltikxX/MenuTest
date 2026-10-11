@@ -28,7 +28,8 @@ end
 
 local function safeLoadUrl(url, fallbackValue)
     local ok, content = false, nil
-    if typeof(readfile) == "function" then
+    local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+    if isDev and typeof(readfile) == "function" then
         local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
         local candidates = {
             "MenuTest/src/" .. localRel,
@@ -101,12 +102,7 @@ local SidebarFallback = {
 }
 
 -- Ładowanie modułów z fallbackami
-local Icons = (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
-if not Icons then
-    Icons = safeLoadUrl(baseUrl .. "Icons.lua", IconsFallback)
-    if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
-    _G._MenuTestIconsModule = Icons
-end
+local Icons = safeLoadUrl(baseUrl .. "Icons.lua", IconsFallback)
 
 local Interactions = safeLoadUrl(baseUrl .. "Interactions.lua", InteractionsFallback)
 local SidebarModule= safeLoadUrl(baseUrl .. "Sidebar.lua",      SidebarFallback)

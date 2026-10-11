@@ -7,9 +7,22 @@
 -- // ==========================================================================
 -- // CZYSZCZENIE POPRZEDNIEJ SESJI SKRYPTU (ZAPOBIEGA DUPLIKACJI I BUGOM)
 -- // ==========================================================================
-if typeof(getgenv) == "function" and getgenv()._TycoonScriptCleanup then
-    pcall(getgenv()._TycoonScriptCleanup)
+if typeof(getgenv) == "function" then
+    if getgenv()._TycoonScriptCleanup then pcall(getgenv()._TycoonScriptCleanup) end
+    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup) end
+    getgenv()._MenuTestModuleCache = nil
+    getgenv()._MenuTestCache = nil
+    getgenv()._MenuTestToggleElement = nil
+    getgenv()._MenuTestLibrary = nil
+    getgenv()._MenuTestIconsModule = nil
+    getgenv()._MenuTestIconsData = nil
 end
+_G._MenuTestModuleCache = nil
+_G._MenuTestCache = nil
+_G._MenuTestToggleElement = nil
+_G._MenuTestLibrary = nil
+_G._MenuTestIconsModule = nil
+_G._MenuTestIconsData = nil
 
 -- Natychmiastowe usunięcie starych instancji GUI ze wszystkich kontenerów
 local function DestroyOldGuis()
@@ -37,9 +50,10 @@ local function DestroyOldGuis()
 end
 DestroyOldGuis()
 
--- 1. Pobranie głównej biblioteki UI (MenuTest - obsługa pamięci podręcznej, offline oraz GitHub HttpGet)
+-- 1. Pobranie głównej biblioteki UI (MenuTest - pobieranie z GitHub z ominięciem cache)
 local MENU = nil
-if typeof(readfile) == "function" then
+local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+if isDev and typeof(readfile) == "function" then
     local candidates = {"MenuTest/Main.lua", "Main.lua"}
     for _, c in ipairs(candidates) do
         if typeof(isfile) == "function" and isfile(c) then
@@ -52,12 +66,8 @@ if typeof(readfile) == "function" then
     end
 end
 if not MENU then
-    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    local cacheBuster = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
     MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua" .. cacheBuster))()
-end
-if MENU then
-    if typeof(getgenv) == "function" then getgenv()._MenuTestLibrary = MENU end
-    _G._MenuTestLibrary = MENU
 end
 
 -- 2. Stworzenie okna menu

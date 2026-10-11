@@ -29,26 +29,22 @@ local function safeHttpGet(url, maxRetries, retryDelay)
     return false, nil
 end
 
--- // WSPÓŁDZIELONA PAMIĘĆ PODRĘCZNA (Nigdy nie pobieraj tego samego pliku dwa razy)
-local GlobalCache = (typeof(getgenv) == "function" and getgenv()._MenuTestCache) or _G._MenuTestCache or {}
-if typeof(getgenv) == "function" then getgenv()._MenuTestCache = GlobalCache end
-_G._MenuTestCache = GlobalCache
+-- // PAMIĘĆ PODRĘCZNA BIEŻĄCEJ SESJI (Wyłącznie w pamięci lokalnej, zapobiega zablokowaniu aktualizacji)
+local SessionCache = {}
+local SessionModuleCache = {}
 
-local GlobalModuleCache = (typeof(getgenv) == "function" and getgenv()._MenuTestModuleCache) or _G._MenuTestModuleCache or {}
-if typeof(getgenv) == "function" then getgenv()._MenuTestModuleCache = GlobalModuleCache end
-_G._MenuTestModuleCache = GlobalModuleCache
-
--- Pobierz, skompiluj i uruchom skrypt z URL lub lokalnego pliku (z buforowaniem)
+-- Pobierz, skompiluj i uruchom skrypt z URL lub lokalnego pliku (z buforowaniem bieżącej sesji)
 local function safeLoadUrl(url, fallbackValue)
-    if GlobalModuleCache[url] ~= nil then
-        return GlobalModuleCache[url]
+    if SessionModuleCache[url] ~= nil then
+        return SessionModuleCache[url]
     end
 
-    local ok, content = false, GlobalCache[url]
+    local ok, content = false, SessionCache[url]
     if content and type(content) == "string" and #content > 0 then
         ok = true
     else
-        if typeof(readfile) == "function" then
+        local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+        if isDev and typeof(readfile) == "function" then
             local localRel = url:gsub("^https://raw%.githubusercontent%.com/[^/]+/[^/]+/refs/heads/[^/]+/src/", "")
             local candidates = {
                 "MenuTest/src/" .. localRel,
@@ -69,7 +65,7 @@ local function safeLoadUrl(url, fallbackValue)
             ok, content = safeHttpGet(url)
         end
         if ok and content then
-            GlobalCache[url] = content
+            SessionCache[url] = content
         end
     end
 

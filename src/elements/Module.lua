@@ -1,6 +1,7 @@
 -- Fast pre-load helper with local readfile support (tylko jako fallback)
 local function safeLoadSubElement(relativePath, remoteUrl)
-    if typeof(readfile) == "function" then
+    local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+    if isDev and typeof(readfile) == "function" then
         local candidates = {
             "MenuTest/src/elements/" .. relativePath,
             "src/elements/" .. relativePath,
@@ -16,7 +17,13 @@ local function safeLoadSubElement(relativePath, remoteUrl)
             end
         end
     end
-    return loadstring(game:HttpGet(remoteUrl))()
+    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    local ok, res = pcall(function() return game:HttpGet(remoteUrl .. cacheBuster) end)
+    if ok and res then
+        local chunk = loadstring(res)
+        if chunk then return chunk() end
+    end
+    return function() return {} end
 end
 
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
@@ -32,10 +39,11 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local InputElement       = (elements and elements.Input)       or safeLoadSubElement("Input.lua",       baseUrl .. "elements/Input.lua")
     local ColorPickerElement = (elements and elements.ColorPicker) or safeLoadSubElement("ColorPicker.lua", baseUrl .. "elements/ColorPicker.lua")
     local ButtonElement      = (elements and elements.Button)      or safeLoadSubElement("Button.lua",      baseUrl .. "elements/Button.lua")
-    local Icons              = (elements and elements.Icons)       or (UI and UI.Icons) or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    local Icons              = (elements and elements.Icons)       or (UI and UI.Icons)
 
     if not Icons then
-        if typeof(readfile) == "function" then
+        local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+        if isDev and typeof(readfile) == "function" then
             local s, d = pcall(readfile, "MenuTest/src/Icons.lua")
             if s and d and #d > 0 then
                 local chunk = loadstring(d)
@@ -43,15 +51,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             end
         end
         if not Icons then
-            local ok, res = pcall(function() return game:HttpGet(baseUrl .. "Icons.lua") end)
+            local cb = "?_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+            local ok, res = pcall(function() return game:HttpGet(baseUrl .. "Icons.lua" .. cb) end)
             if ok and res then
                 local chunk = loadstring(res)
                 if chunk then Icons = chunk() end
             end
-        end
-        if Icons then
-            if typeof(getgenv) == "function" then getgenv()._MenuTestIconsModule = Icons end
-            _G._MenuTestIconsModule = Icons
         end
     end
 

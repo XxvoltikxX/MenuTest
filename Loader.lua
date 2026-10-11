@@ -6,18 +6,29 @@
 
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/"
 
--- Usunięcie istniejącego menu przed startem Loadera
-if typeof(getgenv) == "function" and getgenv()._MenuTestCleanup then
-    pcall(getgenv()._MenuTestCleanup)
+-- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych
+if typeof(getgenv) == "function" then
+    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup) end
+    if getgenv()._TycoonScriptCleanup then pcall(getgenv()._TycoonScriptCleanup) end
+    getgenv()._MenuTestModuleCache = nil
+    getgenv()._MenuTestCache = nil
+    getgenv()._MenuTestToggleElement = nil
+    getgenv()._MenuTestIconsModule = nil
+    getgenv()._MenuTestIconsData = nil
+    getgenv()._MenuTestLibrary = nil
 end
-if typeof(getgenv) == "function" and getgenv()._TycoonScriptCleanup then
-    pcall(getgenv()._TycoonScriptCleanup)
-end
+_G._MenuTestModuleCache = nil
+_G._MenuTestCache = nil
+_G._MenuTestToggleElement = nil
+_G._MenuTestIconsModule = nil
+_G._MenuTestIconsData = nil
+_G._MenuTestLibrary = nil
 
 -- Funkcja bezpiecznego pobierania/ładowania kodu
 local function safeExecute(relativePath, remoteUrl)
-    -- 1. Próba załadowania z lokalnego dysku (jeśli executor wspiera readfile)
-    if typeof(readfile) == "function" then
+    -- 1. Próba załadowania z lokalnego dysku (tylko w jawnym trybie developerskim)
+    local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+    if isDev and typeof(readfile) == "function" then
         local candidates = {
             "MenuTest/" .. relativePath,
             relativePath
@@ -38,7 +49,7 @@ local function safeExecute(relativePath, remoteUrl)
     end
 
     -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN
-    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
     local ok, res = pcall(function()
         return game:HttpGet(remoteUrl .. cacheBuster)
     end)
