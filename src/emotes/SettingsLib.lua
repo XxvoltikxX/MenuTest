@@ -61,13 +61,46 @@ local Theme = {
     ButtonCorner = UDim.new(0, 6)
 }
 
-local TabIcons = {
-    ["General"] = "rbxassetid://10734950309",   -- Sliders / Settings
-    ["Buttons"] = "rbxassetid://10723346959",   -- Gamepad / Grid
-    ["Theme"] = "rbxassetid://10709791437",     -- Palette
-    ["Animation"] = "rbxassetid://10734923214", -- Film / Clapperboard
-    ["Page"] = "rbxassetid://10723395448",      -- Layers / Book
-    ["Backup"] = "rbxassetid://10734944449",    -- Folder / Archive
+local LucideSprites = {
+    ["x"]             = { 16898613869, Vector2.new(48, 48), Vector2.new(869, 906) },
+    ["minus"]         = { 16898613613, Vector2.new(48, 48), Vector2.new(771, 196) },
+    ["settings"]      = { 16898613777, Vector2.new(48, 48), Vector2.new(771, 257) },
+    ["sliders"]       = { 16898613777, Vector2.new(48, 48), Vector2.new(404, 771) },
+    ["gamepad"]       = { 16898613353, Vector2.new(48, 48), Vector2.new(967, 759) },
+    ["palette"]       = { 16898613613, Vector2.new(48, 48), Vector2.new(453, 918) },
+    ["film"]          = { 16898613353, Vector2.new(48, 48), Vector2.new(710, 771) },
+    ["clapperboard"]  = { 16898613044, Vector2.new(48, 48), Vector2.new(257, 869) },
+    ["layers"]        = { 16898613509, Vector2.new(48, 48), Vector2.new(98, 967) },
+    ["book"]          = { 16898612819, Vector2.new(48, 48), Vector2.new(820, 612) },
+    ["folder"]        = { 16898613353, Vector2.new(48, 48), Vector2.new(404, 967) },
+    ["archive"]       = { 16898612629, Vector2.new(48, 48), Vector2.new(918, 49) },
+    ["user"]          = { 16898613869, Vector2.new(48, 48), Vector2.new(661, 869) },
+    ["chevron-right"] = { 16898612819, Vector2.new(48, 48), Vector2.new(869, 759) },
+    ["check"]         = { 16898612819, Vector2.new(48, 48), Vector2.new(710, 869) }
+}
+
+local function applyLucide(img, name)
+    if not img then return end
+    local IconsMod = (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
+    if IconsMod and IconsMod.Apply then
+        local ok = pcall(function() IconsMod:Apply(img, name) end)
+        if ok and img.Image and img.Image ~= "" then return end
+    end
+    local d = LucideSprites[name]
+    if d and (img:IsA("ImageLabel") or img:IsA("ImageButton")) then
+        img.Image = "rbxassetid://" .. tostring(d[1])
+        img.ImageRectSize = d[2]
+        img.ImageRectOffset = d[3]
+    end
+end
+
+local TabIconNames = {
+    ["General"]   = "settings",
+    ["Buttons"]   = "gamepad",
+    ["Theme"]     = "palette",
+    ["Animation"] = "film",
+    ["Page"]      = "layers",
+    ["Backup"]    = "folder"
 }
 
 local SettingsUI = Instance.new("ScreenGui")
@@ -467,30 +500,66 @@ local Controls = Lib:Create("Frame", {
 local MinimizeBtn = Lib:Create("TextButton", {
     Name = "Minimize",
     Parent = Controls,
+    BackgroundColor3 = Color3.fromRGB(35, 35, 45),
     BackgroundTransparency = 1,
-    Size = UDim2.fromOffset(24, 24),
-    Font = Theme.FontBold,
-    TextSize = 13,
-    TextColor3 = Theme.TextMuted,
-    Text = "—",
+    Size = UDim2.fromOffset(26, 26),
+    Text = "",
     LayoutOrder = 1
 }, {
-    Lib:Create("UICorner", {CornerRadius = UDim.new(0, 4)})
+    Lib:Create("UICorner", {CornerRadius = UDim.new(0, 5)})
 })
+
+local MinIcon = Lib:Create("ImageLabel", {
+    Name = "Icon",
+    Parent = MinimizeBtn,
+    BackgroundTransparency = 1,
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(13, 13),
+    ImageColor3 = Theme.TextMuted
+})
+applyLucide(MinIcon, "minus")
 
 local CloseBtn = Lib:Create("TextButton", {
     Name = "Close",
     Parent = Controls,
+    BackgroundColor3 = Color3.fromRGB(220, 50, 50),
     BackgroundTransparency = 1,
-    Size = UDim2.fromOffset(24, 24),
-    Font = Theme.FontBold,
-    TextSize = 15,
-    TextColor3 = Theme.TextMuted,
-    Text = "✕",
+    Size = UDim2.fromOffset(26, 26),
+    Text = "",
     LayoutOrder = 2
 }, {
-    Lib:Create("UICorner", {CornerRadius = UDim.new(0, 4)})
+    Lib:Create("UICorner", {CornerRadius = UDim.new(0, 5)})
 })
+
+local CloseIcon = Lib:Create("ImageLabel", {
+    Name = "Icon",
+    Parent = CloseBtn,
+    BackgroundTransparency = 1,
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(13, 13),
+    ImageColor3 = Theme.TextMuted
+})
+applyLucide(CloseIcon, "x")
+
+MinimizeBtn.MouseEnter:Connect(function()
+    Lib:Tween(MinimizeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5})
+    MinIcon.ImageColor3 = Theme.Text
+end)
+MinimizeBtn.MouseLeave:Connect(function()
+    Lib:Tween(MinimizeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 1})
+    MinIcon.ImageColor3 = Theme.TextMuted
+end)
+
+CloseBtn.MouseEnter:Connect(function()
+    Lib:Tween(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2})
+    CloseIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+end)
+CloseBtn.MouseLeave:Connect(function()
+    Lib:Tween(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 1})
+    CloseIcon.ImageColor3 = Theme.TextMuted
+end)
 
 local isMinimized = false
 local defaultWindowHeight = 400
@@ -642,15 +711,15 @@ Lib:Create("TextLabel", {
 })
 
 -- Gear / Settings Icon in profile card
-Lib:Create("ImageButton", {
+local ProfileGear = Lib:Create("ImageButton", {
     Name = "ProfileGear",
     Parent = ProfileCard,
     BackgroundTransparency = 1,
     Position = UDim2.new(1, -26, 0.5, -7),
     Size = UDim2.fromOffset(14, 14),
-    Image = "rbxassetid://10734950309",
     ImageColor3 = Theme.TextMuted
 })
+applyLucide(ProfileGear, "settings")
 
 -- ==================== RIGHT CONTENT PAGES CONTAINER ====================
 local ContentArea = Lib:Create("Frame", {
@@ -727,16 +796,16 @@ local function CreateTab(name, order)
     })
 
     -- Icon
-    local iconId = TabIcons[name] or "rbxassetid://10709791437"
     local TabIcon = Lib:Create("ImageLabel", {
         Name = "Icon",
         Parent = TabBtn,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0.5, -8),
         Size = UDim2.fromOffset(16, 16),
-        Image = iconId,
         ImageColor3 = isFirst and Color3.fromRGB(255, 255, 255) or Theme.TextMuted
     })
+    local iconKey = TabIconNames[name] or "settings"
+    applyLucide(TabIcon, iconKey)
 
     -- Label
     local TabLabel = Lib:Create("TextLabel", {
