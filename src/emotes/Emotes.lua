@@ -8796,18 +8796,41 @@ task.spawn(function()
     end
 end)
 
--- // Load OpenEmote (Mobile / HUD Opener)
-SafeLoad("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/OpenEmote.lua", "Open Emote")
-
-if getgenv().Notify then
-    getgenv().Notify({
-        Title = 'MenuTest | Emotes',
-        Content = 'Emotes & Animations loaded! Press [.] or click Emote button',
-        Duration = 6
-    })
+local function destroyAllStrayEmoteButtons()
+    local names = {
+        "OpenEmote (Mobile)",
+        "OpenEmoteMobile",
+        "MenuTest_OpenEmote",
+        "OpenEmote"
+    }
+    local containers = {}
+    pcall(function() table.insert(containers, game:GetService("CoreGui")) end)
+    local lp = Players.LocalPlayer
+    if lp then
+        pcall(function()
+            local pg = lp:FindFirstChildOfClass("PlayerGui")
+            if pg then table.insert(containers, pg) end
+        end)
+    end
+    for _, container in ipairs(containers) do
+        for _, name in ipairs(names) do
+            local found = container:FindFirstChild(name)
+            while found do
+                pcall(function() found:Destroy() end)
+                found = container:FindFirstChild(name)
+            end
+        end
+    end
 end
 
--- // Controller API for Settings Toggle
+-- Device detection: strictly check if device is mobile (touch without keyboard)
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+if isMobile then
+    SafeLoad("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/OpenEmote.lua", "Open Emote")
+else
+    destroyAllStrayEmoteButtons()
+end
 
 -- // Explicitly bind KeyCode.Period and ensure Roblox EmotesMenu is enabled
 pcall(function()
@@ -8834,8 +8857,12 @@ local EmoteController = {}
 function EmoteController.Enable()
     _G.MenuTest_EmotesEnabled = true
     if ToggleContainer then ToggleContainer.Visible = true end
-    if _G.MenuTest_OpenEmoteGui then
-        _G.MenuTest_OpenEmoteGui.Enabled = true
+    if isMobile then
+        if _G.MenuTest_OpenEmoteGui then
+            _G.MenuTest_OpenEmoteGui.Enabled = true
+        end
+    else
+        destroyAllStrayEmoteButtons()
     end
 end
 
@@ -8846,9 +8873,7 @@ function EmoteController.Disable()
         SettingsLib.UI.Enabled = false
     end
     if ToggleContainer then ToggleContainer.Visible = false end
-    if _G.MenuTest_OpenEmoteGui then
-        _G.MenuTest_OpenEmoteGui.Enabled = false
-    end
+    destroyAllStrayEmoteButtons()
     if State and State.currentEmoteTrack then
         pcall(function() State.currentEmoteTrack:Stop() end)
         State.currentEmoteTrack = nil

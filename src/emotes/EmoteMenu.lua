@@ -5,7 +5,37 @@
 
 local EmoteMenu = {}
 
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
 local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/"
+
+local function destroyAllStrayEmoteButtons()
+    local names = {
+        "OpenEmote (Mobile)",
+        "OpenEmoteMobile",
+        "MenuTest_OpenEmote",
+        "OpenEmote"
+    }
+    local containers = {}
+    pcall(function() table.insert(containers, game:GetService("CoreGui")) end)
+    local lp = Players.LocalPlayer
+    if lp then
+        pcall(function()
+            local pg = lp:FindFirstChildOfClass("PlayerGui")
+            if pg then table.insert(containers, pg) end
+        end)
+    end
+    for _, container in ipairs(containers) do
+        for _, name in ipairs(names) do
+            local found = container:FindFirstChild(name)
+            while found do
+                pcall(function() found:Destroy() end)
+                found = container:FindFirstChild(name)
+            end
+        end
+    end
+end
 
 local function sendNotification(title, content)
     local sent = false
@@ -65,6 +95,11 @@ function EmoteMenu:Load()
     isLoaded = true
     _G.MenuTest_EmotesEnabled = true
 
+    -- First clean up any stray or duplicate mobile buttons
+    destroyAllStrayEmoteButtons()
+
+    local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
+
     -- Ensure Roblox Emotes Menu is enabled in StarterGui
     pcall(function()
         game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
@@ -72,17 +107,23 @@ function EmoteMenu:Load()
 
     if _G.MenuTest_EmotesController and _G.MenuTest_EmotesController.Enable then
         pcall(function() _G.MenuTest_EmotesController.Enable() end)
-        sendNotification("MenuTest | Emotes", "Emotes Menu wlaczone! Wcisnij [.] lub uzyj przycisku HUD")
+        local msg = isMobile and "Emotes Menu wlaczone! Uzyj przycisku emotek na ekranie" or "Emotes Menu wlaczone! Wcisnij [.] aby otworzyc menu"
+        sendNotification("MenuTest | Emotes", msg)
         return _G.MenuTest_EmotesController
     end
 
-    -- First time loading: execute Emotes.lua (which also loads OpenEmote.lua, SettingsLib, Notify)
+    -- First time loading: execute Emotes.lua (loads animations, catalog, hotkeys, and OpenEmote if mobile)
     local controller = safeLoadSub("Emotes.lua", baseUrl .. "Emotes.lua")
     if controller and typeof(controller) == "table" and controller.Enable then
         pcall(function() controller.Enable() end)
     end
 
-    sendNotification("MenuTest | Emotes", "Emotes Menu zaladowane! Wcisnij [.] lub uzyj przycisku HUD")
+    if not isMobile then
+        destroyAllStrayEmoteButtons()
+    end
+
+    local msg = isMobile and "Emotes Menu zaladowane! Uzyj przycisku emotek na ekranie" or "Emotes Menu zaladowane! Wcisnij [.] aby otworzyc menu"
+    sendNotification("MenuTest | Emotes", msg)
     return controller or _G.MenuTest_EmotesController
 end
 
@@ -92,15 +133,16 @@ function EmoteMenu:Unload()
 
     if _G.MenuTest_EmotesController and _G.MenuTest_EmotesController.Disable then
         pcall(function() _G.MenuTest_EmotesController.Disable() end)
-    else
-        pcall(function()
-            local GuiService = game:GetService("GuiService")
-            GuiService:SetEmotesMenuOpen(false)
-        end)
-        if _G.MenuTest_OpenEmoteGui then
-            _G.MenuTest_OpenEmoteGui.Enabled = false
-        end
     end
+
+    -- Thoroughly destroy all mobile buttons on unload
+    destroyAllStrayEmoteButtons()
+
+    pcall(function()
+        local GuiService = game:GetService("GuiService")
+        GuiService:SetEmotesMenuOpen(false)
+    end)
+
     sendNotification("MenuTest | Emotes", "Emotes Menu wylaczone")
 end
 
