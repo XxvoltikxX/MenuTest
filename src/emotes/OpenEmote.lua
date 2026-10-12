@@ -46,38 +46,56 @@ end
 local function makeDraggable(frame)
     local dragging = false
     local dragInput, dragStart, startPos
+    local movedDistance = 0
+    local DRAG_THRESHOLD = 8
+
     local function update(input)
         local delta = input.Position - dragStart
-        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        local dist = math.sqrt(delta.X * delta.X + delta.Y * delta.Y)
+        if dist > movedDistance then movedDistance = dist end
+        if movedDistance >= DRAG_THRESHOLD then
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
     end
+
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or 
             input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragInput = input
             dragStart = input.Position
             startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+            movedDistance = 0
         end
     end)
+
     frame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or 
             input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
+
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             update(input)
         end
     end)
+
+    UIS.InputEnded:Connect(function(input)
+        if input == dragInput or input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            dragInput = nil
+        end
+    end)
+
+    return function()
+        return movedDistance < DRAG_THRESHOLD
+    end
 end
 
-local function setupHoverEffect(button)
+local function setupHoverEffect(button, wasTapCheck)
     local originalSize = button.Size
     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     
@@ -97,7 +115,10 @@ local function setupHoverEffect(button)
         tween:Play()
     end)
     
-    button.MouseButton1Click:Connect(function()
+    button.Activated:Connect(function()
+        if wasTapCheck and not wasTapCheck() then
+            return
+        end
         local success, emotesMenu = pcall(function()
             return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel
         end)
@@ -159,8 +180,8 @@ UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 UIAspectRatioConstraint.Parent = button
 UIAspectRatioConstraint.AspectRatio = 1.000
 
-makeDraggable(button)
-setupHoverEffect(button)
+local wasTapCheck = makeDraggable(button)
+setupHoverEffect(button, wasTapCheck)
 
 local heartbeatConn
 heartbeatConn = RunService.Heartbeat:Connect(function()

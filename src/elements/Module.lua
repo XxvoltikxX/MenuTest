@@ -135,10 +135,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.TextTruncate = Enum.TextTruncate.AtEnd
     if hasDesc then
-        Label.Size = UDim2.new(1, (options.Icon and -100 or -75), 0, 18)
+        Label.Size = UDim2.new(1, (options.Icon and -112 or -88), 0, 18)
         Label.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 7)
     else
-        Label.Size = UDim2.new(1, (options.Icon and -100 or -75), 1, 0)
+        Label.Size = UDim2.new(1, (options.Icon and -112 or -88), 1, 0)
         Label.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 0)
     end
     Label.BackgroundTransparency = 1
@@ -155,25 +155,49 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         DescLabel.TextColor3 = Colors.TextDim
         DescLabel.TextXAlignment = Enum.TextXAlignment.Left
         DescLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        DescLabel.Size = UDim2.new(1, (options.Icon and -100 or -75), 0, 16)
+        DescLabel.Size = UDim2.new(1, (options.Icon and -112 or -88), 0, 16)
         DescLabel.Position = UDim2.new(0, options.Icon and 42 or 14, 0, 26)
         DescLabel.BackgroundTransparency = 1
         DescLabel.ZIndex = 11
         DescLabel.Parent = Header
     end
 
-    -- Keybind Badge na prawym brzegu
+    -- Dedykowany przycisk rozwijania (Chevron) - kluczowy dla urządzeń mobilnych
+    local ExpandBtn = Instance.new("TextButton")
+    ExpandBtn.Name = "ExpandBtn"
+    ExpandBtn.Size = UDim2.new(0, 26, 0, 26)
+    ExpandBtn.Position = UDim2.new(1, -8, 0.5, 0)
+    ExpandBtn.AnchorPoint = Vector2.new(1, 0.5)
+    ExpandBtn.BackgroundTransparency = 1
+    ExpandBtn.Text = ""
+    ExpandBtn.ZIndex = 14
+    ExpandBtn.Parent = Header
+
+    local ExpandIcon = Instance.new("ImageLabel")
+    ExpandIcon.Name = "Icon"
+    ExpandIcon.Size = UDim2.new(0, 16, 0, 16)
+    ExpandIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ExpandIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    ExpandIcon.BackgroundTransparency = 1
+    ExpandIcon.ImageColor3 = Colors.TextDim
+    ExpandIcon.ZIndex = 15
+    ExpandIcon.Parent = ExpandBtn
+    if Icons and Icons.Apply then
+        Icons:Apply(ExpandIcon, "chevron-down")
+    end
+
+    -- Keybind Badge na prawym brzegu (obok przycisku rozwijania)
     local BindBadge = Instance.new("TextButton")
     BindBadge.Name = "BindBadge"
-    BindBadge.Size = UDim2.new(0, 36, 0, 22)
-    BindBadge.Position = UDim2.new(1, -12, 0.5, 0)
+    BindBadge.Size = UDim2.new(0, 34, 0, 22)
+    BindBadge.Position = UDim2.new(1, -38, 0.5, 0)
     BindBadge.AnchorPoint = Vector2.new(1, 0.5)
     BindBadge.BackgroundColor3 = Colors.BadgeBg
     BindBadge.Text = "..."
     BindBadge.TextColor3 = Colors.TextDim
     BindBadge.Font = Enum.Font.GothamBold
     BindBadge.TextSize = 11
-    BindBadge.ZIndex = 12
+    BindBadge.ZIndex = 14
     BindBadge.Parent = Header
 
     Instance.new("UICorner", BindBadge).CornerRadius = UDim.new(0, 5)
@@ -183,8 +207,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local BadgePadding = Instance.new("UIPadding", BindBadge)
-    BadgePadding.PaddingLeft = UDim.new(0, 6)
-    BadgePadding.PaddingRight = UDim.new(0, 6)
+    BadgePadding.PaddingLeft = UDim.new(0, 5)
+    BadgePadding.PaddingRight = UDim.new(0, 5)
 
     -- Kontener na opcje rozwijane
     local Content = Instance.new("Frame")
@@ -284,6 +308,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             DescLabel.TextColor3 = cur.TextDim
         end
 
+        if ExpandIcon then
+            ExpandIcon.ImageColor3 = Expanded and cur.Text or cur.TextDim
+        end
+
         if not Binding then
             BindBadge.BackgroundColor3 = cur.BadgeBg
             BindBadge.TextColor3 = Enabled and cur.Text or cur.TextDim
@@ -304,6 +332,22 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         if options.Callback then options.Callback(Enabled) end
     end
 
+    local function ToggleExpand()
+        Expanded = not Expanded
+        Content.Visible = Expanded
+
+        local targetHeight = Expanded and (50 + ContentLayout.AbsoluteContentSize.Y + 20) or 50
+        TweenService:Create(ModuleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(1, 0, 0, targetHeight)
+        }):Play()
+
+        if ExpandIcon then
+            TweenService:Create(ExpandIcon, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Rotation = Expanded and 180 or 0
+            }):Play()
+        end
+    end
+
     local function StartBinding()
         Binding = true
         local cur = getColors()
@@ -312,27 +356,54 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         BadgeStroke.Color = cur.Text
     end
 
-    -- Obsługa kliknięć:
-    -- MouseButton1: Włącz / Wyłącz
-    -- MouseButton2: Rozwiń / Zwiń opcje modułu
-    -- MouseButton3 (Scroll): Bindowanie klawisza!
-    ClickBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            ToggleModule()
-        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-            Expanded = not Expanded
-            Content.Visible = Expanded
+    -- Obsługa dotyku i myszy dla urządzeń stacjonarnych oraz mobilnych:
+    -- 1. Tap na nagłówek (ClickBtn.Activated) -> Włącz / Wyłącz moduł (Touch i Mouse)
+    -- 2. Tap na strzałkę rozwijania (ExpandBtn.Activated) -> Rozwiń / Zwiń opcje (Touch i Mouse)
+    -- 3. Przytrzymanie (Long Press 0.4s na mobilce) -> Rozwiń / Zwiń opcje
+    -- 4. Prawy przycisk myszy (MouseButton2) -> Rozwiń / Zwiń opcje
+    -- 5. Kliknięcie kółkiem myszy (MouseButton3) / BindBadge -> Bindowanie klawisza
 
-            local targetHeight = Expanded and (50 + ContentLayout.AbsoluteContentSize.Y + 20) or 50
-            TweenService:Create(ModuleFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetHeight)
-            }):Play()
+    local isTouching = false
+    local touchStartTime = 0
+    local longPressFired = false
+
+    ClickBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isTouching = true
+            touchStartTime = os.clock()
+            longPressFired = false
+            task.delay(0.4, function()
+                if isTouching and (os.clock() - touchStartTime) >= 0.38 and not longPressFired then
+                    longPressFired = true
+                    ToggleExpand()
+                end
+            end)
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            ToggleExpand()
         elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
             StartBinding()
         end
     end)
 
-    BindBadge.MouseButton1Click:Connect(function()
+    ClickBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isTouching = false
+        end
+    end)
+
+    ClickBtn.Activated:Connect(function()
+        if longPressFired then
+            longPressFired = false
+            return
+        end
+        ToggleModule()
+    end)
+
+    ExpandBtn.Activated:Connect(function()
+        ToggleExpand()
+    end)
+
+    BindBadge.Activated:Connect(function()
         StartBinding()
     end)
 

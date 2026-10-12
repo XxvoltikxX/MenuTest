@@ -1,9 +1,12 @@
 local Sidebar = {}
 
-function Sidebar:Create(UI, theme, config)
+function Sidebar:Create(UI, theme, config, customWidth)
+    local sidebarW = customWidth or (config and config.SidebarWidth) or 200
+    local isCompact = sidebarW <= 170
+
     local SidebarFrame = Instance.new("Frame")
     SidebarFrame.Name = "Sidebar"
-    SidebarFrame.Size = UDim2.new(0, 200, 1, -32)
+    SidebarFrame.Size = UDim2.new(0, sidebarW, 1, -32)
     SidebarFrame.Position = UDim2.new(0, 0, 0, 32)
     SidebarFrame.BackgroundTransparency = 1
     SidebarFrame.Parent = UI.MainFrame
@@ -15,7 +18,7 @@ function Sidebar:Create(UI, theme, config)
     local rawName = tostring(config.Name or "X HUB")
     Title.Text = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 16
+    Title.TextSize = isCompact and 13 or 16
     Title.Size = UDim2.new(1, 0, 0, 45)
     Title.BackgroundTransparency = 1
     Title.Parent = SidebarFrame
@@ -67,9 +70,10 @@ function Sidebar:Create(UI, theme, config)
     UI.ThemeManager:Register(ProfileLine, "BackgroundColor3", "Accent")
 
     -- Kontener na awatar (dla maski)
+    local avatarSize = isCompact and 32 or 40
     local AvatarContainer = Instance.new("Frame")
-    AvatarContainer.Size = UDim2.new(0, 40, 0, 40)
-    AvatarContainer.Position = UDim2.new(0, 15, 0.5, 0)
+    AvatarContainer.Size = UDim2.new(0, avatarSize, 0, avatarSize)
+    AvatarContainer.Position = UDim2.new(0, isCompact and 8 or 15, 0.5, 0)
     AvatarContainer.AnchorPoint = Vector2.new(0, 0.5)
     AvatarContainer.BackgroundTransparency = 1
     AvatarContainer.Parent = ProfileFrame
@@ -92,8 +96,10 @@ function Sidebar:Create(UI, theme, config)
 
     local NameFrame = Instance.new("Frame")
     NameFrame.Name = "NameFrame"
-    NameFrame.Size = UDim2.new(1, -112, 1, 0) -- leaves space for settings button
-    NameFrame.Position = UDim2.new(0, 65, 0.5, 0)
+    local nameFrameLeft = isCompact and 46 or 65
+    local nameFrameRightSpace = isCompact and -78 or -112
+    NameFrame.Size = UDim2.new(1, nameFrameRightSpace, 1, 0)
+    NameFrame.Position = UDim2.new(0, nameFrameLeft, 0.5, 0)
     NameFrame.AnchorPoint = Vector2.new(0, 0.5)
     NameFrame.BackgroundTransparency = 1
     NameFrame.Parent = ProfileFrame
@@ -109,7 +115,7 @@ function Sidebar:Create(UI, theme, config)
     DisplayName.Name = "DisplayName"
     DisplayName.Text = nameToShow
     DisplayName.Font = Enum.Font.GothamBold
-    DisplayName.TextSize = 12
+    DisplayName.TextSize = isCompact and 11 or 12
     DisplayName.TextScaled = false
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
     DisplayName.Size = UDim2.new(1, 0, 1, 0)
@@ -125,10 +131,11 @@ function Sidebar:Create(UI, theme, config)
     local TweenService = game:GetService("TweenService")
     local Icons = UI.Icons or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
 
+    local settingsBtnSize = isCompact and 28 or 32
     local SettingsBtn = Instance.new("TextButton")
     SettingsBtn.Name = "SettingsBtn"
-    SettingsBtn.Size = UDim2.new(0, 32, 0, 32)
-    SettingsBtn.Position = UDim2.new(1, -10, 0.5, 0)
+    SettingsBtn.Size = UDim2.new(0, settingsBtnSize, 0, settingsBtnSize)
+    SettingsBtn.Position = UDim2.new(1, isCompact and -6 or -10, 0.5, 0)
     SettingsBtn.AnchorPoint = Vector2.new(1, 0.5)
     SettingsBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
     SettingsBtn.BackgroundTransparency = 1

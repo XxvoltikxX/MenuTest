@@ -376,9 +376,11 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SettingsStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     ThemeManager:Register(SettingsStroke, "Color", "Accent")
 
-    -- // ZMIANA: Używamy UIGridLayout dla opcji
+    local isMobile = (game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled) or (UI and UI.IsMobile)
+
+    -- // ZMIANA: Używamy UIGridLayout dla opcji (1 kolumna dla mobile, 2 kolumny dla PC)
     local SettingsGridLayout = Instance.new("UIGridLayout")
-    SettingsGridLayout.CellSize = UDim2.new(0.5, -5, 0, 35)
+    SettingsGridLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 35) or UDim2.new(0.5, -5, 0, 35)
     SettingsGridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
     SettingsGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
     SettingsGridLayout.Parent = SettingsContainer
@@ -578,7 +580,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     -- Stylizowany spójnie z motywem (dynamiczne kolory ThemeManager)
     local KeybindWidget = Instance.new("TextButton")
     KeybindWidget.Name = "MenuKeybindWidget"
-    KeybindWidget.Size = UDim2.new(0.5, -5, 0, 35)
+    KeybindWidget.Size = isMobile and UDim2.new(1, 0, 0, 35) or UDim2.new(0.5, -5, 0, 35)
     KeybindWidget.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     KeybindWidget.BackgroundTransparency = 0
     KeybindWidget.Text = ""

@@ -58,13 +58,13 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     end)
 
     if options.Callback then
-        Button.MouseButton1Click:Connect(function()
+        Button.Activated:Connect(function()
             local clickBg = getThemeColor("Accent", Color3.fromRGB(48, 48, 56))
             local tw = TweenService:Create(Button, TweenInfo.new(0.08), {BackgroundColor3 = clickBg})
             tw:Play()
             tw.Completed:Connect(function()
-                local hoverBg = getThemeColor("Accent2", Color3.fromRGB(36, 36, 42))
-                TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = hoverBg}):Play()
+                local normalBg = getThemeColor("Secondary", Color3.fromRGB(25, 25, 25))
+                TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = normalBg}):Play()
             end)
             pcall(options.Callback)
         end)

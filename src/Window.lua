@@ -197,7 +197,10 @@ function Window:Create(config)
     UI.ThemeManager = ThemeManager
 
     -- // USTAWIENIA EKRANU
+    local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) or config.TestMobile
     local isTouch = UserInputService.TouchEnabled or config.TestMobile
+    UI.IsMobile = isMobile
+    UI.IsTouch = isTouch
 
     local ProtectedLocation
     pcall(function() ProtectedLocation = CoreGui end)
@@ -241,11 +244,23 @@ function Window:Create(config)
     ScreenGui:SetAttribute(config.MenuId or "MenuInstance", true)
     ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.DisplayOrder = 10
     ScreenGui.Parent = ProtectedLocation
     UI.ScreenGui = ScreenGui
 
     if typeof(getgenv) == "function" then
         getgenv()._MenuTestGui = ScreenGui
+    end
+
+    -- Dynamiczny rozmiar początkowy dopasowany do ekranu
+    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+    local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+
+    local defaultW = 700
+    local defaultH = 400
+    if isMobile or viewport.X < 740 or viewport.Y < 440 then
+        defaultW = math.clamp(math.floor(viewport.X * 0.90), 360, 620)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.85), 250, 370)
     end
 
     -- Cień
@@ -259,11 +274,12 @@ function Window:Create(config)
     Shadow.ScaleType = Enum.ScaleType.Slice
     Shadow.SliceCenter = Rect.new(49, 49, 50, 50)
     Shadow.Parent = ScreenGui
+    UI.Shadow = Shadow
 
     -- MainFrame
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 700, 0, 400)
+    MainFrame.Size = UDim2.new(0, defaultW, 0, defaultH)
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     MainFrame.BorderSizePixel = 0
@@ -318,8 +334,9 @@ function Window:Create(config)
     TopLine.Parent = MainFrame
     ThemeManager:Register(TopLine, "BackgroundColor3", "Accent")
 
-    -- Sidebar
-    local SidebarFrame, TabList = SidebarModule:Create(UI, config.Theme, config)
+    -- Sidebar (responsywna szerokość dla urządzeń mobilnych)
+    local sidebarWidth = (isMobile or viewport.X < 600) and 155 or 200
+    local SidebarFrame, TabList = SidebarModule:Create(UI, config.Theme, config, sidebarWidth)
     SidebarFrame.Parent = MainFrame
     UI.TabList = TabList
 
@@ -347,8 +364,8 @@ function Window:Create(config)
     -- PagesContainer
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
-    PagesContainer.Size = UDim2.new(1, -200, 1, -32)
-    PagesContainer.Position = UDim2.new(0, 200, 0, 32)
+    PagesContainer.Size = UDim2.new(1, -sidebarWidth, 1, -32)
+    PagesContainer.Position = UDim2.new(0, sidebarWidth, 0, 32)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.ClipsDescendants = true
     PagesContainer.Parent = MainFrame
@@ -398,7 +415,7 @@ function Window:Create(config)
             lastPos  = MainFrame.Position
             pcall(function()
                 TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(1, 0, 1, 0),
+                    Size = UDim2.new(1, -10, 1, -10),
                     Position = UDim2.new(0.5, 0, 0.5, 0)
                 }):Play()
             end)
@@ -408,7 +425,7 @@ function Window:Create(config)
         else
             pcall(function()
                 TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Size = lastSize or UDim2.new(0, 700, 0, 400),
+                    Size = lastSize or UDim2.new(0, defaultW, 0, defaultH),
                     Position = lastPos or UDim2.new(0.5, 0, 0.5, 0)
                 }):Play()
             end)
@@ -418,11 +435,12 @@ function Window:Create(config)
         end
     end)
 
-    -- ResizeHandle
+    -- ResizeHandle (większy na mobilce, żeby łatwo było złapać palcem)
+    local handleSize = isMobile and 34 or 25
     local ResizeHandle = Instance.new("TextButton")
     ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 25, 0, 25)
-    ResizeHandle.Position = UDim2.new(1, -25, 1, -25)
+    ResizeHandle.Size = UDim2.new(0, handleSize, 0, handleSize)
+    ResizeHandle.Position = UDim2.new(1, -handleSize, 1, -handleSize)
     ResizeHandle.BackgroundTransparency = 1
     ResizeHandle.Text = ""
     ResizeHandle.ZIndex = 10
@@ -431,7 +449,7 @@ function Window:Create(config)
 
     local ResizeIcon = Instance.new("ImageLabel")
     ResizeIcon.Name = "Icon"
-    ResizeIcon.Size = UDim2.new(0, 15, 0, 15)
+    ResizeIcon.Size = UDim2.new(0, isMobile and 18 or 15, 0, isMobile and 18 or 15)
     ResizeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     ResizeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     ResizeIcon.BackgroundTransparency = 1
@@ -439,8 +457,21 @@ function Window:Create(config)
     ThemeManager:Register(ResizeIcon, "ImageColor3", "Accent")
     Icons:Apply(ResizeIcon, "arrow-down-right")
 
+    -- Minimalne wymiary okna (na telefonach można zmniejszyć do 340x230)
+    local minW = isMobile and 340 or 440
+    local minH = isMobile and 230 or 270
     Interactions:MakeDraggable(TopBar, MainFrame)
-    Interactions:MakeResizable(ResizeHandle, MainFrame, 700, 400)
+    Interactions:MakeResizable(ResizeHandle, MainFrame, minW, minH)
+
+    -- Automatyczne dopasowanie, jeśli gracz obróci ekran telefonu
+    if camera then
+        camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+            local vp = camera.ViewportSize
+            if MainFrame.AbsoluteSize.X > vp.X - 10 or MainFrame.AbsoluteSize.Y > vp.Y - 10 then
+                MainFrame.Size = UDim2.new(0, math.clamp(MainFrame.AbsoluteSize.X, minW, vp.X - 16), 0, math.clamp(MainFrame.AbsoluteSize.Y, minH, vp.Y - 16))
+            end
+        end)
+    end
 
     -- Cień śledzi MainFrame
     Shadow.AnchorPoint = MainFrame.AnchorPoint
@@ -459,7 +490,58 @@ function Window:Create(config)
         Shadow.Visible = MainFrame.Visible
     end)
 
-    -- Mobile toggle
+    -- // ============================================================
+    -- // ZUNIFIKOWANA LOGIKA TOGGLE MENU DLA PC ORAZ MOBILE
+    -- // ============================================================
+    local isMenuVisible = true
+    local currentToggleTween = nil
+    local lastNormalPos = MainFrame.Position
+    local HiddenPos = UDim2.new(0, -900, 0.5, 0)
+
+    function UI:ToggleMenu(forceState)
+        local target = (forceState ~= nil) and forceState or (not isMenuVisible)
+        if target == isMenuVisible and not currentToggleTween then return end
+
+        isMenuVisible = target
+
+        if currentToggleTween then
+            currentToggleTween:Cancel()
+            currentToggleTween = nil
+        end
+
+        if UI.MobileToggleText then
+            UI.MobileToggleText.Text = isMenuVisible and "CLOSE" or "OPEN"
+            UI.MobileToggleText.TextColor3 = isMenuVisible and Color3.fromRGB(255, 100, 100) or getColor(ThemeManager.CurrentTheme.Success)
+        end
+
+        if isMenuVisible then
+            MainFrame.Visible = true
+            Shadow.Visible = true
+            local destPos = lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
+            currentToggleTween = TweenService:Create(MainFrame,
+                TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                {Position = destPos})
+            currentToggleTween:Play()
+            currentToggleTween.Completed:Connect(function()
+                currentToggleTween = nil
+            end)
+        else
+            lastNormalPos = MainFrame.Position
+            currentToggleTween = TweenService:Create(MainFrame,
+                TweenInfo.new(0.20, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
+                {Position = HiddenPos})
+            currentToggleTween:Play()
+            currentToggleTween.Completed:Connect(function()
+                if not isMenuVisible then
+                    MainFrame.Visible = false
+                    Shadow.Visible = false
+                end
+                currentToggleTween = nil
+            end)
+        end
+    end
+
+    -- Mobile toggle (Pływający przycisk otwierania na telefonach/tabletach)
     if isTouch then
         local MobileToggle = Instance.new("TextButton")
         MobileToggle.Name = "MobileToggle"
@@ -495,23 +577,16 @@ function Window:Create(config)
         ToggleText.Text = "CLOSE"
         ToggleText.Font = Enum.Font.GothamBold
         ToggleText.TextSize = 9
+        ToggleText.TextColor3 = Color3.fromRGB(255, 100, 100)
         ToggleText.Parent = MobileToggle
         UI.MobileToggleText = ToggleText
 
         MainFrame.Visible = true
-        MobileToggle.MouseButton1Click:Connect(function()
-            local vis = MainFrame.Visible
-            MainFrame.Visible = not vis
-            Shadow.Visible    = not vis
-            if vis then
-                ToggleText.Text = "OPEN"
-                ToggleText.TextColor3 = getColor(ThemeManager.CurrentTheme.Success)
-            else
-                ToggleText.Text = "CLOSE"
-                ToggleText.TextColor3 = Color3.fromRGB(255, 100, 100)
-            end
+
+        -- Bezkonfliktowe przeciąganie i tapnięcie: tap otwiera/zamyka menu, przeciąganie przesuwa przycisk
+        Interactions:MakeDraggable(MobileToggle, MobileToggle, function()
+            UI:ToggleMenu()
         end)
-        Interactions:MakeDraggable(MobileToggle, MobileToggle)
     end
 
     -- // ============================================================

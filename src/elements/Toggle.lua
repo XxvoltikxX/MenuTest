@@ -78,7 +78,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
         end
     end
 
-    ToggleFrame.MouseButton1Click:Connect(function()
+    ToggleFrame.Activated:Connect(function()
         Value = not Value
         Update(true)
         if options.Callback then options.Callback(Value) end

@@ -178,6 +178,7 @@ local function createLoadingIndicator(title)
     loaderGui:SetAttribute("MenuLoaderIndicator", true)
     loaderGui.ResetOnSpawn = false
     loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    loaderGui.DisplayOrder = 999999
     pcall(function() loaderGui.Parent = screenParent end)
 
     local Toast = Instance.new("Frame")
@@ -260,16 +261,21 @@ local function createLoadingIndicator(title)
         StatusLabel.Text = "Załadowano w " .. (timeText or "0.2s")
         TweenService:Create(BarFill, TweenInfo.new(0.08), { Size = UDim2.new(1, 0, 1, 0) }):Play()
 
+        local camera = workspace.CurrentCamera
+        local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
+        local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+        local splashWidth = math.min(360, vp.X - 24)
+
         -- Center Splash Modal: "Loaded - Keybind For Open: keybind"
         local Splash = Instance.new("Frame")
         Splash.Name = "Splash"
-        Splash.Size = UDim2.new(0, 360, 0, 115)
+        Splash.Size = UDim2.new(0, splashWidth, 0, 115)
         Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
         Splash.AnchorPoint = Vector2.new(0.5, 0.5)
         Splash.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
         Splash.BackgroundTransparency = 1
         Splash.ClipsDescendants = true
-        Splash.ZIndex = 100
+        Splash.ZIndex = 1000
         Splash.Parent = loaderGui
 
         Instance.new("UICorner", Splash).CornerRadius = UDim.new(0, 10)
@@ -288,31 +294,34 @@ local function createLoadingIndicator(title)
         SplashHeader.Size = UDim2.new(1, 0, 0, 22)
         SplashHeader.Position = UDim2.new(0, 0, 0, 14)
         SplashHeader.BackgroundTransparency = 1
-        SplashHeader.ZIndex = 101
+        SplashHeader.ZIndex = 1001
         SplashHeader.Parent = Splash
 
+        local keyTextValue = isMobile and "Mobile Button Enabled" or ("Keybind For Open: \"" .. keybindName .. "\"")
+        local hintTextValue = isMobile and "Tap floating button to toggle Menu | Drag to move" or ("Press [" .. keybindName .. "] to toggle Menu | Change in Settings")
+
         local KeybindText = Instance.new("TextLabel")
-        KeybindText.Text = "Keybind For Open: \"" .. keybindName .. "\""
+        KeybindText.Text = keyTextValue
         KeybindText.Font = Enum.Font.GothamBold
-        KeybindText.TextSize = 16
+        KeybindText.TextSize = isMobile and 15 or 16
         KeybindText.TextColor3 = Color3.fromRGB(255, 255, 255)
         KeybindText.TextTransparency = 1
         KeybindText.Size = UDim2.new(1, -20, 0, 26)
         KeybindText.Position = UDim2.new(0, 10, 0, 40)
         KeybindText.BackgroundTransparency = 1
-        KeybindText.ZIndex = 101
+        KeybindText.ZIndex = 1001
         KeybindText.Parent = Splash
 
         local HintText = Instance.new("TextLabel")
-        HintText.Text = "Press [" .. keybindName .. "] to toggle Menu | Change in Settings"
+        HintText.Text = hintTextValue
         HintText.Font = Enum.Font.Gotham
         HintText.TextSize = 11
         HintText.TextColor3 = Color3.fromRGB(160, 165, 180)
         HintText.TextTransparency = 1
-        HintText.Size = UDim2.new(1, 0, 0, 20)
-        HintText.Position = UDim2.new(0, 0, 0, 74)
+        HintText.Size = UDim2.new(1, -20, 0, 20)
+        HintText.Position = UDim2.new(0, 10, 0, 74)
         HintText.BackgroundTransparency = 1
-        HintText.ZIndex = 101
+        HintText.ZIndex = 1001
         HintText.Parent = Splash
 
         -- Animacja wejścia
@@ -327,8 +336,8 @@ local function createLoadingIndicator(title)
         TweenService:Create(KeybindText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
         TweenService:Create(HintText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
 
-        -- Po 1.8 sekundy płynne zniknięcie i usunięcie GUI
-        task.delay(1.8, function()
+        -- Po 2.2 sekundy płynne zniknięcie i usunięcie GUI
+        task.delay(2.2, function()
             local tw1 = TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                 Position = UDim2.new(0.5, 0, 0.47, 0),
                 BackgroundTransparency = 1
@@ -583,16 +592,6 @@ function MenuLib:CreateWindow(options)
     UI.ScreenGui.Destroying:Connect(Cleanup)
 
     -- LOGIKA TOGGLE MENU I KEYBINDU
-    local isVisible  = true
-    local isTweening = false
-    local MainFrame  = UI.MainFrame
-    local CenterPos  = UDim2.new(0.5, 0, 0.5, 0)
-    local HiddenPos  = UDim2.new(0, -750, 1, 20)
-
-    -- Upewnij się, że menu jest natychmiast wyśrodkowane i widoczne
-    MainFrame.Position = CenterPos
-    MainFrame.Visible  = true
-
     local function resolveKeyCode(bind)
         if typeof(bind) == "EnumItem" then
             return bind, bind.Name
@@ -625,35 +624,25 @@ function MenuLib:CreateWindow(options)
         end
     end
 
-    local function toggleMenu()
-        if isTweening then return end
-        isTweening = true
-        local target = isVisible and HiddenPos or CenterPos
-        if not isVisible then MainFrame.Visible = true end
-        local tw = TweenService:Create(MainFrame,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut),
-            {Position = target})
-        tw:Play()
-        tw.Completed:Connect(function()
-            isVisible = not isVisible
-            if not isVisible then MainFrame.Visible = false end
-            isTweening = false
-        end)
-    end
-
+    -- Podpięcie zunifikowanej funkcji UI:ToggleMenu do klawisza klawiatury
     AddConnection(UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == currentKeyCode then
-            toggleMenu()
+            if UI.ToggleMenu then
+                UI:ToggleMenu()
+            end
         end
     end))
 
-    if UI.MinBtn   then UI.MinBtn.MouseButton1Click:Connect(toggleMenu) end
+    if UI.MinBtn then
+        UI.MinBtn.MouseButton1Click:Connect(function()
+            if UI.ToggleMenu then UI:ToggleMenu() end
+        end)
+    end
     if UI.CloseBtn then
         UI.CloseBtn.MouseButton1Click:Connect(function()
             if UI.ShowExitModal then UI.ShowExitModal() else UI.ScreenGui:Destroy() end
         end)
     end
-    if UI.MobileToggle then UI.MobileToggle.MouseButton1Click:Connect(toggleMenu) end
 
     -- // ============================================================
     -- // ŁADOWANIE ELEMENTÓW (bezpieczne, z pamięci podręcznej)
@@ -721,7 +710,9 @@ function MenuLib:CreateWindow(options)
 
         TabElements.Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-        -- Tworzymy 2-kolumnowy responsywny kontener obok siebie
+        -- Tworzymy responsywny kontener kolumn (1 kolumna dla urządzeń mobilnych, 2 kolumny dla PC)
+        local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) or Config.TestMobile
+
         local ColumnsContainer = Instance.new("Frame")
         ColumnsContainer.Name = "ColumnsContainer"
         ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -731,13 +722,13 @@ function MenuLib:CreateWindow(options)
 
         local ColumnsLayout = Instance.new("UIListLayout")
         ColumnsLayout.FillDirection = Enum.FillDirection.Horizontal
-        ColumnsLayout.Padding = UDim.new(0, 12)
+        ColumnsLayout.Padding = UDim.new(0, isMobile and 0 or 12)
         ColumnsLayout.SortOrder = Enum.SortOrder.LayoutOrder
         ColumnsLayout.Parent = ColumnsContainer
 
         local LeftColumn = Instance.new("Frame")
         LeftColumn.Name = "LeftColumn"
-        LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        LeftColumn.Size = isMobile and UDim2.new(1, 0, 0, 0) or UDim2.new(0.5, -6, 0, 0)
         LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
         LeftColumn.BackgroundTransparency = 1
         LeftColumn.LayoutOrder = 1
@@ -751,7 +742,8 @@ function MenuLib:CreateWindow(options)
 
         local RightColumn = Instance.new("Frame")
         RightColumn.Name = "RightColumn"
-        RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        RightColumn.Size = isMobile and UDim2.new(1, 0, 0, 0) or UDim2.new(0.5, -6, 0, 0)
+        RightColumn.Visible = not isMobile
         RightColumn.AutomaticSize = Enum.AutomaticSize.Y
         RightColumn.BackgroundTransparency = 1
         RightColumn.LayoutOrder = 2
@@ -770,6 +762,9 @@ function MenuLib:CreateWindow(options)
 
         local itemCounter = 0
         local function getNextParent()
+            if isMobile then
+                return LeftColumn
+            end
             itemCounter = itemCounter + 1
             return (itemCounter % 2 == 1) and LeftColumn or RightColumn
         end

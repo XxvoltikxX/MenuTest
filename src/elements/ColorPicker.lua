@@ -294,7 +294,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- 2. Pasek tęczowy HUE (Barwa - 0..360)
     local HueBar = Instance.new("Frame")
     HueBar.Name = "HueBar"
-    HueBar.Size = UDim2.new(1, 0, 0, 12)
+    HueBar.Size = UDim2.new(1, 0, 0, 16)
     HueBar.BackgroundColor3 = Color3.new(1, 1, 1)
     HueBar.LayoutOrder = 2
     HueBar.Parent = DropdownContent
@@ -333,7 +333,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- 3. Pasek ALPHA / TRANSPARENCY (Przezroczystość z prawdziwą szachownicą)
     local AlphaBar = Instance.new("Frame")
     AlphaBar.Name = "AlphaBar"
-    AlphaBar.Size = UDim2.new(1, 0, 0, 12)
+    AlphaBar.Size = UDim2.new(1, 0, 0, 16)
     AlphaBar.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
     AlphaBar.ClipsDescendants = true
     AlphaBar.LayoutOrder = 3
@@ -542,10 +542,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     end
 
     local draggingSV, draggingHue, draggingAlpha = false, false, false
+    local scrollParent = parent:FindFirstAncestorOfClass("ScrollingFrame")
 
     SVBox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingSV = true
+            if scrollParent then scrollParent.ScrollingEnabled = false end
             updateSV(input.Position)
         end
     end)
@@ -553,6 +555,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     HueBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingHue = true
+            if scrollParent then scrollParent.ScrollingEnabled = false end
             updateHue(input.Position)
         end
     end)
@@ -560,6 +563,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     AlphaBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingAlpha = true
+            if scrollParent then scrollParent.ScrollingEnabled = false end
             updateAlpha(input.Position)
         end
     end)
@@ -579,7 +583,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local endConn = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingSV, draggingHue, draggingAlpha = false, false, false
+            if draggingSV or draggingHue or draggingAlpha then
+                draggingSV, draggingHue, draggingAlpha = false, false, false
+                if scrollParent then scrollParent.ScrollingEnabled = true end
+            end
         end
     end)
     if addConnection then addConnection(endConn) end

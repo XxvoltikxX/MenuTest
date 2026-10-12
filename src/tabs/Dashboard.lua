@@ -127,7 +127,7 @@ function Dashboard:Render(UI, order, passedIcons)
         Icons:Apply(LinkIcon, "external-link")
 
         if link and typeof(setclipboard) == "function" then
-            Btn.MouseButton1Click:Connect(function() setclipboard(link) end)
+            Btn.Activated:Connect(function() setclipboard(link) end)
         end
         return Btn
     end

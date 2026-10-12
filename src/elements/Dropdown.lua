@@ -117,29 +117,37 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local Layout = Instance.new("UIListLayout", Scroll)
 
     local isOpen = false
+    local function updateDropdownPosition()
+        if not isOpen or not Main.Parent then return end
+        local camera = workspace.CurrentCamera
+        local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
+        local absPos = Main.AbsolutePosition
+        local absSize = Main.AbsoluteSize
+        local targetH = math.min(#Options * 32, 140)
+        local openUp = (absPos.Y + absSize.Y + targetH + 10 > vp.Y) and (absPos.Y - targetH - 5 >= 0)
+        local posY = openUp and (absPos.Y - targetH - 5) or (absPos.Y + absSize.Y + 5)
+        List.Position = UDim2.new(0, absPos.X, 0, posY)
+        List.Size = UDim2.new(0, absSize.X, 0, targetH)
+        Scroll.CanvasSize = UDim2.new(0, 0, 0, #Options * 32)
+    end
+
     local function Toggle()
         isOpen = not isOpen
         List.Visible = isOpen
 
         if isOpen then
             if Icons then Icons:Apply(Icon, "chevron-up") end
-            local absPos = Main.AbsolutePosition
-            local absSize = Main.AbsoluteSize
-            List.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
-            List.Size = UDim2.new(0, absSize.X, 0, math.min(#Options * 30, 150))
-            Scroll.CanvasSize = UDim2.new(0, 0, 0, #Options * 30)
+            updateDropdownPosition()
         else
             if Icons then Icons:Apply(Icon, "chevron-down") end
         end
     end
 
-    Main.MouseButton1Click:Connect(Toggle)
+    Main.Activated:Connect(Toggle)
 
     RunService.RenderStepped:Connect(function()
         if isOpen and Main.Parent then
-            local absPos = Main.AbsolutePosition
-            local absSize = Main.AbsoluteSize
-            List.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+            updateDropdownPosition()
         elseif isOpen and not Main.Parent then
             Toggle()
         end
@@ -152,7 +160,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
         for _, opt in ipairs(Options) do
             local Item = Instance.new("TextButton")
-            Item.Size = UDim2.new(1, 0, 0, 30)
+            Item.Size = UDim2.new(1, 0, 0, 32)
             Item.BackgroundTransparency = 1
             Item.Text = "   " .. opt
             Item.Font = Enum.Font.Gotham
@@ -165,7 +173,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             for _, s in ipairs(CurrentOption) do if s == opt then isSelected = true break end end
             if isSelected then Item.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255)) end
 
-            Item.MouseButton1Click:Connect(function()
+            Item.Activated:Connect(function()
                 if not options.MultipleOptions then
                     CurrentOption = {opt}
                     UpdateLabel()

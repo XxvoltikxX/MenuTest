@@ -72,6 +72,18 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     KnobStroke.Color = getThemeColor("Main", Color3.fromRGB(35, 35, 40))
     KnobStroke.Thickness = 1.5
 
+    -- Powiększony obszar dotykowy dla urządzeń mobilnych (zapobiega pudłowaniu palcem w pasek 8px)
+    local TouchArea = Instance.new("TextButton")
+    TouchArea.Name = "TouchArea"
+    TouchArea.Size = UDim2.new(1, 0, 0, 30)
+    TouchArea.Position = UDim2.new(0, 0, 0, 16)
+    TouchArea.BackgroundTransparency = 1
+    TouchArea.Text = ""
+    TouchArea.ZIndex = 5
+    TouchArea.Parent = SliderFrame
+
+    local scrollParent = parent:FindFirstAncestorOfClass("ScrollingFrame")
+
     local function updateThemeColors()
         Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165))
         ValueLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
@@ -107,26 +119,32 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     end
 
     local dragging = false
-    SliderBar.InputBegan:Connect(function(input)
+    local function processInput(input)
+        local pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+        local newVal = math.floor(Min + ((Max - Min) * pos))
+        Update(newVal)
+    end
+
+    TouchArea.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            local pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
-            local newVal = math.floor(Min + ((Max - Min) * pos))
-            Update(newVal)
+            if scrollParent then scrollParent.ScrollingEnabled = false end
+            processInput(input)
         end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+            if dragging then
+                dragging = false
+                if scrollParent then scrollParent.ScrollingEnabled = true end
+            end
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
-            local newVal = math.floor(Min + ((Max - Min) * pos))
-            Update(newVal)
+            processInput(input)
         end
     end)
 

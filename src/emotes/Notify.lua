@@ -2,13 +2,18 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
-local Player = Players.LocalPlayer
-local PlayerGui = game.CoreGui
+local PlayerGui
+pcall(function() PlayerGui = game:GetService("CoreGui") end)
+if not PlayerGui and Player then
+    PlayerGui = Player:FindFirstChildOfClass("PlayerGui")
+end
 
 local NotificationGui = Instance.new("ScreenGui")
 NotificationGui.Name = "NotificationSystem"
-NotificationGui.Parent = PlayerGui
 NotificationGui.ResetOnSpawn = false
+NotificationGui.DisplayOrder = 99999
+NotificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+if PlayerGui then NotificationGui.Parent = PlayerGui end
 
 local activeNotifications = {}
 local notificationCount = 0
