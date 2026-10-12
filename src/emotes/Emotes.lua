@@ -232,7 +232,7 @@ function resolveAnimationMappings(bundledItems)
 
     local gatheredObjects = {}
     local remaining = #flatAssets
-    local mainThread = coroutine.running()
+    local isDone = false
 
     for idx, assetId in ipairs(flatAssets) do
         task.spawn(function()
@@ -243,14 +243,15 @@ function resolveAnimationMappings(bundledItems)
                 gatheredObjects[idx] = objects
             end
             remaining = remaining - 1
-            if remaining <= 0 and mainThread then
-                task.spawn(mainThread)
+            if remaining <= 0 then
+                isDone = true
             end
         end)
     end
 
-    if remaining > 0 then
-        coroutine.yield()
+    local startWait = os.clock()
+    while not isDone and (os.clock() - startWait < 4) do
+        task.wait()
     end
 
     local function searchTree(parent, parentPath)
