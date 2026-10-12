@@ -219,44 +219,70 @@ end
 
 function resolveAnimationMappings(bundledItems)
     local mappings = {}
+    local flatAssets = {}
     for _, assetIds in pairs(bundledItems) do
-        for _, assetId in pairs(assetIds) do
+        if type(assetIds) == "table" then
+            for _, id in pairs(assetIds) do table.insert(flatAssets, id) end
+        else
+            table.insert(flatAssets, assetIds)
+        end
+    end
+
+    if #flatAssets == 0 then return mappings end
+
+    local gatheredObjects = {}
+    local remaining = #flatAssets
+    local mainThread = coroutine.running()
+
+    for idx, assetId in ipairs(flatAssets) do
+        task.spawn(function()
             local success, objects = pcall(function()
-                return game:GetObjects("rbxassetid://" .. assetId)
+                return game:GetObjects("rbxassetid://" .. tostring(assetId))
             end)
             if success and objects then
-                local function searchTree(parent, parentPath)
-                    for _, child in pairs(parent:GetChildren()) do
-                        if child:IsA("Animation") then
-                            local animationPath = parentPath .. "." .. child.Name
-                            local pathParts = animationPath:split(".")
-                            local weightVals = {}
-                            for _, wChild in ipairs(child:GetChildren()) do
-                                if wChild:IsA("NumberValue") and wChild.Name == "Weight" then
-                                    table.insert(weightVals, wChild.Value)
-                                end
-                            end
-                            table.insert(mappings, {
-                                category = pathParts[#pathParts - 1],
-                                name = pathParts[#pathParts],
-                                animationId = child.AnimationId,
-                                weights = weightVals
-                            })
-                        elseif #child:GetChildren() > 0 then
-                            searchTree(child, parentPath .. "." .. child.Name)
-                        end
+                gatheredObjects[idx] = objects
+            end
+            remaining = remaining - 1
+            if remaining <= 0 and mainThread then
+                task.spawn(mainThread)
+            end
+        end)
+    end
+
+    if remaining > 0 then
+        coroutine.yield()
+    end
+
+    local function searchTree(parent, parentPath)
+        for _, child in pairs(parent:GetChildren()) do
+            if child:IsA("Animation") then
+                local animationPath = parentPath .. "." .. child.Name
+                local pathParts = animationPath:split(".")
+                local weightVals = {}
+                for _, wChild in ipairs(child:GetChildren()) do
+                    if wChild:IsA("NumberValue") and wChild.Name == "Weight" then
+                        table.insert(weightVals, wChild.Value)
                     end
                 end
-                for _, obj in pairs(objects) do
-                    searchTree(obj, obj.Name)
-                    obj.Parent = workspace
-                    task.delay(1, function()
-                        if obj then obj:Destroy() end
-                    end)
-                end
+                table.insert(mappings, {
+                    category = pathParts[#pathParts - 1] or "idle",
+                    name = pathParts[#pathParts] or child.Name,
+                    animationId = child.AnimationId,
+                    weights = weightVals
+                })
+            elseif #child:GetChildren() > 0 then
+                searchTree(child, parentPath .. "." .. child.Name)
             end
         end
     end
+
+    for _, objects in pairs(gatheredObjects) do
+        for _, obj in pairs(objects) do
+            searchTree(obj, obj.Name)
+            pcall(function() obj:Destroy() end)
+        end
+    end
+
     return mappings
 end
 
@@ -4059,20 +4085,28 @@ function pickRandomItem()
     return list[math.random(1, #list)]
 end
 
+local cachedRandomAnimList = nil
+local lastRandomAnimSourceCount = 0
+
 function pickRandomItemForMode()
     local list = getRandomSourceList() or {}
-    if #list == 0 then return nil end
+    local count = #list
+    if count == 0 then return nil end
     if State.currentMode == "animation" then
-        local filtered = {}
-        for _, item in ipairs(list) do
-            if item.bundledItems then
-                table.insert(filtered, item)
+        if not cachedRandomAnimList or lastRandomAnimSourceCount ~= count then
+            cachedRandomAnimList = {}
+            for _, item in ipairs(list) do
+                if item.bundledItems then
+                    table.insert(cachedRandomAnimList, item)
+                end
             end
+            lastRandomAnimSourceCount = count
         end
-        if #filtered == 0 then return nil end
-        return filtered[math.random(1, #filtered)]
+        local cCount = #cachedRandomAnimList
+        if cCount == 0 then return nil end
+        return cachedRandomAnimList[math.random(1, cCount)]
     end
-    return list[math.random(1, #list)]
+    return list[math.random(1, count)]
 end
 function updateRandomSlotBlocker(frontFrame, enable)
     if not frontFrame then return end
@@ -5317,8 +5351,9 @@ function setupEmoteClickDetection()
 end
 
 applyAnimation = function(animationData)
+    task.spawn(function()
     local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+    local character = player.Character or (player.CharacterAdded:Wait())
     local humanoid = character:FindFirstChild("Humanoid")
     local animate = character:FindFirstChild("Animate")
     
@@ -5457,6 +5492,7 @@ applyAnimation = function(animationData)
         animate.Disabled = true
         animate.Disabled = false
     end
+    end)
 end
 
 function playAnimationPreview(animationData)
@@ -5928,6 +5964,21 @@ function fetchAllAnimations()
     State.isLoading = true
     State.animationsData = {}
 
+    -- Load from local disk cache immediately for 0ms startup
+    local cachedAnims = nil
+    pcall(function()
+        if isfile and isfile(State.AnimationListCachePath) then
+            local json = readfile(State.AnimationListCachePath)
+            local decoded = HttpService:JSONDecode(json)
+            if type(decoded) == "table" and #decoded > 0 then
+                cachedAnims = decoded
+            end
+        end
+    end)
+    if cachedAnims then
+        State.animationsData = cachedAnims
+    end
+
     local function processCustomSets()
         if State.CustomAnimations and State.CustomAnimations.Order then
             for idx, customSetName in ipairs(State.CustomAnimations.Order) do
@@ -6025,6 +6076,10 @@ function fetchAllAnimations()
 
             local prevMode = State.currentMode
             State.animationsData = animationsData
+            pcall(function()
+                ensureEmoteFolders()
+                writefile(State.AnimationListCachePath, HttpService:JSONEncode(animationsData))
+            end)
             processCustomSets()
             finalize()
             State.totalPages = calculateTotalPages()
@@ -6322,16 +6377,72 @@ playRandomEmote = function(humanoid, emoteId)
     stopCurrentEmote()
     stopEmotes()
 
-    local ok, track = pcall(function()
-        return humanoid:PlayEmoteAndGetAnimTrackById(emoteId)
-    end)
-    if ok and track and typeof(track) == "Instance" and track:IsA("AnimationTrack") then
-        State.currentEmoteTrack = track
-        if State.speedEmoteEnabled then
-            local speedVal = tonumber(UI.SpeedBox.Text) or Config.EmoteSpeed or 1
-            track:AdjustSpeed(speedVal)
+    task.spawn(function()
+        local isOwned = false
+        if getgenv().OwnedAuthenticEmotes then
+            for _, owned in ipairs(getgenv().OwnedAuthenticEmotes) do
+                if tostring(owned.id) == tostring(emoteId) then
+                    isOwned = true
+                    break
+                end
+            end
         end
-    end
+
+        local track = nil
+        -- Only query Roblox's inventory check if we know it's owned
+        if isOwned then
+            local ok, t = pcall(function()
+                return humanoid:PlayEmoteAndGetAnimTrackById(emoteId)
+            end)
+            if ok and t and typeof(t) == "Instance" and t:IsA("AnimationTrack") then
+                track = t
+            end
+        end
+
+        if not track then
+            -- Immediate fast playback via Animator
+            local animId = tostring(emoteId)
+            if State.EmoteAnimCache and State.EmoteAnimCache[animId] then
+                animId = State.EmoteAnimCache[animId]
+            end
+
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://" .. animId
+            local s, loaded = pcall(function()
+                return humanoid.Animator:LoadAnimation(anim)
+            end)
+            if s and loaded then
+                track = loaded
+                track.Priority = Enum.AnimationPriority.Action
+                track:Play()
+            else
+                -- Resolve asset if not loaded directly
+                local resolved = resolveEmoteToAnimationId(emoteId)
+                if resolved and resolved ~= tonumber(emoteId) then
+                    State.EmoteAnimCache = State.EmoteAnimCache or {}
+                    State.EmoteAnimCache[tostring(emoteId)] = tostring(resolved)
+                    local anim2 = Instance.new("Animation")
+                    anim2.AnimationId = "rbxassetid://" .. tostring(resolved)
+                    local s2, loaded2 = pcall(function()
+                        return humanoid.Animator:LoadAnimation(anim2)
+                    end)
+                    if s2 and loaded2 then
+                        track = loaded2
+                        track.Priority = Enum.AnimationPriority.Action
+                        track:Play()
+                    end
+                end
+            end
+        end
+
+        if track and typeof(track) == "Instance" and track:IsA("AnimationTrack") then
+            State.currentEmoteTrack = track
+            if State.speedEmoteEnabled then
+                local speedVal = tonumber(UI.SpeedBox.Text) or Config.EmoteSpeed or 1
+                pcall(function() track:AdjustSpeed(speedVal) end)
+            end
+        end
+    end)
 end
 
 function onCharacterAdded(character)
