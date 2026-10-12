@@ -3913,14 +3913,20 @@ function loadFavoritesAnimations()
 end
 
 function disconnectAllConnections()
-    for _, connection in pairs(State.guiConnections) do
+    for _, connection in pairs(State.guiConnections or {}) do
         if connection then
-            connection:Disconnect()
+            pcall(function() connection:Disconnect() end)
         end
     end
     State.guiConnections = {}
+    for _, connection in pairs(State.emoteClickConnections or {}) do
+        if connection then
+            pcall(function() connection:Disconnect() end)
+        end
+    end
+    State.emoteClickConnections = {}
     if ContextActionService then
-        ContextActionService:UnbindAction("MenuTest_EmoteWheelHotkeys")
+        pcall(function() ContextActionService:UnbindAction("MenuTest_EmoteWheelHotkeys") end)
     end
 end
 
@@ -6864,6 +6870,7 @@ function connectEvents()
         }
 
         local function onHotkey(actionName, inputState, inputObject)
+            if not _G.MenuTest_EmotesEnabled then return Enum.ContextActionResult.Pass end
             if inputState ~= Enum.UserInputState.Begin then return Enum.ContextActionResult.Pass end
             if State.hudEditorActive then return Enum.ContextActionResult.Pass end
             if UserInputService:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
@@ -8802,6 +8809,7 @@ State.RefreshSettingsUI = function()
 end
 
 function checkAndRecreateGUI()
+    if not _G.MenuTest_EmotesEnabled then return end
     local exists, emotesWheel = checkEmotesMenuExists()
     if not exists then
         State.isGUICreated = false
@@ -8851,6 +8859,7 @@ end)
 
 
 RunService.Heartbeat:Connect(function()
+    if not _G.MenuTest_EmotesEnabled then return end
     if not State.isGUICreated then
         checkAndRecreateGUI()
     else
@@ -8860,6 +8869,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 RunService.Stepped:Connect(function()
+    if not _G.MenuTest_EmotesEnabled then return end
     if humanoid and State.currentEmoteTrack and typeof(State.currentEmoteTrack) == "Instance" and State.currentEmoteTrack:IsA("AnimationTrack") and State.currentEmoteTrack.IsPlaying then
         if humanoid.MoveDirection.Magnitude > 0 then
             if State.toolEquipped or (State.speedEmoteEnabled and not State.emotesWalkEnabled) then
@@ -8880,29 +8890,29 @@ end)
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
 task.spawn(function()
     while true do
-        local robloxGui = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
-        local emotesMenu = robloxGui and robloxGui:FindFirstChild("EmotesMenu")
+        if _G.MenuTest_EmotesEnabled then
+            local robloxGui = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
+            local emotesMenu = robloxGui and robloxGui:FindFirstChild("EmotesMenu")
 
-        if not emotesMenu then
-            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+            if not emotesMenu then
+                StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+            else
+                local exists = emotesMenu:FindFirstChild("Children") and emotesMenu.Children:FindFirstChild("Main") and
+                                   emotesMenu.Children.Main:FindFirstChild("EmotesWheel")
 
-        else
-            local exists = emotesMenu:FindFirstChild("Children") and emotesMenu.Children:FindFirstChild("Main") and
-                               emotesMenu.Children.Main:FindFirstChild("EmotesWheel")
-
-            if exists then
-                local emotesWheel = emotesMenu.Children.Main.EmotesWheel
-                if not emotesWheel:FindFirstChild("Under") or not emotesWheel:FindFirstChild("Top") then
-                    if createGUIElements then
-                        createGUIElements()
-                        loadSpeedEmoteConfig()
+                if exists then
+                    local emotesWheel = emotesMenu.Children.Main.EmotesWheel
+                    if not emotesWheel:FindFirstChild("Under") or not emotesWheel:FindFirstChild("Top") then
+                        if createGUIElements then
+                            createGUIElements()
+                            loadSpeedEmoteConfig()
+                        end
+                        updateGUIColors()
+                        updatePageDisplay()
                     end
-                    updateGUIColors()
-                    updatePageDisplay()
                 end
             end
         end
-
         task.wait(0.3)
     end
 end)
@@ -8963,11 +8973,74 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+local function restoreDefaultEmotesWheel()
+    State.isGUICreated = false
+    disconnectAllConnections()
+
+    local exists, emotesWheel = checkEmotesMenuExists()
+    if exists and emotesWheel then
+        local customNames = {
+            "Under", "Top", "EmoteWalkButton", "Favorite", "SpeedEmote",
+            "Changepage", "SpeedBox", "Reload"
+        }
+        for _, name in ipairs(customNames) do
+            local c = emotesWheel:FindFirstChild(name)
+            if c then pcall(function() c:Destroy() end) end
+        end
+
+        if UI.CustomFrames then
+            for _, frame in pairs(UI.CustomFrames) do
+                if frame and frame.Parent then pcall(function() frame:Destroy() end) end
+            end
+            UI.CustomFrames = {}
+        end
+
+        -- Clean up custom overlays and tinting on wheel buttons
+        local front = emotesWheel:FindFirstChild("Front")
+        local buttons = front and front:FindFirstChild("EmotesButtons")
+        if buttons then
+            for _, slot in ipairs(buttons:GetChildren()) do
+                local blocker = slot:FindFirstChild("RandomBlocker")
+                if blocker then pcall(function() blocker:Destroy() end) end
+                local fav = slot:FindFirstChild("FavoriteIcon")
+                if fav then pcall(function() fav:Destroy() end) end
+                if slot:IsA("ImageLabel") then
+                    slot.ImageColor3 = Color3.fromRGB(255, 255, 255)
+                end
+            end
+        end
+
+        local back = emotesWheel:FindFirstChild("Back")
+        local bg = back and back:FindFirstChild("Background")
+        if bg and bg:IsA("ImageLabel") then
+            bg.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end
+
+    State.targetImages = {}
+
+    -- Close menu and restart native Roblox EmotesMenu so it re-reads authentic equipped emotes
+    pcall(function()
+        GuiService:SetEmotesMenuOpen(false)
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
+        task.delay(0.05, function()
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+        end)
+    end)
+end
+
 local EmoteController = {}
 
 function EmoteController.Enable()
     _G.MenuTest_EmotesEnabled = true
-    if ToggleContainer then ToggleContainer.Visible = true end
+    if SettingsLib and SettingsLib.UI then
+        SettingsLib.UI.Enabled = true
+    end
+    if ToggleContainer then
+        ToggleContainer.Visible = true
+        applySettingsToggleStyle()
+        syncToggleVisibility()
+    end
     if isMobile then
         if _G.MenuTest_OpenEmoteGui then
             _G.MenuTest_OpenEmoteGui.Enabled = true
@@ -8975,15 +9048,32 @@ function EmoteController.Enable()
     else
         destroyAllStrayEmoteButtons()
     end
+
+    pcall(function()
+        bindWheelHotkeys()
+        if createGUIElements() then
+            updatePageDisplay()
+            updateEmotes()
+            updateGUIColors()
+            loadSpeedEmoteConfig()
+            State.isGUICreated = true
+        end
+    end)
 end
 
 function EmoteController.Disable()
     _G.MenuTest_EmotesEnabled = false
-    pcall(function() GuiService:SetEmotesMenuOpen(false) end)
+    restoreDefaultEmotesWheel()
+
     if SettingsLib and SettingsLib.UI then
         SettingsLib.UI.Enabled = false
+        if SettingsLib.MainFrame then
+            SettingsLib.MainFrame.Visible = false
+        end
     end
-    if ToggleContainer then ToggleContainer.Visible = false end
+    if ToggleContainer then
+        ToggleContainer.Visible = false
+    end
     destroyAllStrayEmoteButtons()
     if State and State.currentEmoteTrack then
         pcall(function() State.currentEmoteTrack:Stop() end)
