@@ -1100,16 +1100,7 @@ TogglesUI.NotifyEnabled = SettingsLib.AddToggle(GeneralTab, "Show Notifications"
     SaveConfig()
 end)
 
-TogglesUI.AuthenticFirstPage = SettingsLib.AddToggle(GeneralTab, "Authentic Emotes Page", "Show owned emotes on page 1", Config.AuthenticFirstPage, function(v)
-    Config.AuthenticFirstPage = v
-    State.totalPages = calculateTotalPages()
-    if State.currentPage > State.totalPages then
-        State.currentPage = State.totalPages
-    end
-    updatePageDisplay()
-    updateEmotes()
-    SaveConfig()
-end)
+-- [Authentic Emotes Page toggle removed as requested]
 
 local randomModes = { "All", "Favorites" }
 local randomDropdown = SettingsLib.AddDropdown(GeneralTab, "Random Source", randomModes, Config.RandomMode or "All", function(v)
@@ -3723,6 +3714,9 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
 getgenv().OwnedAuthenticEmotes = getgenv().OwnedAuthenticEmotes or {}
+getgenv().OriginalAuthenticEmotesTable = getgenv().OriginalAuthenticEmotesTable or nil
+getgenv().OriginalAuthenticEquippedEmotes = getgenv().OriginalAuthenticEquippedEmotes or nil
+
 function gatherAuthenticEmotes(char)
     if not char then return end
     local hum = char:WaitForChild("Humanoid", 5)
@@ -3730,16 +3724,18 @@ function gatherAuthenticEmotes(char)
     local desc = hum:WaitForChild("HumanoidDescription", 5)
     if not desc then return end
     local allEmotes = desc:GetEmotes()
+    local equipped = desc:GetEquippedEmotes()
     local owned = {}
     
-    for _, e in ipairs(desc:GetEquippedEmotes()) do
+    for _, e in ipairs(equipped or {}) do
         local id = allEmotes[e.Name] and allEmotes[e.Name][1]
         if id then
             local idNum = tonumber((tostring(id):gsub("rbxassetid://", "")))
             if idNum then
                 table.insert(owned, {
                     name = e.Name,
-                    id = idNum
+                    id = idNum,
+                    slot = e.Slot
                 })
             end
         end
@@ -3747,7 +3743,47 @@ function gatherAuthenticEmotes(char)
     if #owned > 0 then
         getgenv().OwnedAuthenticEmotes = owned
     end
+    if allEmotes and next(allEmotes) ~= nil and not getgenv().OriginalAuthenticEmotesTable then
+        getgenv().OriginalAuthenticEmotesTable = allEmotes
+    end
+    if equipped and #equipped > 0 and not getgenv().OriginalAuthenticEquippedEmotes then
+        getgenv().OriginalAuthenticEquippedEmotes = equipped
+    end
 end
+
+-- Immediately fetch authentic HumanoidDescription from Roblox backend to guarantee original emotes
+task.spawn(function()
+    pcall(function()
+        local authDesc = Players:GetHumanoidDescriptionFromUserId(player.UserId)
+        if authDesc then
+            local rawAll = authDesc:GetEmotes()
+            local rawEquipped = authDesc:GetEquippedEmotes()
+            if rawAll and next(rawAll) ~= nil then
+                getgenv().OriginalAuthenticEmotesTable = rawAll
+            end
+            if rawEquipped and #rawEquipped > 0 then
+                getgenv().OriginalAuthenticEquippedEmotes = rawEquipped
+            end
+            local owned = {}
+            for _, e in ipairs(rawEquipped or {}) do
+                local id = rawAll and rawAll[e.Name] and rawAll[e.Name][1]
+                if id then
+                    local idNum = tonumber((tostring(id):gsub("rbxassetid://", "")))
+                    if idNum then
+                        table.insert(owned, {
+                            name = e.Name,
+                            id = idNum,
+                            slot = e.Slot
+                        })
+                    end
+                end
+            end
+            if #owned > 0 then
+                getgenv().OwnedAuthenticEmotes = owned
+            end
+        end
+    end)
+end)
 
 task.spawn(function() gatherAuthenticEmotes(character) end)
 player.CharacterAdded:Connect(gatherAuthenticEmotes)
@@ -3994,11 +4030,8 @@ function getCategoryStats()
     local randomCaptured = false
     local shouldShowRandom = shouldRandomSlotBeShown()
 
-    local authenticEmotes = (Config.AuthenticFirstPage and State.currentMode == "emote") and (getgenv().OwnedAuthenticEmotes or {}) or {}
-    if #authenticEmotes > 0 then
-        local pages = calcPagesForList(#authenticEmotes, false)
-        table.insert(stats, { name = "Authentic", list = authenticEmotes, pages = pages, hasRandom = false })
-    end
+    -- Authentic category page in wheel disabled; authentic emotes are restored on disable
+    local authenticEmotes = {}
 
     local favoritesToUse = (State.currentMode == "animation") and (_G.filteredFavoritesAnimationsForDisplay or State.favoriteAnimations) or (_G.filteredFavoritesForDisplay or State.favoriteEmotes)
     if #favoritesToUse > 0 then
@@ -8977,8 +9010,25 @@ local function restoreDefaultEmotesWheel()
     State.isGUICreated = false
     disconnectAllConnections()
 
+    -- 1. Restore the player's authentic HumanoidDescription emotes
+    pcall(function()
+        local character, humanoid = getCharacterAndHumanoid()
+        if humanoid and humanoid:FindFirstChild("HumanoidDescription") then
+            local desc = humanoid.HumanoidDescription
+            local authEmotes = getgenv().OriginalAuthenticEmotesTable or {}
+            local authEquipped = getgenv().OriginalAuthenticEquippedEmotes or {}
+            if next(authEmotes) ~= nil then
+                desc:SetEmotes(authEmotes)
+            end
+            if #authEquipped > 0 then
+                desc:SetEquippedEmotes(authEquipped)
+            end
+        end
+    end)
+
     local exists, emotesWheel = checkEmotesMenuExists()
     if exists and emotesWheel then
+        -- 2. Destroy all custom injected HUD elements
         local customNames = {
             "Under", "Top", "EmoteWalkButton", "Favorite", "SpeedEmote",
             "Changepage", "SpeedBox", "Reload"
@@ -8995,7 +9045,7 @@ local function restoreDefaultEmotesWheel()
             UI.CustomFrames = {}
         end
 
-        -- Clean up custom overlays and tinting on wheel buttons
+        -- 3. Clean up custom overlays and restore authentic emote images on each slot
         local front = emotesWheel:FindFirstChild("Front")
         local buttons = front and front:FindFirstChild("EmotesButtons")
         if buttons then
@@ -9006,6 +9056,22 @@ local function restoreDefaultEmotesWheel()
                 if fav then pcall(function() fav:Destroy() end) end
                 if slot:IsA("ImageLabel") then
                     slot.ImageColor3 = Color3.fromRGB(255, 255, 255)
+                    slot.Image = ""
+                end
+            end
+
+            -- Restore authentic slot thumbnails from OriginalAuthenticEquippedEmotes
+            local authAll = getgenv().OriginalAuthenticEmotesTable or {}
+            local authEquipped = getgenv().OriginalAuthenticEquippedEmotes or {}
+            for _, e in ipairs(authEquipped) do
+                local slotNum = tostring(e.Slot)
+                local slot = buttons:FindFirstChild(slotNum)
+                local emoteId = authAll[e.Name] and authAll[e.Name][1]
+                if slot and slot:IsA("ImageLabel") and emoteId then
+                    local idNum = tonumber((tostring(emoteId):gsub("rbxassetid://", "")))
+                    if idNum then
+                        slot.Image = "rbxthumb://type=Asset&id=" .. tostring(idNum) .. "&w=150&h=150"
+                    end
                 end
             end
         end
@@ -9019,7 +9085,7 @@ local function restoreDefaultEmotesWheel()
 
     State.targetImages = {}
 
-    -- Close menu and restart native Roblox EmotesMenu so it re-reads authentic equipped emotes
+    -- 4. Close menu and toggle CoreGui to re-sync Roblox native EmotesMenu CoreScript
     pcall(function()
         GuiService:SetEmotesMenuOpen(false)
         StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
