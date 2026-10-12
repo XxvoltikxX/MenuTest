@@ -32,7 +32,8 @@ local Camera = Workspace.CurrentCamera
 -- // Zmienne ESP
 local espEnabled = false
 local espBoxWireframe = true
-local espHighlights = true
+local espHighlights = true  -- Highlight outline
+local espChams = false      -- Chams = widoczność przez ściany (AlwaysOnTop DepthMode)
 local espNames = true
 local espDistance = true
 local espColor = Color3.fromRGB(0, 255, 170)
@@ -105,7 +106,7 @@ local function UpdateESP()
                 local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
                 local dist = math.floor((hrp.Position - Camera.CFrame.Position).Magnitude)
 
-                -- 1. Chams (Highlight)
+                -- 1. HighLight (Highlight outline / Chams = through-wall)
                 if espEnabled and espHighlights and espAlpha > 0.005 then
                     if not data.Highlight or data.Highlight.Parent ~= char then
                         if data.Highlight then data.Highlight:Destroy() end
@@ -120,6 +121,10 @@ local function UpdateESP()
                     data.Highlight.FillTransparency = 1 - (espAlpha * 0.5)
                     data.Highlight.OutlineTransparency = 1 - espAlpha
                     data.Highlight.Enabled = true
+                    -- Chams: czy widoczny przez ściany
+                    data.Highlight.DepthMode = espChams
+                        and Enum.HighlightDepthMode.AlwaysOnTop
+                        or  Enum.HighlightDepthMode.Occluded
                 elseif data.Highlight then
                     data.Highlight.Enabled = false
                 end
@@ -219,11 +224,20 @@ local ESPMod = TabRender:CreateModule({
 })
 
 ESPMod:AddToggle({
-    Name = "Chams",
+    Name = "HighLight",
     Default = true,
-    Flag = "Universal_ESPChams",
+    Flag = "Universal_ESPHighLight",
     Callback = function(state)
         espHighlights = state
+    end
+})
+
+ESPMod:AddToggle({
+    Name = "Chams",
+    Default = false,
+    Flag = "Universal_ESPChams",
+    Callback = function(state)
+        espChams = state
     end
 })
 

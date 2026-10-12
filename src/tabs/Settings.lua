@@ -510,6 +510,41 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 
+    -- Emotes Menu (floating button for Roblox Emotes Wheel)
+    local EmoteModuleCache = nil
+    local function getEmoteModule()
+        if EmoteModuleCache then return EmoteModuleCache end
+        EmoteModuleCache = safeLoadSub(
+            "emotes/EmoteMenu.lua",
+            baseUrl .. "emotes/EmoteMenu.lua"
+        )
+        return EmoteModuleCache
+    end
+
+    local emoteMenuEnabled = (UI.MenuConfig and UI.MenuConfig["EmotesMenu"] == true) or false
+    task.defer(function()
+        if emoteMenuEnabled then
+            local mod = getEmoteModule()
+            if mod and mod.Load then pcall(function() mod:Load() end) end
+        end
+    end)
+
+    ToggleElement({
+        Name = "Emotes Menu",
+        CurrentValue = emoteMenuEnabled,
+        Default = false,
+        Flag = "EmotesMenu",
+        Callback = function(Value)
+            local mod = getEmoteModule()
+            if not mod then return end
+            if Value then
+                pcall(function() mod:Load() end)
+            else
+                pcall(function() mod:Unload() end)
+            end
+        end,
+    }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
+
     -- Keybinds Overlay (Minecraft style)
     local isOverlayActive = false
     if UI.MenuConfig and UI.MenuConfig["KeybindsOverlay"] ~= nil then
