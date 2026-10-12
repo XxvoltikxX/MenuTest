@@ -1045,7 +1045,6 @@ function syncToggleVisibility()
     end
 end
 
-function  end
 
 ToggleBtn.MouseButton1Click:Connect(function()
     local main = getSettingsMainFrame()
@@ -1924,17 +1923,17 @@ function ApplyWheelBackgroundImage(bgImg, wheel)
     local gifUrl, sheetUrl = nil, nil
     if bgSrc and tostring(bgSrc):find("\n") then
         local lines = {}
-        for line in tostring(bgSrc):gmatch("[^\r\n]+") do
-            line = line:match("^%s*(.-)%s*$")
+        for rawLine in tostring(bgSrc):gmatch("[^\r\n]+") do
+            local line = rawLine:match("^%s*(.-)%s*$")
             if line ~= "" then table.insert(lines, line) end
         end
         gifUrl = lines[1]
         sheetUrl = lines[2]
     elseif tostring(bgSrc):find("|") then
         local parts = {}
-        for part in tostring(bgSrc):gmatch("[^|]+") do
-            part = part:match("^%s*(.-)%s*$")
-            if part ~= "" then table.insert(parts, part) end
+        for rawPart in tostring(bgSrc):gmatch("[^|]+") do
+            local trimmed = rawPart:match("^%s*(.-)%s*$")
+            if trimmed ~= "" then table.insert(parts, trimmed) end
         end
         gifUrl = parts[1]
         sheetUrl = parts[2]
@@ -5421,38 +5420,36 @@ applyAnimation = function(animationData)
 
     for cat, data in pairs(mappingMap) do
         local categoryFolder = animate:FindFirstChild(data.folderName)
-        if not categoryFolder then
-            continue
-        end
+        if categoryFolder then
+            local items = data.items
 
-        local items = data.items
+            local sourceByName = {}
+            for name, m in pairs(items) do
+                sourceByName[name] = m
+            end
 
-        local sourceByName = {}
-        for name, m in pairs(items) do
-            sourceByName[name] = m
-        end
-
-        for _, animObj in ipairs(categoryFolder:GetChildren()) do
-            if animObj:IsA("Animation") then
-                local lowerName = animObj.Name:lower()
-                local m = sourceByName[lowerName]
-                if m then
-                    sourceByName[lowerName] = nil
-                    applyAnimationToObject(animObj, m.animationId, m.weights)
-                    if animObj.Name ~= m.name then
-                        animObj.Name = m.name
+            for _, animObj in ipairs(categoryFolder:GetChildren()) do
+                if animObj:IsA("Animation") then
+                    local lowerName = animObj.Name:lower()
+                    local m = sourceByName[lowerName]
+                    if m then
+                        sourceByName[lowerName] = nil
+                        applyAnimationToObject(animObj, m.animationId, m.weights)
+                        if animObj.Name ~= m.name then
+                            animObj.Name = m.name
+                        end
+                    else
+                        animObj:Destroy()
                     end
-                else
-                    animObj:Destroy()
                 end
             end
-        end
 
-        for name, m in pairs(sourceByName) do
-            local animObj = Instance.new("Animation")
-            animObj.Name = m.name
-            applyAnimationToObject(animObj, m.animationId, m.weights)
-            animObj.Parent = categoryFolder
+            for name, m in pairs(sourceByName) do
+                local animObj = Instance.new("Animation")
+                animObj.Name = m.name
+                applyAnimationToObject(animObj, m.animationId, m.weights)
+                animObj.Parent = categoryFolder
+            end
         end
     end
     
@@ -8811,6 +8808,27 @@ if getgenv().Notify then
 end
 
 -- // Controller API for Settings Toggle
+
+-- // Explicitly bind KeyCode.Period and ensure Roblox EmotesMenu is enabled
+pcall(function()
+    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not _G.MenuTest_EmotesEnabled then return end
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.Period then
+        local success, emotesMenu = pcall(function()
+            return game:GetService("CoreGui").RobloxGui.EmotesMenu.Children.Main.EmotesWheel
+        end)
+        if success and emotesMenu then
+            GuiService:SetEmotesMenuOpen(not emotesMenu.Visible)
+        else
+            GuiService:SetEmotesMenuOpen(true)
+        end
+    end
+end)
+
 local EmoteController = {}
 
 function EmoteController.Enable()

@@ -12,7 +12,7 @@ local Window = MENU:CreateWindow({
     Name = "Universal",
     Tittle = "Universal Suite",
     TittlePos = "Center",
-    ToggleUIKeybind = "Insert",
+    ToggleUIKeybind = "K",
     TestMobile = false,
     GameId = "Universal"
 })
@@ -304,9 +304,3 @@ TracerMod:AddColorPicker({
         tracerAlpha = (alpha ~= nil and alpha) or 1.0
     end
 })
-
-print("==================================================")
-print("✅ Universal Suite załadowany pomyślnie!")
-print("📌 Kategoria: Render (Player ESP & Tracers)")
-print("📌 Klawisz menu: INSERT")
-print("==================================================")

@@ -536,11 +536,20 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         Flag = "EmotesMenu",
         Callback = function(Value)
             local mod = getEmoteModule()
-            if not mod then return end
+            if not mod then
+                warn("[MenuTest] Nie udalo sie zaladowac modulu Emotes (mod == nil)")
+                return
+            end
             if Value then
-                pcall(function() mod:Load() end)
+                local ok, err = pcall(function() mod:Load() end)
+                if not ok then
+                    warn("[MenuTest] Blad podczas mod:Load(): " .. tostring(err))
+                end
             else
-                pcall(function() mod:Unload() end)
+                local ok, err = pcall(function() mod:Unload() end)
+                if not ok then
+                    warn("[MenuTest] Blad podczas mod:Unload(): " .. tostring(err))
+                end
             end
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
