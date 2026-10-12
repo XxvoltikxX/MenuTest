@@ -165,10 +165,23 @@ local function prettyEncode(tbl)
     return result .. table.concat(entries, ",\n") .. "\n}"
 end
 
+-- Funkcja precyzyjnie wykrywająca urządzenia dotykowe i mobilne
+local function isMobileDevice(cfg)
+    if cfg and (cfg.TestMobile or cfg.Mobile or cfg.IsMobile) then return true end
+    if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then return true end
+    if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then return true end
+    local camera = workspace.CurrentCamera
+    local vp = camera and camera.ViewportSize
+    if UserInputService.TouchEnabled and vp and (vp.X < 950 or vp.Y < 550) then
+        return true
+    end
+    return false
+end
+
 -- // ============================================================
 -- // WSKAŹNIK PROCESU ŁADOWANIA (Elegancki HUD Toast)
 -- // ============================================================
-local function createLoadingIndicator(title)
+local function createLoadingIndicator(title, isMobile)
     local screenParent
     pcall(function() screenParent = CoreGui end)
     if not screenParent then screenParent = PlayerGui end
@@ -263,7 +276,7 @@ local function createLoadingIndicator(title)
 
         local camera = workspace.CurrentCamera
         local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
-        local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+        local isMobileView = isMobile or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
         local splashWidth = math.min(360, vp.X - 24)
 
         -- Center Splash Modal: "Loaded - Keybind For Open: keybind"
@@ -297,8 +310,8 @@ local function createLoadingIndicator(title)
         SplashHeader.ZIndex = 1001
         SplashHeader.Parent = Splash
 
-        local keyTextValue = isMobile and "Mobile Button Enabled" or ("Keybind For Open: \"" .. keybindName .. "\"")
-        local hintTextValue = isMobile and "Tap floating button to toggle Menu | Drag to move" or ("Press [" .. keybindName .. "] to toggle Menu | Change in Settings")
+        local keyTextValue = isMobileView and "Mobile Button Enabled" or ("Keybind For Open: \"" .. keybindName .. "\"")
+        local hintTextValue = isMobileView and "Tap floating button to toggle Menu | Drag to move" or ("Press [" .. keybindName .. "] to toggle Menu | Change in Settings")
 
         local KeybindText = Instance.new("TextLabel")
         KeybindText.Text = keyTextValue
@@ -369,9 +382,10 @@ function MenuLib:CreateWindow(options)
     local Name   = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
     local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "109949693269081")
     local startTime = os.clock()
+    local isMobile = isMobileDevice(Config)
 
     -- Uruchomienie wskaźnika procesu ładowania
-    local loader = createLoadingIndicator(Name)
+    local loader = createLoadingIndicator(Name, isMobile)
 
     -- CLEANUP
     local Connections = {}
@@ -583,6 +597,8 @@ function MenuLib:CreateWindow(options)
         GenerateID     = function() return MenuLib:GenerateID() end,
         MenuConfig     = menuConfig,
         SaveMenuConfig = saveMenuConfig,
+        TestMobile     = Config.TestMobile or Config.Mobile or isMobile,
+        IsMobile       = isMobile,
     })
 
     -- Upewnij się, że ScreenGui jest bezpiecznie podpięty do ProtectedLocation
@@ -711,7 +727,7 @@ function MenuLib:CreateWindow(options)
         TabElements.Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
         -- Tworzymy responsywny kontener kolumn (1 kolumna dla urządzeń mobilnych, 2 kolumny dla PC)
-        local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) or Config.TestMobile
+        local isMobile = (UI and UI.IsMobile) or isMobile
 
         local ColumnsContainer = Instance.new("Frame")
         ColumnsContainer.Name = "ColumnsContainer"
@@ -878,17 +894,24 @@ function MenuLib:CreateWindow(options)
             task.spawn(cb)
         end
 
-        -- Upewnij się, że menu jest od razu otwarte i widoczne na środku ekranu
-        MainFrame.Position = CenterPos
-        MainFrame.Visible  = true
-        isVisible          = true
+        -- Upewnij się, że okno menu i cień są widoczne
+        if UI.MainFrame then
+            UI.MainFrame.Visible = true
+        end
+        if UI.Shadow then
+            UI.Shadow.Visible = true
+        end
 
-        loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName)
+        -- Zakończ proces ładowania i pokaż informację o klawiszu / przycisku mobilnym
+        pcall(function()
+            loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName)
+        end)
 
-        -- 5. Wybierz Dashboard jako domyślną zakładkę.
-        --    task.wait() daje Robloxowi czas na obliczenie AbsolutePosition.
-        task.wait()
-        UI:SelectDashboard()
+        -- 5. Wybierz Dashboard jako domyślną zakładkę
+        task.wait(0.08)
+        if UI.SelectDashboard then
+            pcall(function() UI:SelectDashboard() end)
+        end
     end)
 
     return WindowAPI

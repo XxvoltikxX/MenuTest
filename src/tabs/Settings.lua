@@ -376,7 +376,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SettingsStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     ThemeManager:Register(SettingsStroke, "Color", "Accent")
 
-    local isMobile = (game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled) or (UI and UI.IsMobile)
+    local isMobile = (UI and UI.IsMobile) or (game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").MouseEnabled)
 
     -- // ZMIANA: Używamy UIGridLayout dla opcji (1 kolumna dla mobile, 2 kolumny dla PC)
     local SettingsGridLayout = Instance.new("UIGridLayout")

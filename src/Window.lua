@@ -196,9 +196,18 @@ function Window:Create(config)
     end
     UI.ThemeManager = ThemeManager
 
-    -- // USTAWIENIA EKRANU
-    local isMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled) or config.TestMobile
-    local isTouch = UserInputService.TouchEnabled or config.TestMobile
+    -- // USTAWIENIA EKRANU (Wykrywanie urządzeń mobilnych / dotykowych)
+    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+    local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+    if viewport.X <= 50 or viewport.Y <= 50 then
+        viewport = Vector2.new(1280, 720)
+    end
+
+    local isMobile = (config and (config.TestMobile or config.Mobile or config.IsMobile))
+        or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
+        or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+        or (UserInputService.TouchEnabled and (viewport.X < 950 or viewport.Y < 550))
+    local isTouch = UserInputService.TouchEnabled or isMobile
     UI.IsMobile = isMobile
     UI.IsTouch = isTouch
 
@@ -253,14 +262,15 @@ function Window:Create(config)
     end
 
     -- Dynamiczny rozmiar początkowy dopasowany do ekranu
-    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
-    local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
-
     local defaultW = 700
     local defaultH = 400
-    if isMobile or viewport.X < 740 or viewport.Y < 440 then
-        defaultW = math.clamp(math.floor(viewport.X * 0.90), 360, 620)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.85), 250, 370)
+    if isMobile then
+        -- Na urządzeniach mobilnych zgrabny, kompaktowy rozmiar z wygodnymi marginesami dookoła
+        defaultW = math.clamp(math.floor(viewport.X * 0.72), 340, 500)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.74), 230, 310)
+    elseif viewport.X < 750 or viewport.Y < 450 then
+        defaultW = math.clamp(math.floor(viewport.X * 0.88), 360, 600)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.84), 250, 360)
     end
 
     -- Cień
@@ -517,7 +527,7 @@ function Window:Create(config)
         if isMenuVisible then
             MainFrame.Visible = true
             Shadow.Visible = true
-            local destPos = lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
+            local destPos = (lastNormalPos and lastNormalPos.X.Offset > -100) and lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
             currentToggleTween = TweenService:Create(MainFrame,
                 TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
                 {Position = destPos})
@@ -526,7 +536,9 @@ function Window:Create(config)
                 currentToggleTween = nil
             end)
         else
-            lastNormalPos = MainFrame.Position
+            if MainFrame.Position.X.Offset > -100 then
+                lastNormalPos = MainFrame.Position
+            end
             currentToggleTween = TweenService:Create(MainFrame,
                 TweenInfo.new(0.20, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
                 {Position = HiddenPos})
