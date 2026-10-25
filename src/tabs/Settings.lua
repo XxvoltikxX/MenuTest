@@ -392,11 +392,33 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SettingsPadding.PaddingRight = UDim.new(0, 10)
     SettingsPadding.Parent = SettingsContainer
 
-    -- AntiAFK & Keybinds Overlay wewnątrz SettingsContainer
+    -- AntiAFK & Keybinds Overlay wewnatrz SettingsContainer (Infinite Yield)
     local antiAfkConnection = nil
     local function enableAntiAfk()
-        if antiAfkConnection then antiAfkConnection:Disconnect() end
-        antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
+        local speaker = Players.LocalPlayer
+        if not speaker then return end
+
+        pcall(function()
+            if typeof(getconnections) == "function" then
+                for _, c in pairs(getconnections(speaker.Idled)) do
+                    pcall(function() c:Disable() end)
+                    pcall(function() c:Disconnect() end)
+                end
+            end
+        end)
+
+        if antiAfkConnection then
+            pcall(function() antiAfkConnection:Disconnect() end)
+            antiAfkConnection = nil
+        end
+
+        antiAfkConnection = speaker.Idled:Connect(function()
+            pcall(function()
+                local VirtualInputManager = Instance.new("VirtualInputManager")
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                VirtualInputManager:Destroy()
+            end)
             pcall(function()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton2(Vector2.new())
@@ -405,12 +427,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
     local function disableAntiAfk()
         if antiAfkConnection then
-            antiAfkConnection:Disconnect()
+            pcall(function() antiAfkConnection:Disconnect() end)
             antiAfkConnection = nil
         end
     end
 
-    -- Włącz AntiAFK natychmiast od startu sesji
+    -- Wlacz AntiAFK natychmiast od startu sesji
     enableAntiAfk()
     if UI.MenuConfig then
         UI.MenuConfig["AntiAfk"] = true
@@ -430,7 +452,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end,
     }, ThemeManager, SettingsContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection)
 
-    -- AntiFling & Unfling (ochrona przed wyrzuceniem w stylu Infinite Yield)
+    -- AntiFling & Unfling (ochrona przed wyrzuceniem w stylu Infinite Yield - prog 3500 studs/s, nie koliduje ze Speed)
     local antiFlingConnection = nil
     local function enableAntiFling()
         if antiFlingConnection then
@@ -443,7 +465,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             if not lp then return end
             local myChar = lp.Character
 
-            -- 1. Wyłącz kolizje CanCollide u wszystkich innych graczy (metoda z Infinite Yield antifling)
+            -- 1. Wylacz kolizje CanCollide u wszystkich innych graczy (metoda z Infinite Yield antifling)
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= lp and player.Character then
                     for _, v in ipairs(player.Character:GetDescendants()) do
@@ -454,16 +476,16 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                 end
             end
 
-            -- 2. Zabezpieczenie przed ekstremalną prędkością fizyki i obrotu (unfling guard)
+            -- 2. Zabezpieczenie przed ekstremalnym wyrzuceniem (prog 3500 studs/s - nie koliduje ze Speed!)
             if myChar then
                 local hrp = myChar:FindFirstChild("HumanoidRootPart")
                 if hrp then
                     local linVel = hrp.AssemblyLinearVelocity
                     local angVel = hrp.AssemblyAngularVelocity
-                    if linVel and linVel.Magnitude > 150 then
+                    if linVel and linVel.Magnitude > 3500 then
                         hrp.AssemblyLinearVelocity = Vector3.zero
                     end
-                    if angVel and angVel.Magnitude > 100 then
+                    if angVel and angVel.Magnitude > 2500 then
                         hrp.AssemblyAngularVelocity = Vector3.zero
                     end
                 end
@@ -492,7 +514,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end
     end
 
-    -- Włącz AntiFling natychmiast od startu sesji (domyślnie włączone w bibliotece)
+    -- Wlacz AntiFling natychmiast od startu sesji (bezpieczny prog 3500 studs/s)
     enableAntiFling()
     if UI.MenuConfig then
         UI.MenuConfig["AntiFling"] = true
