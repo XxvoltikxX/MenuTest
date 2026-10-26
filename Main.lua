@@ -88,6 +88,8 @@ local function safeLoadUrl(url, fallbackValue)
         return fallbackValue
     end
     
+    content = content:gsub("^\239\187\191", "")
+    
     local chunk, compileErr = loadstring(content)
     if not chunk then
         warn("[MenuLib] Błąd kompilacji " .. tostring(url) .. ": " .. tostring(compileErr))

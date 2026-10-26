@@ -1,4 +1,4 @@
-﻿--[[ 
+--[[ 
     Source script taken from: https://github.com/Roblox/creator-docs/blob/main/content/en-us/characters/emotes.md
 
     scriptblox: https://scriptblox.com/script/Universal-Script-7yd7-I-Emote-Script-48024

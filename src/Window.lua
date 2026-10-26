@@ -55,6 +55,7 @@ local function safeLoadUrl(url, fallbackValue)
         warn("[Window] Nie udało się pobrać: " .. tostring(url))
         return fallbackValue
     end
+    content = content:gsub("^\239\187\191", "")
     local chunk, compileErr = loadstring(content)
     if not chunk then
         warn("[Window] Błąd kompilacji " .. tostring(url) .. ": " .. tostring(compileErr))

@@ -1,4 +1,4 @@
-﻿local Dashboard = {}
+local Dashboard = {}
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
 

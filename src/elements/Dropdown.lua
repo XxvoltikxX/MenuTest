@@ -1,4 +1,4 @@
-﻿return function(options, themeManager, parent, menuConfig, saveMenuConfig, addConnection, passedIcons)
+return function(options, themeManager, parent, menuConfig, saveMenuConfig, addConnection, passedIcons)
     local TweenService = game:GetService("TweenService")
     local RunService = game:GetService("RunService")
 

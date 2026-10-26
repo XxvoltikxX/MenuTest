@@ -54,6 +54,7 @@ local function safeExecute(relativePath, remoteUrl)
         return game:HttpGet(remoteUrl .. cacheBuster)
     end)
     if ok and res and #res > 0 then
+        res = res:gsub("^\239\187\191", "")
         local chunk, err = loadstring(res)
         if chunk then
             return true, chunk()

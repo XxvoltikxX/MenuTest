@@ -36,14 +36,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Padding.PaddingLeft = UDim.new(0, 14)
     Padding.PaddingRight = UDim.new(0, 14)
 
-    local ContentLayout = Instance.new("UIListLayout", Button)
-    ContentLayout.FillDirection = Enum.FillDirection.Horizontal
-    ContentLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
-
     local Label = Instance.new("TextLabel")
     Label.Name = "Label"
     Label.Size = UDim2.new(1, -24, 1, 0)
+    Label.Position = UDim2.new(0, 0, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Font = Enum.Font.GothamBold
     Label.TextSize = 12
@@ -54,7 +50,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local Arrow = Instance.new("TextLabel")
     Arrow.Name = "Arrow"
-    Arrow.Size = UDim2.new(0, 16, 1, 0)
+    Arrow.Size = UDim2.new(0, 18, 1, 0)
+    Arrow.Position = UDim2.new(1, -18, 0, 0)
     Arrow.BackgroundTransparency = 1
     Arrow.Font = Enum.Font.GothamBold
     Arrow.Text = "→"
