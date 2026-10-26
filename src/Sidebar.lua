@@ -141,7 +141,9 @@ function Sidebar:Create(UI, theme, config, customWidth)
     TabList.AnchorPoint = Vector2.new(0, 0.5)
     TabList.BackgroundTransparency = 1
     TabList.BorderSizePixel = 0
-    TabList.ScrollingDirection = Enum.ScrollingDirection.X
+    pcall(function()
+        TabList.ScrollingDirection = Enum.ScrollingDirection.X
+    end)
     TabList.ScrollBarThickness = 0
     TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabList.AutomaticCanvasSize = Enum.AutomaticSize.X

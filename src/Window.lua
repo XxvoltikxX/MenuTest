@@ -110,7 +110,9 @@ local SidebarFallback = {
         TabList.AnchorPoint = Vector2.new(0, 0.5)
         TabList.BackgroundTransparency = 1
         TabList.BorderSizePixel = 0
-        TabList.ScrollingDirection = Enum.ScrollingDirection.X
+        pcall(function()
+            TabList.ScrollingDirection = Enum.ScrollingDirection.X
+        end)
         TabList.ScrollBarThickness = 0
         TabList.ZIndex = 9
         TabList.Parent = HeaderFrame
@@ -518,7 +520,16 @@ function Window:Create(config)
     -- =========================================================================
     -- MASTER TOP HEADER BAR (Zastępuje dawny lewy sidebar)
     -- =========================================================================
-    local HeaderFrame, TabList = SidebarModule:Create(UI, config.Theme, config)
+    local HeaderFrame, TabList
+    local sOk, sHeader, sTabs = pcall(function()
+        return SidebarModule:Create(UI, config.Theme, config)
+    end)
+    if sOk and sHeader and sTabs then
+        HeaderFrame, TabList = sHeader, sTabs
+    else
+        warn("[Window] SidebarModule:Create threw error, invoking SidebarFallback: " .. tostring(sHeader))
+        HeaderFrame, TabList = SidebarFallback:Create(UI, config.Theme, config)
+    end
     HeaderFrame.Parent = MainFrame
     UI.TopBar = HeaderFrame
     UI.TabList = TabList
