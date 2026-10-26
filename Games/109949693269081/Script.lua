@@ -5,7 +5,7 @@
 -- // ==========================================================================
 
 -- 1. Pobranie głównej biblioteki UI
-local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua"))()
+local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))))()
 
 -- 2. Stworzenie okna menu
 local Window = MENU:CreateWindow({

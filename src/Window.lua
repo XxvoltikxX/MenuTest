@@ -13,14 +13,16 @@ local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 local function safeHttpGet(url, maxRetries, retryDelay)
     maxRetries = maxRetries or 3
     retryDelay = retryDelay or 0.5
+    local buster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    local fetchUrl = url .. buster
     for attempt = 1, maxRetries do
         local ok, result = pcall(function()
-            return game:HttpGet(url)
+            return game:HttpGet(fetchUrl)
         end)
         if ok and type(result) == "string" and #result > 0 then
             return true, result
         end
-        warn(string.format("[Window] Próba %d/%d nie powiodła się: %s", attempt, maxRetries, tostring(url)))
+        warn(string.format("[Window] Próba %d/%d nie powiodła się: %s", attempt, maxRetries, tostring(fetchUrl)))
         if attempt < maxRetries then task.wait(retryDelay) end
     end
     return false, nil
@@ -76,28 +78,67 @@ local InteractionsFallback = {
 }
 local SidebarFallback = {
     Create = function(self, UI, theme, config)
-        local SidebarFrame = Instance.new("Frame")
-        SidebarFrame.Name = "Sidebar"
-        SidebarFrame.Size = UDim2.new(0, 200, 1, -32)
-        SidebarFrame.Position = UDim2.new(0, 0, 0, 32)
-        SidebarFrame.BackgroundTransparency = 1
+        local HeaderFrame = Instance.new("Frame")
+        HeaderFrame.Name = "MasterHeader"
+        HeaderFrame.Size = UDim2.new(1, 0, 0, 52)
+        HeaderFrame.BackgroundColor3 = Color3.fromRGB(12, 13, 19)
+        HeaderFrame.BorderSizePixel = 0
+        HeaderFrame.ZIndex = 8
+
+        local BrandContainer = Instance.new("Frame")
+        BrandContainer.Name = "BrandContainer"
+        BrandContainer.Size = UDim2.new(0, 200, 1, 0)
+        BrandContainer.Position = UDim2.new(0, 14, 0, 0)
+        BrandContainer.BackgroundTransparency = 1
+        BrandContainer.ZIndex = 9
+        BrandContainer.Parent = HeaderFrame
+
+        local BrandTitle = Instance.new("TextLabel")
+        BrandTitle.Text = config.Name or "UNIVERSAL"
+        BrandTitle.Font = Enum.Font.GothamBold
+        BrandTitle.TextSize = 14
+        BrandTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        BrandTitle.Size = UDim2.new(1, 0, 1, 0)
+        BrandTitle.TextXAlignment = Enum.TextXAlignment.Left
+        BrandTitle.BackgroundTransparency = 1
+        BrandTitle.Parent = BrandContainer
 
         local TabList = Instance.new("ScrollingFrame")
-        TabList.Name = "TabList"
-        TabList.Size = UDim2.new(1, 0, 1, -46)
-        TabList.Position = UDim2.new(0, 0, 0, 46)
+        TabList.Name = "TopTabBar"
+        TabList.Size = UDim2.new(1, -440, 0, 38)
+        TabList.Position = UDim2.new(0, 215, 0.5, 0)
+        TabList.AnchorPoint = Vector2.new(0, 0.5)
         TabList.BackgroundTransparency = 1
         TabList.BorderSizePixel = 0
-        TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
-        TabList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        TabList.ScrollBarThickness = 2
-        TabList.Parent = SidebarFrame
+        TabList.ScrollingDirection = Enum.ScrollingDirection.Horizontal
+        TabList.ScrollBarThickness = 0
+        TabList.ZIndex = 9
+        TabList.Parent = HeaderFrame
 
-        local Layout = Instance.new("UIListLayout")
-        Layout.SortOrder = Enum.SortOrder.LayoutOrder
-        Layout.Parent = TabList
+        local TabLayout = Instance.new("UIListLayout", TabList)
+        TabLayout.FillDirection = Enum.FillDirection.Horizontal
+        TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        TabLayout.Padding = UDim.new(0, 6)
 
-        return SidebarFrame, TabList
+        local RightContainer = Instance.new("Frame")
+        RightContainer.Name = "RightContainer"
+        RightContainer.Size = UDim2.new(0, 200, 1, 0)
+        RightContainer.Position = UDim2.new(1, -10, 0.5, 0)
+        RightContainer.AnchorPoint = Vector2.new(1, 0.5)
+        RightContainer.BackgroundTransparency = 1
+        RightContainer.ZIndex = 9
+        RightContainer.Parent = HeaderFrame
+
+        local Controls = Instance.new("Frame")
+        Controls.Name = "Controls"
+        Controls.Size = UDim2.new(0, 80, 1, 0)
+        Controls.Position = UDim2.new(1, 0, 0.5, 0)
+        Controls.AnchorPoint = Vector2.new(1, 0.5)
+        Controls.BackgroundTransparency = 1
+        Controls.Parent = RightContainer
+        UI.Controls = Controls
+
+        return HeaderFrame, TabList
     end
 }
 
@@ -483,7 +524,27 @@ function Window:Create(config)
     UI.TabList = TabList
 
     -- Controls (Nowoczesne przyciski okna w prawym rogu HeaderFrame)
-    local Controls = UI.Controls or HeaderFrame:FindFirstChild("RightContainer", true):FindFirstChild("Controls", true)
+    local Controls = UI.Controls
+    if not Controls and HeaderFrame then
+        local right = HeaderFrame:FindFirstChild("RightContainer", true)
+        if right then
+            Controls = right:FindFirstChild("Controls", true)
+        end
+        if not Controls then
+            Controls = HeaderFrame:FindFirstChild("Controls", true)
+        end
+    end
+    if not Controls then
+        Controls = Instance.new("Frame")
+        Controls.Name = "Controls"
+        Controls.Size = UDim2.new(0, 80, 1, 0)
+        Controls.Position = UDim2.new(1, -10, 0.5, 0)
+        Controls.AnchorPoint = Vector2.new(1, 0.5)
+        Controls.BackgroundTransparency = 1
+        Controls.ZIndex = 12
+        Controls.Parent = HeaderFrame
+    end
+    UI.Controls = Controls
     local function createModernBtn(iconName, isClose)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(0, 26, 0, 26)
