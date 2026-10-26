@@ -301,7 +301,7 @@ function Window:Create(config)
     UI.MainFrame = MainFrame
     ThemeManager:Register(MainFrame, "BackgroundColor3", "Main")
 
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     MainStroke.Thickness = 1.6
@@ -455,115 +455,127 @@ function Window:Create(config)
         end
     end
 
-    -- TopBar
+    -- Sidebar (zaczyna się od samej góry i ma pełną wysokość)
+    local sidebarWidth = (isMobile or viewport.X < 600) and 160 or 210
+    local SidebarFrame, TabList = SidebarModule:Create(UI, config.Theme, config, sidebarWidth)
+    SidebarFrame.Parent = MainFrame
+    UI.TabList = TabList
+
+    -- TopBar (znajduje się tylko nad przestrzenią treści po prawej)
+    local topBarHeight = 44
     local TopBar = Instance.new("Frame")
     TopBar.Name = "TopBar"
-    TopBar.Size = UDim2.new(1, 0, 0, 32)
+    TopBar.Size = UDim2.new(1, -sidebarWidth, 0, topBarHeight)
+    TopBar.Position = UDim2.new(0, sidebarWidth, 0, 0)
     TopBar.BackgroundTransparency = 1
     TopBar.ZIndex = 5
     TopBar.Parent = MainFrame
     UI.TopBar = TopBar
 
-    if config.Tittle and config.Tittle ~= "" then
-        local TopTitle = Instance.new("TextLabel")
-        TopTitle.Name = "TopTitle"
-        TopTitle.Text = config.Tittle
-        TopTitle.Font = Enum.Font.GothamMedium
-        TopTitle.TextSize = 14
-        TopTitle.BackgroundTransparency = 1
-        TopTitle.Size = UDim2.new(1, -115, 1, 0)
-        TopTitle.Position = UDim2.new(0, 10, 0, 0)
-        TopTitle.Parent = TopBar
-        ThemeManager:Register(TopTitle, "TextColor3", "Text_Secondary")
-        if config.TittlePos == "Center" then
-            TopTitle.TextXAlignment = Enum.TextXAlignment.Center
-            TopTitle.Position = UDim2.new(0, 0, 0, 0)
-            TopTitle.Size = UDim2.new(1, 0, 1, 0)
-            TopTitle.ZIndex = 4
-        else
-            TopTitle.TextXAlignment = Enum.TextXAlignment.Left
-        end
-    end
+    -- ActiveTabTitle po lewej stronie TopBaru
+    local ActiveTabTitle = Instance.new("TextLabel")
+    ActiveTabTitle.Name = "ActiveTabTitle"
+    ActiveTabTitle.Text = config.Tittle or config.Name or "Dashboard"
+    ActiveTabTitle.Font = Enum.Font.GothamBold
+    ActiveTabTitle.TextSize = 14
+    ActiveTabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ActiveTabTitle.Size = UDim2.new(0, 0, 1, 0)
+    ActiveTabTitle.AutomaticSize = Enum.AutomaticSize.X
+    ActiveTabTitle.Position = UDim2.new(0, 20, 0, 0)
+    ActiveTabTitle.BackgroundTransparency = 1
+    ActiveTabTitle.Parent = TopBar
+    UI.ActiveTabTitle = ActiveTabTitle
+    ThemeManager:Register(ActiveTabTitle, "TextColor3", "Text")
 
-    -- Linia pod TopBarem
+    local BreadcrumbTag = Instance.new("TextLabel")
+    BreadcrumbTag.Name = "BreadcrumbTag"
+    BreadcrumbTag.Text = "  /  Suite"
+    BreadcrumbTag.Font = Enum.Font.GothamMedium
+    BreadcrumbTag.TextSize = 11
+    BreadcrumbTag.TextColor3 = Color3.fromRGB(140, 140, 160)
+    BreadcrumbTag.TextXAlignment = Enum.TextXAlignment.Left
+    BreadcrumbTag.Size = UDim2.new(0, 0, 1, 0)
+    BreadcrumbTag.AutomaticSize = Enum.AutomaticSize.X
+    BreadcrumbTag.Position = UDim2.new(1, 0, 0, 0)
+    BreadcrumbTag.BackgroundTransparency = 1
+    BreadcrumbTag.Parent = ActiveTabTitle
+    ThemeManager:Register(BreadcrumbTag, "TextColor3", "Text_Secondary")
+
+    -- Nowoczesna, subtelna pozioma linia pod TopBarem
     local TopLine = Instance.new("Frame")
-    TopLine.Size = UDim2.new(1, 0, 0, 1)
-    TopLine.Position = UDim2.new(0, 0, 0, 32)
+    TopLine.Name = "TopLine"
+    TopLine.Size = UDim2.new(1, -sidebarWidth, 0, 1)
+    TopLine.Position = UDim2.new(0, sidebarWidth, 0, topBarHeight)
     TopLine.BorderSizePixel = 0
-    TopLine.ZIndex = 10
+    TopLine.BackgroundColor3 = Color3.fromRGB(35, 36, 48)
+    TopLine.ZIndex = 4
     TopLine.Parent = MainFrame
     ThemeManager:Register(TopLine, "BackgroundColor3", "Accent")
 
-    -- Sidebar (responsywna szerokość dla urządzeń mobilnych)
-    local sidebarWidth = (isMobile or viewport.X < 600) and 155 or 200
-    local SidebarFrame, TabList = SidebarModule:Create(UI, config.Theme, config, sidebarWidth)
-    SidebarFrame.Parent = MainFrame
-    UI.TabList = TabList
-
-    -- GlobalIndicator (wskaźnik aktywnej zakładki)
-    local GlobalIndicator = Instance.new("Frame")
-    GlobalIndicator.Name = "GlobalIndicator"
-    GlobalIndicator.Size = UDim2.new(0, 2, 0, 45)
-    GlobalIndicator.Position = UDim2.new(0, 0, 0, 46)
-    GlobalIndicator.BorderSizePixel = 0
-    GlobalIndicator.ZIndex = 20
-    GlobalIndicator.Visible = false
-    GlobalIndicator.Parent = SidebarFrame
-    UI.GlobalIndicator = GlobalIndicator
-    ThemeManager:Register(GlobalIndicator, "BackgroundColor3", "Text")
-
-    -- Pionowa linia oddzielająca sidebar
-    local VerticalLine = Instance.new("Frame")
-    VerticalLine.Size = UDim2.new(0, 1, 1, 0)
-    VerticalLine.Position = UDim2.new(1, 0, 0, 0)
-    VerticalLine.BorderSizePixel = 0
-    VerticalLine.ZIndex = 10
-    VerticalLine.Parent = SidebarFrame
-    ThemeManager:Register(VerticalLine, "BackgroundColor3", "Accent")
-
-    -- PagesContainer
+    -- PagesContainer (treść stron)
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
-    PagesContainer.Size = UDim2.new(1, -sidebarWidth, 1, -32)
-    PagesContainer.Position = UDim2.new(0, sidebarWidth, 0, 32)
+    PagesContainer.Size = UDim2.new(1, -sidebarWidth, 1, -(topBarHeight + 1))
+    PagesContainer.Position = UDim2.new(0, sidebarWidth, 0, topBarHeight + 1)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.ClipsDescendants = true
     PagesContainer.Parent = MainFrame
     UI.PagesContainer = PagesContainer
 
-    -- Controls (przyciski min/max/close)
+    -- Controls (Nowoczesne przyciski okna w prawym rogu)
     local Controls = Instance.new("Frame")
     Controls.Name = "Controls"
-    Controls.Size = UDim2.new(0, 105, 1, 0)
-    Controls.Position = UDim2.new(1, -105, 0, 0)
+    Controls.Size = UDim2.new(0, 100, 1, 0)
+    Controls.Position = UDim2.new(1, -14, 0.5, 0)
+    Controls.AnchorPoint = Vector2.new(1, 0.5)
     Controls.BackgroundTransparency = 1
     Controls.ZIndex = 6
     Controls.Parent = TopBar
     UI.Controls = Controls
 
-    local function createIconBtn(iconName, pos)
+    local ControlsLayout = Instance.new("UIListLayout", Controls)
+    ControlsLayout.FillDirection = Enum.FillDirection.Horizontal
+    ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    ControlsLayout.Padding = UDim.new(0, 6)
+
+    local function createModernBtn(iconName, isClose)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 35, 1, 0)
-        btn.Position = pos
+        btn.Size = UDim2.new(0, 26, 0, 26)
+        btn.BackgroundColor3 = isClose and Color3.fromRGB(225, 29, 72) or Color3.fromRGB(30, 31, 44)
         btn.BackgroundTransparency = 1
         btn.Text = ""
+        btn.AutoButtonColor = false
         btn.Parent = Controls
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
         local iconImg = Instance.new("ImageLabel")
         iconImg.Name = "Icon"
-        iconImg.Size = UDim2.new(0, 17, 0, 17)
+        iconImg.Size = UDim2.new(0, 13, 0, 13)
         iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
         iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
         iconImg.BackgroundTransparency = 1
+        iconImg.ImageColor3 = isClose and Color3.fromRGB(220, 120, 130) or Color3.fromRGB(150, 150, 165)
         iconImg.Parent = btn
-        ThemeManager:Register(iconImg, "ImageColor3", "Text_Secondary")
         Icons:Apply(iconImg, iconName)
+
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = isClose and 0 or 0.2 }):Play()
+            TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(iconImg, TweenInfo.new(0.18), {
+                ImageColor3 = isClose and Color3.fromRGB(220, 120, 130) or Color3.fromRGB(150, 150, 165)
+            }):Play()
+        end)
         return btn
     end
 
-    UI.MinBtn   = createIconBtn("minus",      UDim2.new(0,  0, 0, 0))
-    UI.MaxBtn   = createIconBtn("maximize-2", UDim2.new(0, 35, 0, 0))
-    UI.CloseBtn = createIconBtn("x",          UDim2.new(0, 70, 0, 0))
+    UI.MinBtn   = createModernBtn("minus", false)
+    UI.MaxBtn   = createModernBtn("maximize-2", false)
+    UI.CloseBtn = createModernBtn("x", true)
 
     -- Maximize/restore
     local maximized = false
@@ -954,7 +966,7 @@ function Window:Create(config)
     UI.ShowExitModal = ShowExitModal
 
     -- // ============================================================
-    -- // UI:SelectTab  – wybiera zakładkę i ustawia GlobalIndicator
+    -- // UI:SelectTab  – wybiera zakładkę (Nowoczesny Tab Pill)
     -- // ============================================================
     function UI:SelectTab(targetButton, immediate)
         if not targetButton then return end
@@ -991,12 +1003,17 @@ function Window:Create(config)
 
         -- Wyczyść poprzedni stan
         if UI.SelectedTab and UI.SelectedTab ~= targetButton then
-            local prevIcon  = UI.SelectedTab:FindFirstChild("Icon")
-            local prevLabel = UI.SelectedTab:FindFirstChild("Label")
-            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2),
-                {ImageColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
-            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2),
-                {TextColor3  = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
+            local prevBtn   = UI.SelectedTab
+            local prevIcon  = prevBtn:FindFirstChild("Icon")
+            local prevLabel = prevBtn:FindFirstChild("Label")
+            local prevPill  = prevBtn:FindFirstChild("Pill")
+            local prevStroke= prevBtn:FindFirstChildOfClass("UIStroke")
+
+            TweenService:Create(prevBtn, TweenInfo.new(0.2), { BackgroundTransparency = 1 }):Play()
+            if prevStroke then TweenService:Create(prevStroke, TweenInfo.new(0.2), { Transparency = 1 }):Play() end
+            if prevPill then prevPill.Visible = false end
+            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2), { ImageColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play() end
+            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2), { TextColor3  = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play() end
         end
 
         -- Ukryj wszystkie strony, pokaż wybraną
@@ -1004,36 +1021,31 @@ function Window:Create(config)
         targetPage.Visible = true
         UI.SelectedTab = targetButton
 
-        -- Podświetl wybrany przycisk
-        local TabIcon  = targetButton:FindFirstChild("Icon")
-        local TabLabel = targetButton:FindFirstChild("Label")
-        if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2),
-            {ImageColor3 = getColor(ThemeManager.CurrentTheme.Text)}):Play() end
-        if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2),
-            {TextColor3  = getColor(ThemeManager.CurrentTheme.Text)}):Play() end
+        -- Podświetl wybrany przycisk kapsułkowy
+        local curStroke = targetButton:FindFirstChildOfClass("UIStroke")
+        local curPill   = targetButton:FindFirstChild("Pill")
+        local TabIcon   = targetButton:FindFirstChild("Icon")
+        local TabLabel  = targetButton:FindFirstChild("Label")
 
-        -- Pozycja GlobalIndicator
-        UI.GlobalIndicator.Visible = true
-
-        local function updateIndicator()
-            if not targetButton or not SidebarFrame then return end
-            local relativeY = targetButton.AbsolutePosition.Y - SidebarFrame.AbsolutePosition.Y
-            -- Fallback gdy layout engine jeszcze nie obliczył AbsolutePosition
-            if relativeY <= 0 or targetButton.AbsolutePosition.Y == 0 then
-                relativeY = 46 + (targetButton.LayoutOrder - 1) * 45
-            end
-            if immediate then
-                UI.GlobalIndicator.Position = UDim2.new(0, 0, 0, relativeY)
-            else
-                TweenService:Create(UI.GlobalIndicator,
-                    TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    {Position = UDim2.new(0, 0, 0, relativeY)}):Play()
-            end
+        local accentCol = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
+        local secCol    = ThemeManager:GetColor("Secondary") or Color3.fromRGB(24, 25, 36)
+        targetButton.BackgroundColor3 = secCol
+        TweenService:Create(targetButton, TweenInfo.new(0.2), { BackgroundTransparency = 0.1 }):Play()
+        if curStroke then
+            curStroke.Color = accentCol
+            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.4 }):Play()
         end
+        if curPill then
+            curPill.BackgroundColor3 = accentCol
+            curPill.Visible = true
+        end
+        if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play() end
+        if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(255, 255, 255) }):Play() end
 
-        updateIndicator()
-        -- Wywołaj ponownie po klatce, gdy Roblox obliczy AbsolutePosition
-        task.defer(updateIndicator)
+        -- Zaktualizuj nagłówek TopBaru
+        if UI.ActiveTabTitle then
+            UI.ActiveTabTitle.Text = targetButton.Name
+        end
     end
 
     -- // ============================================================
@@ -1120,18 +1132,38 @@ function Window:Create(config)
 
         local TabButton = Instance.new("TextButton")
         TabButton.Name = name
-        TabButton.Size = UDim2.new(1, 0, 0, 45)
+        TabButton.Size = UDim2.new(1, 0, 0, 38)
+        TabButton.BackgroundColor3 = Color3.fromRGB(24, 25, 36)
         TabButton.BackgroundTransparency = 1
         TabButton.Text = ""
         TabButton.AutoButtonColor = false
         TabButton.BorderSizePixel = 0
         TabButton.LayoutOrder = tabOrder
         TabButton.Parent = TabList
+        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 8)
+
+        local TabStroke = Instance.new("UIStroke", TabButton)
+        TabStroke.Color = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
+        TabStroke.Thickness = 1
+        TabStroke.Transparency = 1
+        TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        -- Neonowy wskaźnik aktywacji po lewej
+        local TabPill = Instance.new("Frame")
+        TabPill.Name = "Pill"
+        TabPill.Size = UDim2.new(0, 3, 0, 18)
+        TabPill.Position = UDim2.new(0, 3, 0.5, 0)
+        TabPill.AnchorPoint = Vector2.new(0, 0.5)
+        TabPill.BackgroundColor3 = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
+        TabPill.BorderSizePixel = 0
+        TabPill.Visible = false
+        TabPill.Parent = TabButton
+        Instance.new("UICorner", TabPill).CornerRadius = UDim.new(1, 0)
 
         local TabIcon = Instance.new("ImageLabel")
         TabIcon.Name = "Icon"
-        TabIcon.Size = UDim2.new(0, 20, 0, 20)
-        TabIcon.Position = UDim2.new(0, 15, 0.5, 0)
+        TabIcon.Size = UDim2.new(0, 18, 0, 18)
+        TabIcon.Position = UDim2.new(0, 14, 0.5, 0)
         TabIcon.AnchorPoint = Vector2.new(0, 0.5)
         TabIcon.BackgroundTransparency = 1
         TabIcon.Parent = TabButton
@@ -1140,15 +1172,28 @@ function Window:Create(config)
 
         local TabLabel = Instance.new("TextLabel")
         TabLabel.Name = "Label"
-        TabLabel.Size = UDim2.new(1, -50, 1, 0)
-        TabLabel.Position = UDim2.new(0, 45, 0, 0)
+        TabLabel.Size = UDim2.new(1, -48, 1, 0)
+        TabLabel.Position = UDim2.new(0, 40, 0, 0)
         TabLabel.BackgroundTransparency = 1
-        TabLabel.Font = Enum.Font.GothamMedium
+        TabLabel.Font = Enum.Font.GothamBold
         TabLabel.Text = name
-        TabLabel.TextSize = 14
+        TabLabel.TextSize = 12
         TabLabel.TextXAlignment = Enum.TextXAlignment.Left
         TabLabel.Parent = TabButton
         ThemeManager:Register(TabLabel, "TextColor3", "Text_Secondary")
+
+        TabButton.MouseEnter:Connect(function()
+            if UI.SelectedTab ~= TabButton then
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.5 }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(220, 220, 235) }):Play()
+            end
+        end)
+        TabButton.MouseLeave:Connect(function()
+            if UI.SelectedTab ~= TabButton then
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 1 }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play()
+            end
+        end)
 
         local Page = Instance.new("ScrollingFrame")
         Page.Name = name .. "Page"

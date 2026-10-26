@@ -1,7 +1,7 @@
 -- // ==========================================================================
--- // MENUTEST SECTION & CATEGORY COMPONENT (ROBUST / ZERO COLLAPSE)
--- // Nowoczesny, modułowy kontener kategorii z nagłówkiem, ikoną, opisem,
--- // plakietką (badge), płynnym zwijaniem/rozwijaniem oraz pełnym API kontrolek.
+-- // MENUTEST SECTION & CATEGORY COMPONENT (NEVERLOSE / SKEET STYLE)
+-- // Luksusowy kontener sekcji z zaokrągloną kasetką na ikonę, plakietką (badge),
+-- // subtelnym gradientowym obrysem i bezbłędnym rozwijaniem zawartości.
 -- // ==========================================================================
 
 return function(options, themeManager, parent, menuConfig, saveMenuConfig, addConnection, UI, elements)
@@ -32,22 +32,21 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local isCollapsible = (options.Collapsible ~= false)
     local isOpen        = (options.DefaultOpen ~= false)
 
-    -- Kontener nadrzędny kategorii (Card Frame)
-    -- Kluczowe: ClipsDescendants = false zapobiega ucinaniu zawartości przy zagnieżdżonym AutomaticSize
+    -- Karta sekcji (Card Frame)
     local SectionCard = Instance.new("Frame")
     SectionCard.Name = "Category_" .. sectionName
     SectionCard.Size = UDim2.new(1, 0, 0, 0)
     SectionCard.AutomaticSize = Enum.AutomaticSize.Y
-    SectionCard.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(20, 20, 25))
-    SectionCard.BackgroundTransparency = 0.2
+    SectionCard.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(17, 18, 25))
+    SectionCard.BackgroundTransparency = 0.05
     SectionCard.ClipsDescendants = false
     SectionCard.Parent = parent
 
     local CardCorner = Instance.new("UICorner", SectionCard)
-    CardCorner.CornerRadius = UDim.new(0, 8)
+    CardCorner.CornerRadius = UDim.new(0, 10)
 
     local CardStroke = Instance.new("UIStroke", SectionCard)
-    CardStroke.Color = getThemeColor("Accent", Color3.fromRGB(42, 42, 50))
+    CardStroke.Color = getThemeColor("Accent", Color3.fromRGB(38, 40, 54))
     CardStroke.Thickness = 1.2
     CardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
@@ -58,7 +57,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- =========================================================================
     -- NAGŁÓWEK KATEGORII (HEADER)
     -- =========================================================================
-    local headerHeight = sectionDesc and 46 or 36
+    local headerHeight = sectionDesc and 50 or 42
     local Header = Instance.new("TextButton")
     Header.Name = "Header"
     Header.Size = UDim2.new(1, 0, 0, headerHeight)
@@ -69,12 +68,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Header.Parent = SectionCard
 
     local HeaderPadding = Instance.new("UIPadding", Header)
-    HeaderPadding.PaddingLeft = UDim.new(0, 10)
-    HeaderPadding.PaddingRight = UDim.new(0, 10)
-    HeaderPadding.PaddingTop = UDim.new(0, 6)
-    HeaderPadding.PaddingBottom = UDim.new(0, 6)
+    HeaderPadding.PaddingLeft = UDim.new(0, 12)
+    HeaderPadding.PaddingRight = UDim.new(0, 12)
+    HeaderPadding.PaddingTop = UDim.new(0, 7)
+    HeaderPadding.PaddingBottom = UDim.new(0, 7)
 
-    -- Prawa strona nagłówka (Badge + Chevron zwijania) – dokowana do prawej krawędzi
+    -- Prawa strona nagłówka (Badge + Chevron zwijania)
     local RightContainer = Instance.new("Frame")
     RightContainer.Name = "RightContainer"
     RightContainer.Size = UDim2.new(0, 0, 1, 0)
@@ -88,31 +87,31 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     RightLayout.FillDirection = Enum.FillDirection.Horizontal
     RightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     RightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    RightLayout.Padding = UDim.new(0, 6)
+    RightLayout.Padding = UDim.new(0, 8)
 
     if sectionBadge and tostring(sectionBadge) ~= "" then
         local BadgeFrame = Instance.new("Frame")
         BadgeFrame.Name = "Badge"
-        BadgeFrame.Size = UDim2.new(0, 0, 0, 18)
+        BadgeFrame.Size = UDim2.new(0, 0, 0, 20)
         BadgeFrame.AutomaticSize = Enum.AutomaticSize.X
-        BadgeFrame.BackgroundColor3 = getThemeColor("Accent2", Color3.fromRGB(36, 36, 44))
+        BadgeFrame.BackgroundColor3 = Color3.fromRGB(28, 30, 46)
         BadgeFrame.BorderSizePixel = 0
         BadgeFrame.Parent = RightContainer
-        Instance.new("UICorner", BadgeFrame).CornerRadius = UDim.new(0, 4)
+        Instance.new("UICorner", BadgeFrame).CornerRadius = UDim.new(0, 5)
 
         local BadgeStroke = Instance.new("UIStroke", BadgeFrame)
-        BadgeStroke.Color = getThemeColor("Accent", Color3.fromRGB(55, 55, 68))
+        BadgeStroke.Color = Color3.fromRGB(55, 60, 90)
         BadgeStroke.Thickness = 1
 
         local BadgePadding = Instance.new("UIPadding", BadgeFrame)
-        BadgePadding.PaddingLeft = UDim.new(0, 6)
-        BadgePadding.PaddingRight = UDim.new(0, 6)
+        BadgePadding.PaddingLeft = UDim.new(0, 7)
+        BadgePadding.PaddingRight = UDim.new(0, 7)
 
         local BadgeLabel = Instance.new("TextLabel")
         BadgeLabel.Text = string.upper(tostring(sectionBadge))
         BadgeLabel.Font = Enum.Font.GothamBold
         BadgeLabel.TextSize = 9
-        BadgeLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(220, 220, 230))
+        BadgeLabel.TextColor3 = Color3.fromRGB(165, 180, 252)
         BadgeLabel.Size = UDim2.new(0, 0, 1, 0)
         BadgeLabel.AutomaticSize = Enum.AutomaticSize.X
         BadgeLabel.BackgroundTransparency = 1
@@ -123,17 +122,17 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Chevron.Name = "Chevron"
     Chevron.Size = UDim2.new(0, 16, 0, 16)
     Chevron.BackgroundTransparency = 1
-    Chevron.ImageColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 175))
+    Chevron.ImageColor3 = Color3.fromRGB(160, 165, 185)
     Chevron.Rotation = isOpen and 0 or -90
     Chevron.Parent = RightContainer
     if Icons and Icons.Apply then
         Icons:Apply(Chevron, "chevron-down")
     end
 
-    -- Lewa strona nagłówka (Ikona + Tytuł + Opis)
+    -- Lewa strona nagłówka (Kasetka z ikoną + Tytuł + Opis)
     local LeftContainer = Instance.new("Frame")
     LeftContainer.Name = "LeftContainer"
-    LeftContainer.Size = UDim2.new(1, -95, 1, 0)
+    LeftContainer.Size = UDim2.new(1, -110, 1, 0)
     LeftContainer.Position = UDim2.new(0, 0, 0, 0)
     LeftContainer.BackgroundTransparency = 1
     LeftContainer.Parent = Header
@@ -141,21 +140,36 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local LeftLayout = Instance.new("UIListLayout", LeftContainer)
     LeftLayout.FillDirection = Enum.FillDirection.Horizontal
     LeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    LeftLayout.Padding = UDim.new(0, 8)
+    LeftLayout.Padding = UDim.new(0, 10)
+
+    -- Zaokrąglona kasetka na ikonę sekcji
+    local IconBox = Instance.new("Frame")
+    IconBox.Name = "IconBox"
+    IconBox.Size = UDim2.new(0, 28, 0, 28)
+    IconBox.BackgroundColor3 = Color3.fromRGB(26, 28, 42)
+    IconBox.BorderSizePixel = 0
+    IconBox.Parent = LeftContainer
+    Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 7)
+
+    local IconBoxStroke = Instance.new("UIStroke", IconBox)
+    IconBoxStroke.Color = Color3.fromRGB(48, 52, 75)
+    IconBoxStroke.Thickness = 1
 
     local IconLabel = Instance.new("ImageLabel")
     IconLabel.Name = "Icon"
-    IconLabel.Size = UDim2.new(0, 18, 0, 18)
+    IconLabel.Size = UDim2.new(0, 16, 0, 16)
+    IconLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    IconLabel.AnchorPoint = Vector2.new(0.5, 0.5)
     IconLabel.BackgroundTransparency = 1
-    IconLabel.ImageColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
-    IconLabel.Parent = LeftContainer
+    IconLabel.ImageColor3 = Color3.fromRGB(129, 140, 248)
+    IconLabel.Parent = IconBox
     if Icons and Icons.Apply then
         Icons:Apply(IconLabel, sectionIcon)
     end
 
     local TextContainer = Instance.new("Frame")
     TextContainer.Name = "TextContainer"
-    TextContainer.Size = UDim2.new(1, -26, 1, 0)
+    TextContainer.Size = UDim2.new(1, -38, 1, 0)
     TextContainer.BackgroundTransparency = 1
     TextContainer.Parent = LeftContainer
 
@@ -169,7 +183,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     TitleLabel.Text = sectionName
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.TextSize = 13
-    TitleLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.Size = UDim2.new(1, 0, 0, 16)
     TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -182,7 +196,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         DescLabel.Text = sectionDesc
         DescLabel.Font = Enum.Font.GothamMedium
         DescLabel.TextSize = 10
-        DescLabel.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 165))
+        DescLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
         DescLabel.TextXAlignment = Enum.TextXAlignment.Left
         DescLabel.Size = UDim2.new(1, 0, 0, 14)
         DescLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -193,9 +207,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Pasek rozdzielający nagłówek od zawartości (Divider Line)
     local HeaderLine = Instance.new("Frame")
     HeaderLine.Name = "HeaderLine"
-    HeaderLine.Size = UDim2.new(1, 0, 0, 1)
+    HeaderLine.Size = UDim2.new(1, -24, 0, 1)
+    HeaderLine.Position = UDim2.new(0, 12, 0, 0)
     HeaderLine.BorderSizePixel = 0
-    HeaderLine.BackgroundColor3 = getThemeColor("Accent", Color3.fromRGB(42, 42, 50))
+    HeaderLine.BackgroundColor3 = Color3.fromRGB(38, 40, 54)
     HeaderLine.LayoutOrder = 2
     HeaderLine.Visible = isOpen
     HeaderLine.Parent = SectionCard
@@ -214,10 +229,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     ContentContainer.Parent = SectionCard
 
     local ContentPadding = Instance.new("UIPadding", ContentContainer)
-    ContentPadding.PaddingLeft = UDim.new(0, 8)
-    ContentPadding.PaddingRight = UDim.new(0, 8)
-    ContentPadding.PaddingTop = UDim.new(0, 8)
-    ContentPadding.PaddingBottom = UDim.new(0, 10)
+    ContentPadding.PaddingLeft = UDim.new(0, 10)
+    ContentPadding.PaddingRight = UDim.new(0, 10)
+    ContentPadding.PaddingTop = UDim.new(0, 10)
+    ContentPadding.PaddingBottom = UDim.new(0, 12)
 
     local ContentLayout = Instance.new("UIListLayout", ContentContainer)
     ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -249,7 +264,6 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         themeManager:Register(SectionCard, "BackgroundColor3", "Secondary")
         themeManager:Register(CardStroke, "Color", "Accent")
         themeManager:Register(TitleLabel, "TextColor3", "Text")
-        themeManager:Register(IconLabel, "ImageColor3", "Text")
         themeManager:Register(Chevron, "ImageColor3", "Text_Secondary")
         themeManager:Register(HeaderLine, "BackgroundColor3", "Accent")
     end
@@ -334,7 +348,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         Line.Position = UDim2.new(0, 0, 0.5, 0)
         Line.AnchorPoint = Vector2.new(0, 0.5)
         Line.BorderSizePixel = 0
-        Line.BackgroundColor3 = getThemeColor("Accent", Color3.fromRGB(45, 45, 55))
+        Line.BackgroundColor3 = Color3.fromRGB(38, 40, 54)
         Line.Parent = Div
 
         if label then
@@ -342,8 +356,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             Text.Text = "  " .. tostring(label) .. "  "
             Text.Font = Enum.Font.GothamBold
             Text.TextSize = 10
-            Text.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 165))
-            Text.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(20, 20, 25))
+            Text.TextColor3 = Color3.fromRGB(148, 163, 184)
+            Text.BackgroundColor3 = Color3.fromRGB(17, 18, 25)
             Text.Size = UDim2.new(0, 0, 1, 0)
             Text.AutomaticSize = Enum.AutomaticSize.X
             Text.AnchorPoint = Vector2.new(0.5, 0.5)

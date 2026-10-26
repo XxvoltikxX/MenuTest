@@ -96,10 +96,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local function Update(animate)
         local targetPos = Value and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local targetSwitchBg = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent2", Color3.fromRGB(32, 32, 40))
-        local targetSwitchStroke = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent", Color3.fromRGB(55, 55, 65))
-        local targetKnobBg = Value and getThemeColor("Main", Color3.fromRGB(18, 18, 22)) or getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 170))
-        local targetTextColor = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Text_Secondary", Color3.fromRGB(170, 170, 180))
+        local targetSwitchBg = Value and (getThemeColor("Accent") or Color3.fromRGB(99, 102, 241)) or Color3.fromRGB(34, 35, 48)
+        local targetSwitchStroke = Value and Color3.fromRGB(129, 140, 248) or Color3.fromRGB(48, 50, 70)
+        local targetKnobBg = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 165, 185)
+        local targetTextColor = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 165, 185)
 
         if animate then
             TweenService:Create(Switch, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
