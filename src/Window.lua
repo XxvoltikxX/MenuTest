@@ -263,16 +263,16 @@ function Window:Create(config)
         getgenv()._MenuTestGui = ScreenGui
     end
 
-    -- Dynamiczny rozmiar początkowy dopasowany do ekranu
-    local defaultW = 750
-    local defaultH = 460
+    -- Dynamiczny rozmiar początkowy dopasowany do ekranu (800x500 - przestronny bento layout)
+    local defaultW = 800
+    local defaultH = 500
     if isMobile then
         -- Na urządzeniach mobilnych zgrabny, kompaktowy rozmiar z wygodnymi marginesami dookoła
-        defaultW = math.clamp(math.floor(viewport.X * 0.72), 340, 500)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.74), 230, 310)
-    elseif viewport.X < 750 or viewport.Y < 450 then
-        defaultW = math.clamp(math.floor(viewport.X * 0.88), 360, 600)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.84), 250, 360)
+        defaultW = math.clamp(math.floor(viewport.X * 0.90), 340, 520)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.88), 260, 400)
+    elseif viewport.X < 850 or viewport.Y < 550 then
+        defaultW = math.clamp(math.floor(viewport.X * 0.90), 380, 680)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.86), 280, 440)
     end
 
     -- Cień
@@ -301,11 +301,30 @@ function Window:Create(config)
     UI.MainFrame = MainFrame
     ThemeManager:Register(MainFrame, "BackgroundColor3", "Main")
 
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     MainStroke.Thickness = 1.6
     ThemeManager:Register(MainStroke, "Color", "Accent")
+
+    -- Frosted Glass Rim Light (1px highlight na górnej krawędzi)
+    local RimLight = Instance.new("Frame")
+    RimLight.Name = "RimLight"
+    RimLight.Size = UDim2.new(1, -24, 0, 1)
+    RimLight.Position = UDim2.new(0, 12, 0, 1)
+    RimLight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    RimLight.BackgroundTransparency = 0.82
+    RimLight.BorderSizePixel = 0
+    RimLight.ZIndex = 25
+    RimLight.Parent = MainFrame
+    local RimGrad = Instance.new("UIGradient", RimLight)
+    RimGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.2, 0.5),
+        NumberSequenceKeypoint.new(0.5, 0.2),
+        NumberSequenceKeypoint.new(0.8, 0.5),
+        NumberSequenceKeypoint.new(1, 1)
+    })
 
     -- // ============================================================
     -- // ANIMATED BACKGROUND & LIVE THEME GIF ENGINE
@@ -455,91 +474,16 @@ function Window:Create(config)
         end
     end
 
-    -- Sidebar (zaczyna się od samej góry i ma pełną wysokość)
-    local sidebarWidth = (isMobile or viewport.X < 600) and 160 or 210
-    local SidebarFrame, TabList = SidebarModule:Create(UI, config.Theme, config, sidebarWidth)
-    SidebarFrame.Parent = MainFrame
+    -- =========================================================================
+    -- MASTER TOP HEADER BAR (Zastępuje dawny lewy sidebar)
+    -- =========================================================================
+    local HeaderFrame, TabList = SidebarModule:Create(UI, config.Theme, config)
+    HeaderFrame.Parent = MainFrame
+    UI.TopBar = HeaderFrame
     UI.TabList = TabList
 
-    -- TopBar (znajduje się tylko nad przestrzenią treści po prawej)
-    local topBarHeight = 44
-    local TopBar = Instance.new("Frame")
-    TopBar.Name = "TopBar"
-    TopBar.Size = UDim2.new(1, -sidebarWidth, 0, topBarHeight)
-    TopBar.Position = UDim2.new(0, sidebarWidth, 0, 0)
-    TopBar.BackgroundTransparency = 1
-    TopBar.ZIndex = 5
-    TopBar.Parent = MainFrame
-    UI.TopBar = TopBar
-
-    -- ActiveTabTitle po lewej stronie TopBaru
-    local ActiveTabTitle = Instance.new("TextLabel")
-    ActiveTabTitle.Name = "ActiveTabTitle"
-    ActiveTabTitle.Text = config.Tittle or config.Name or "Dashboard"
-    ActiveTabTitle.Font = Enum.Font.GothamBold
-    ActiveTabTitle.TextSize = 14
-    ActiveTabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
-    ActiveTabTitle.Size = UDim2.new(0, 0, 1, 0)
-    ActiveTabTitle.AutomaticSize = Enum.AutomaticSize.X
-    ActiveTabTitle.Position = UDim2.new(0, 20, 0, 0)
-    ActiveTabTitle.BackgroundTransparency = 1
-    ActiveTabTitle.Parent = TopBar
-    UI.ActiveTabTitle = ActiveTabTitle
-    ThemeManager:Register(ActiveTabTitle, "TextColor3", "Text")
-
-    local BreadcrumbTag = Instance.new("TextLabel")
-    BreadcrumbTag.Name = "BreadcrumbTag"
-    BreadcrumbTag.Text = "  /  Suite"
-    BreadcrumbTag.Font = Enum.Font.GothamMedium
-    BreadcrumbTag.TextSize = 11
-    BreadcrumbTag.TextColor3 = Color3.fromRGB(140, 140, 160)
-    BreadcrumbTag.TextXAlignment = Enum.TextXAlignment.Left
-    BreadcrumbTag.Size = UDim2.new(0, 0, 1, 0)
-    BreadcrumbTag.AutomaticSize = Enum.AutomaticSize.X
-    BreadcrumbTag.Position = UDim2.new(1, 0, 0, 0)
-    BreadcrumbTag.BackgroundTransparency = 1
-    BreadcrumbTag.Parent = ActiveTabTitle
-    ThemeManager:Register(BreadcrumbTag, "TextColor3", "Text_Secondary")
-
-    -- Nowoczesna, subtelna pozioma linia pod TopBarem
-    local TopLine = Instance.new("Frame")
-    TopLine.Name = "TopLine"
-    TopLine.Size = UDim2.new(1, -sidebarWidth, 0, 1)
-    TopLine.Position = UDim2.new(0, sidebarWidth, 0, topBarHeight)
-    TopLine.BorderSizePixel = 0
-    TopLine.BackgroundColor3 = Color3.fromRGB(35, 36, 48)
-    TopLine.ZIndex = 4
-    TopLine.Parent = MainFrame
-    ThemeManager:Register(TopLine, "BackgroundColor3", "Accent")
-
-    -- PagesContainer (treść stron)
-    local PagesContainer = Instance.new("Frame")
-    PagesContainer.Name = "PagesContainer"
-    PagesContainer.Size = UDim2.new(1, -sidebarWidth, 1, -(topBarHeight + 1))
-    PagesContainer.Position = UDim2.new(0, sidebarWidth, 0, topBarHeight + 1)
-    PagesContainer.BackgroundTransparency = 1
-    PagesContainer.ClipsDescendants = true
-    PagesContainer.Parent = MainFrame
-    UI.PagesContainer = PagesContainer
-
-    -- Controls (Nowoczesne przyciski okna w prawym rogu)
-    local Controls = Instance.new("Frame")
-    Controls.Name = "Controls"
-    Controls.Size = UDim2.new(0, 100, 1, 0)
-    Controls.Position = UDim2.new(1, -14, 0.5, 0)
-    Controls.AnchorPoint = Vector2.new(1, 0.5)
-    Controls.BackgroundTransparency = 1
-    Controls.ZIndex = 6
-    Controls.Parent = TopBar
-    UI.Controls = Controls
-
-    local ControlsLayout = Instance.new("UIListLayout", Controls)
-    ControlsLayout.FillDirection = Enum.FillDirection.Horizontal
-    ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    ControlsLayout.Padding = UDim.new(0, 6)
-
+    -- Controls (Nowoczesne przyciski okna w prawym rogu HeaderFrame)
+    local Controls = UI.Controls or HeaderFrame:FindFirstChild("RightContainer", true):FindFirstChild("Controls", true)
     local function createModernBtn(iconName, isClose)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(0, 26, 0, 26)
@@ -576,6 +520,232 @@ function Window:Create(config)
     UI.MinBtn   = createModernBtn("minus", false)
     UI.MaxBtn   = createModernBtn("maximize-2", false)
     UI.CloseBtn = createModernBtn("x", true)
+
+    -- =========================================================================
+    -- SUB-HEADER: QUICK COMMAND & LIVE TELEMETRY BAR (Wysokość: 36px)
+    -- =========================================================================
+    local subBarHeight = 36
+    local SubBar = Instance.new("Frame")
+    SubBar.Name = "SubBar"
+    SubBar.Size = UDim2.new(1, 0, 0, subBarHeight)
+    SubBar.Position = UDim2.new(0, 0, 0, 52)
+    SubBar.BackgroundColor3 = Color3.fromRGB(11, 12, 17)
+    SubBar.BorderSizePixel = 0
+    SubBar.ZIndex = 6
+    SubBar.Parent = MainFrame
+    UI.SubBar = SubBar
+
+    local SubBarLine = Instance.new("Frame")
+    SubBarLine.Name = "SubBarLine"
+    SubBarLine.Size = UDim2.new(1, 0, 0, 1)
+    SubBarLine.Position = UDim2.new(0, 0, 1, -1)
+    SubBarLine.BorderSizePixel = 0
+    SubBarLine.BackgroundColor3 = Color3.fromRGB(28, 30, 42)
+    SubBarLine.Parent = SubBar
+
+    -- Lewa strona: Instant Search Box
+    local SearchBoxContainer = Instance.new("Frame")
+    SearchBoxContainer.Name = "SearchBoxContainer"
+    SearchBoxContainer.Size = UDim2.new(0, 240, 0, 24)
+    SearchBoxContainer.Position = UDim2.new(0, 16, 0.5, 0)
+    SearchBoxContainer.AnchorPoint = Vector2.new(0, 0.5)
+    SearchBoxContainer.BackgroundColor3 = Color3.fromRGB(18, 19, 28)
+    SearchBoxContainer.BorderSizePixel = 0
+    SearchBoxContainer.ZIndex = 7
+    SearchBoxContainer.Parent = SubBar
+    Instance.new("UICorner", SearchBoxContainer).CornerRadius = UDim.new(0, 6)
+
+    local SearchBoxStroke = Instance.new("UIStroke", SearchBoxContainer)
+    SearchBoxStroke.Color = Color3.fromRGB(36, 38, 54)
+    SearchBoxStroke.Thickness = 1
+
+    local SearchIcon = Instance.new("ImageLabel")
+    SearchIcon.Name = "SearchIcon"
+    SearchIcon.Size = UDim2.new(0, 13, 0, 13)
+    SearchIcon.Position = UDim2.new(0, 7, 0.5, 0)
+    SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
+    SearchIcon.BackgroundTransparency = 1
+    SearchIcon.ImageColor3 = Color3.fromRGB(120, 125, 145)
+    SearchIcon.ZIndex = 8
+    SearchIcon.Parent = SearchBoxContainer
+    if Icons and Icons.Apply then Icons:Apply(SearchIcon, "search") end
+
+    local SearchInput = Instance.new("TextBox")
+    SearchInput.Name = "SearchInput"
+    SearchInput.Size = UDim2.new(1, -26, 1, 0)
+    SearchInput.Position = UDim2.new(0, 24, 0, 0)
+    SearchInput.BackgroundTransparency = 1
+    SearchInput.Font = Enum.Font.GothamMedium
+    SearchInput.Text = ""
+    SearchInput.PlaceholderText = "Szukaj modułów i funkcji..."
+    SearchInput.PlaceholderColor3 = Color3.fromRGB(100, 105, 125)
+    SearchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SearchInput.TextSize = 11
+    SearchInput.TextXAlignment = Enum.TextXAlignment.Left
+    SearchInput.ClearTextOnFocus = false
+    SearchInput.ZIndex = 8
+    SearchInput.Parent = SearchBoxContainer
+    UI.SearchInput = SearchInput
+
+    -- Live Search Filter Logic
+    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local query = string.lower(string.gsub(SearchInput.Text, "%s+", ""))
+        for _, page in ipairs(UI.Pages or {}) do
+            for _, desc in ipairs(page:GetDescendants()) do
+                if desc:IsA("Frame") and (desc.Name:match("^Category_") or desc.Name:match("^Module_") or desc:FindFirstChild("ClickBtn")) then
+                    if query == "" then
+                        desc.Visible = true
+                    else
+                        local match = string.find(string.lower(desc.Name), query, 1, true)
+                        local titleLbl = desc:FindFirstChild("Title") or desc:FindFirstChild("Label")
+                        if titleLbl and titleLbl:IsA("TextLabel") and string.find(string.lower(titleLbl.Text), query, 1, true) then
+                            match = true
+                        end
+                        desc.Visible = match and true or false
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Prawa strona: Live Telemetry Badges
+    local Telemetry = Instance.new("Frame")
+    Telemetry.Name = "Telemetry"
+    Telemetry.Size = UDim2.new(0, 260, 1, 0)
+    Telemetry.Position = UDim2.new(1, -16, 0.5, 0)
+    Telemetry.AnchorPoint = Vector2.new(1, 0.5)
+    Telemetry.BackgroundTransparency = 1
+    Telemetry.ZIndex = 7
+    Telemetry.Parent = SubBar
+
+    local TelemetryLayout = Instance.new("UIListLayout", Telemetry)
+    TelemetryLayout.FillDirection = Enum.FillDirection.Horizontal
+    TelemetryLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    TelemetryLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    TelemetryLayout.Padding = UDim.new(0, 8)
+
+    local function makeBadge(text, color)
+        local badge = Instance.new("Frame")
+        badge.Size = UDim2.new(0, 0, 0, 20)
+        badge.AutomaticSize = Enum.AutomaticSize.X
+        badge.BackgroundColor3 = Color3.fromRGB(16, 17, 25)
+        badge.BorderSizePixel = 0
+        badge.Parent = Telemetry
+        Instance.new("UICorner", badge).CornerRadius = UDim.new(0, 5)
+        local bStroke = Instance.new("UIStroke", badge)
+        bStroke.Color = Color3.fromRGB(32, 34, 48)
+        bStroke.Thickness = 1
+        local bPad = Instance.new("UIPadding", badge)
+        bPad.PaddingLeft = UDim.new(0, 7)
+        bPad.PaddingRight = UDim.new(0, 7)
+        local bLbl = Instance.new("TextLabel")
+        bLbl.Text = text
+        bLbl.Font = Enum.Font.GothamBold
+        bLbl.TextSize = 10
+        bLbl.TextColor3 = color
+        bLbl.Size = UDim2.new(0, 0, 1, 0)
+        bLbl.AutomaticSize = Enum.AutomaticSize.X
+        bLbl.BackgroundTransparency = 1
+        bLbl.Parent = badge
+        return bLbl
+    end
+
+    local FpsBadge = makeBadge("60 FPS", Color3.fromRGB(16, 185, 129))
+    local PingBadge = makeBadge("24 ms", Color3.fromRGB(129, 140, 248))
+    local SuiteBadge = makeBadge("UNIVERSAL", Color3.fromRGB(168, 85, 247))
+
+    -- Pętla live telemetry
+    local frameCount = 0
+    local lastFpsTime = tick()
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        local now = tick()
+        if now - lastFpsTime >= 0.5 then
+            local fps = math.floor(frameCount / (now - lastFpsTime) + 0.5)
+            FpsBadge.Text = tostring(fps) .. " FPS"
+            frameCount = 0
+            lastFpsTime = now
+            pcall(function()
+                if LocalPlayer and LocalPlayer.GetNetworkPing then
+                    local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000 + 0.5)
+                    PingBadge.Text = tostring(ping) .. " ms"
+                end
+            end)
+        end
+    end)
+
+    -- =========================================================================
+    -- STATUS DOCK (Pasek dolny - stopka okna)
+    -- =========================================================================
+    local dockHeight = 28
+    local StatusDock = Instance.new("Frame")
+    StatusDock.Name = "StatusDock"
+    StatusDock.Size = UDim2.new(1, 0, 0, dockHeight)
+    StatusDock.Position = UDim2.new(0, 0, 1, -dockHeight)
+    StatusDock.BackgroundColor3 = Color3.fromRGB(10, 11, 16)
+    StatusDock.BorderSizePixel = 0
+    StatusDock.ZIndex = 6
+    StatusDock.Parent = MainFrame
+
+    local DockLine = Instance.new("Frame")
+    DockLine.Name = "DockLine"
+    DockLine.Size = UDim2.new(1, 0, 0, 1)
+    DockLine.Position = UDim2.new(0, 0, 0, 0)
+    DockLine.BorderSizePixel = 0
+    DockLine.BackgroundColor3 = Color3.fromRGB(26, 28, 40)
+    DockLine.Parent = StatusDock
+
+    local DockPadding = Instance.new("UIPadding", StatusDock)
+    DockPadding.PaddingLeft = UDim.new(0, 16)
+    DockPadding.PaddingRight = UDim.new(0, 16)
+
+    local DockLeft = Instance.new("TextLabel")
+    DockLeft.Name = "DockLeft"
+    DockLeft.Text = "MenuTest Framework • Build 2026.10"
+    DockLeft.Font = Enum.Font.GothamMedium
+    DockLeft.TextSize = 10
+    DockLeft.TextColor3 = Color3.fromRGB(100, 105, 130)
+    DockLeft.TextXAlignment = Enum.TextXAlignment.Left
+    DockLeft.Size = UDim2.new(0.4, 0, 1, 0)
+    DockLeft.BackgroundTransparency = 1
+    DockLeft.Parent = StatusDock
+
+    local DockCenter = Instance.new("TextLabel")
+    DockCenter.Name = "DockCenter"
+    DockCenter.Text = "Naciśnij [ " .. tostring(config.ToggleUIKeybind or "K") .. " ], aby ukryć menu"
+    DockCenter.Font = Enum.Font.GothamMedium
+    DockCenter.TextSize = 10
+    DockCenter.TextColor3 = Color3.fromRGB(140, 145, 170)
+    DockCenter.TextXAlignment = Enum.TextXAlignment.Center
+    DockCenter.Size = UDim2.new(0.3, 0, 1, 0)
+    DockCenter.Position = UDim2.new(0.35, 0, 0, 0)
+    DockCenter.BackgroundTransparency = 1
+    DockCenter.Parent = StatusDock
+
+    local DockRight = Instance.new("TextLabel")
+    DockRight.Name = "DockRight"
+    DockRight.Text = "● System Aktywny • Chroniony"
+    DockRight.Font = Enum.Font.GothamBold
+    DockRight.TextSize = 10
+    DockRight.TextColor3 = Color3.fromRGB(16, 185, 129)
+    DockRight.TextXAlignment = Enum.TextXAlignment.Right
+    DockRight.Size = UDim2.new(0.35, 0, 1, 0)
+    DockRight.Position = UDim2.new(0.65, 0, 0, 0)
+    DockRight.BackgroundTransparency = 1
+    DockRight.Parent = StatusDock
+
+    -- =========================================================================
+    -- KONTENER STRON (PAGES CONTAINER) - PEŁNA SZEROKOŚĆ
+    -- =========================================================================
+    local totalHeaderSpace = 52 + subBarHeight
+    local PagesContainer = Instance.new("Frame")
+    PagesContainer.Name = "PagesContainer"
+    PagesContainer.Size = UDim2.new(1, 0, 1, -(totalHeaderSpace + dockHeight))
+    PagesContainer.Position = UDim2.new(0, 0, 0, totalHeaderSpace)
+    PagesContainer.BackgroundTransparency = 1
+    PagesContainer.ClipsDescendants = true
+    PagesContainer.Parent = MainFrame
+    UI.PagesContainer = PagesContainer
 
     -- Maximize/restore
     local maximized = false
@@ -1006,14 +1176,20 @@ function Window:Create(config)
             local prevBtn   = UI.SelectedTab
             local prevIcon  = prevBtn:FindFirstChild("Icon")
             local prevLabel = prevBtn:FindFirstChild("Label")
-            local prevPill  = prevBtn:FindFirstChild("Pill")
             local prevStroke= prevBtn:FindFirstChildOfClass("UIStroke")
 
-            TweenService:Create(prevBtn, TweenInfo.new(0.2), { BackgroundTransparency = 1 }):Play()
-            if prevStroke then TweenService:Create(prevStroke, TweenInfo.new(0.2), { Transparency = 1 }):Play() end
-            if prevPill then prevPill.Visible = false end
-            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2), { ImageColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play() end
-            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2), { TextColor3  = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play() end
+            TweenService:Create(prevBtn, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(18, 19, 28),
+                BackgroundTransparency = 0.4
+            }):Play()
+            if prevStroke then
+                TweenService:Create(prevStroke, TweenInfo.new(0.2), {
+                    Color = Color3.fromRGB(40, 42, 60),
+                    Transparency = 0.5
+                }):Play()
+            end
+            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(148, 163, 184) }):Play() end
+            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(148, 163, 184) }):Play() end
         end
 
         -- Ukryj wszystkie strony, pokaż wybraną
@@ -1021,31 +1197,22 @@ function Window:Create(config)
         targetPage.Visible = true
         UI.SelectedTab = targetButton
 
-        -- Podświetl wybrany przycisk kapsułkowy
+        -- Podświetl wybrany przycisk
         local curStroke = targetButton:FindFirstChildOfClass("UIStroke")
-        local curPill   = targetButton:FindFirstChild("Pill")
         local TabIcon   = targetButton:FindFirstChild("Icon")
         local TabLabel  = targetButton:FindFirstChild("Label")
 
-        local accentCol = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
-        local secCol    = ThemeManager:GetColor("Secondary") or Color3.fromRGB(24, 25, 36)
-        targetButton.BackgroundColor3 = secCol
-        TweenService:Create(targetButton, TweenInfo.new(0.2), { BackgroundTransparency = 0.1 }):Play()
+        local accentCol = Color3.fromRGB(99, 102, 241)
+        TweenService:Create(targetButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = accentCol,
+            BackgroundTransparency = 0
+        }):Play()
         if curStroke then
-            curStroke.Color = accentCol
-            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.4 }):Play()
-        end
-        if curPill then
-            curPill.BackgroundColor3 = accentCol
-            curPill.Visible = true
+            curStroke.Color = Color3.fromRGB(165, 180, 252)
+            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.2 }):Play()
         end
         if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play() end
         if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(255, 255, 255) }):Play() end
-
-        -- Zaktualizuj nagłówek TopBaru
-        if UI.ActiveTabTitle then
-            UI.ActiveTabTitle.Text = targetButton.Name
-        end
     end
 
     -- // ============================================================
@@ -1132,66 +1299,64 @@ function Window:Create(config)
 
         local TabButton = Instance.new("TextButton")
         TabButton.Name = name
-        TabButton.Size = UDim2.new(1, 0, 0, 38)
-        TabButton.BackgroundColor3 = Color3.fromRGB(24, 25, 36)
-        TabButton.BackgroundTransparency = 1
+        TabButton.Size = UDim2.new(0, 105, 0, 32)
+        TabButton.AutomaticSize = Enum.AutomaticSize.X
+        TabButton.BackgroundColor3 = Color3.fromRGB(18, 19, 28)
+        TabButton.BackgroundTransparency = 0.4
         TabButton.Text = ""
         TabButton.AutoButtonColor = false
         TabButton.BorderSizePixel = 0
         TabButton.LayoutOrder = tabOrder
         TabButton.Parent = TabList
-        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 8)
+        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 7)
+
+        local TabBtnPadding = Instance.new("UIPadding", TabButton)
+        TabBtnPadding.PaddingLeft = UDim.new(0, 10)
+        TabBtnPadding.PaddingRight = UDim.new(0, 12)
+
+        local TabBtnLayout = Instance.new("UIListLayout", TabButton)
+        TabBtnLayout.FillDirection = Enum.FillDirection.Horizontal
+        TabBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        TabBtnLayout.Padding = UDim.new(0, 7)
 
         local TabStroke = Instance.new("UIStroke", TabButton)
-        TabStroke.Color = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
+        TabStroke.Color = Color3.fromRGB(40, 42, 60)
         TabStroke.Thickness = 1
-        TabStroke.Transparency = 1
+        TabStroke.Transparency = 0.5
         TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-        -- Neonowy wskaźnik aktywacji po lewej
-        local TabPill = Instance.new("Frame")
-        TabPill.Name = "Pill"
-        TabPill.Size = UDim2.new(0, 3, 0, 18)
-        TabPill.Position = UDim2.new(0, 3, 0.5, 0)
-        TabPill.AnchorPoint = Vector2.new(0, 0.5)
-        TabPill.BackgroundColor3 = ThemeManager:GetColor("Accent") or Color3.fromRGB(99, 102, 241)
-        TabPill.BorderSizePixel = 0
-        TabPill.Visible = false
-        TabPill.Parent = TabButton
-        Instance.new("UICorner", TabPill).CornerRadius = UDim.new(1, 0)
 
         local TabIcon = Instance.new("ImageLabel")
         TabIcon.Name = "Icon"
-        TabIcon.Size = UDim2.new(0, 18, 0, 18)
-        TabIcon.Position = UDim2.new(0, 14, 0.5, 0)
-        TabIcon.AnchorPoint = Vector2.new(0, 0.5)
+        TabIcon.Size = UDim2.new(0, 15, 0, 15)
         TabIcon.BackgroundTransparency = 1
+        TabIcon.ImageColor3 = Color3.fromRGB(148, 163, 184)
         TabIcon.Parent = TabButton
         Icons:Apply(TabIcon, icon)
-        ThemeManager:Register(TabIcon, "ImageColor3", "Text_Secondary")
 
         local TabLabel = Instance.new("TextLabel")
         TabLabel.Name = "Label"
-        TabLabel.Size = UDim2.new(1, -48, 1, 0)
-        TabLabel.Position = UDim2.new(0, 40, 0, 0)
+        TabLabel.Size = UDim2.new(0, 0, 1, 0)
+        TabLabel.AutomaticSize = Enum.AutomaticSize.X
         TabLabel.BackgroundTransparency = 1
         TabLabel.Font = Enum.Font.GothamBold
         TabLabel.Text = name
-        TabLabel.TextSize = 12
+        TabLabel.TextSize = 11
+        TabLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
         TabLabel.TextXAlignment = Enum.TextXAlignment.Left
         TabLabel.Parent = TabButton
-        ThemeManager:Register(TabLabel, "TextColor3", "Text_Secondary")
 
         TabButton.MouseEnter:Connect(function()
             if UI.SelectedTab ~= TabButton then
-                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.5 }):Play()
-                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(220, 220, 235) }):Play()
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.1, BackgroundColor3 = Color3.fromRGB(26, 28, 42) }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(230, 235, 250) }):Play()
+                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(230, 235, 250) }):Play()
             end
         end)
         TabButton.MouseLeave:Connect(function()
             if UI.SelectedTab ~= TabButton then
-                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 1 }):Play()
-                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary) }):Play()
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(18, 19, 28) }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(148, 163, 184) }):Play()
+                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(148, 163, 184) }):Play()
             end
         end)
 

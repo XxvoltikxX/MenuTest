@@ -12,9 +12,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local Button = Instance.new("TextButton")
     Button.Name = options.Name or "Button"
     Button.Text = ""
-    Button.Size = UDim2.new(1, 0, 0, 42)
+    Button.Size = UDim2.new(1, 0, 0, 38)
     Button.AutoButtonColor = false
-    Button.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(25, 25, 25))
+    Button.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+    Button.BorderSizePixel = 0
     Button.Parent = parent
 
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 8)
@@ -22,49 +23,65 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local Stroke = Instance.new("UIStroke", Button)
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     Stroke.Thickness = 1
-    Stroke.Color = getThemeColor("Accent", Color3.fromRGB(55, 55, 60))
+    Stroke.Color = Color3.fromRGB(42, 45, 62)
+
+    local ButtonGradient = Instance.new("UIGradient", Button)
+    ButtonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 27, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(19, 20, 30))
+    })
+    ButtonGradient.Rotation = 90
+
+    local Padding = Instance.new("UIPadding", Button)
+    Padding.PaddingLeft = UDim.new(0, 14)
+    Padding.PaddingRight = UDim.new(0, 14)
+
+    local ContentLayout = Instance.new("UIListLayout", Button)
+    ContentLayout.FillDirection = Enum.FillDirection.Horizontal
+    ContentLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
 
     local Label = Instance.new("TextLabel")
     Label.Name = "Label"
-    Label.Size = UDim2.new(1, -20, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.Size = UDim2.new(1, -24, 1, 0)
     Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 13
+    Label.Font = Enum.Font.GothamBold
+    Label.TextSize = 12
     Label.Text = options.Name or "Button"
-    Label.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
-    Label.TextXAlignment = Enum.TextXAlignment.Center
+    Label.TextColor3 = Color3.fromRGB(241, 245, 249)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Button
 
-    if themeManager and themeManager.Register then
-        themeManager:Register(Button, "BackgroundColor3", "Secondary")
-        themeManager:Register(Stroke, "Color", "Accent")
-        themeManager:Register(Label, "TextColor3", "Text")
-    end
+    local Arrow = Instance.new("TextLabel")
+    Arrow.Name = "Arrow"
+    Arrow.Size = UDim2.new(0, 16, 1, 0)
+    Arrow.BackgroundTransparency = 1
+    Arrow.Font = Enum.Font.GothamBold
+    Arrow.Text = "→"
+    Arrow.TextSize = 13
+    Arrow.TextColor3 = Color3.fromRGB(129, 140, 248)
+    Arrow.TextXAlignment = Enum.TextXAlignment.Right
+    Arrow.Parent = Button
 
-    -- Smooth Hover animations z dynamicznymi kolorami motywu
+    -- Hover & click animations
     Button.MouseEnter:Connect(function()
-        local hoverBg = getThemeColor("Accent2", Color3.fromRGB(36, 36, 42))
-        local hoverStroke = getThemeColor("Text_Secondary", Color3.fromRGB(85, 85, 95))
-        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = hoverBg}):Play()
-        TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = hoverStroke}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.18), {BackgroundColor3 = Color3.fromRGB(32, 35, 52)}):Play()
+        TweenService:Create(Stroke, TweenInfo.new(0.18), {Color = Color3.fromRGB(99, 102, 241)}):Play()
+        TweenService:Create(Arrow, TweenInfo.new(0.18), {TextColor3 = Color3.fromRGB(192, 132, 252)}):Play()
     end)
 
     Button.MouseLeave:Connect(function()
-        local normalBg = getThemeColor("Secondary", Color3.fromRGB(25, 25, 25))
-        local normalStroke = getThemeColor("Accent", Color3.fromRGB(55, 55, 60))
-        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = normalBg}):Play()
-        TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = normalStroke}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.18), {BackgroundColor3 = Color3.fromRGB(22, 24, 34)}):Play()
+        TweenService:Create(Stroke, TweenInfo.new(0.18), {Color = Color3.fromRGB(42, 45, 62)}):Play()
+        TweenService:Create(Arrow, TweenInfo.new(0.18), {TextColor3 = Color3.fromRGB(129, 140, 248)}):Play()
     end)
 
     if options.Callback then
         Button.Activated:Connect(function()
-            local clickBg = getThemeColor("Accent", Color3.fromRGB(48, 48, 56))
-            local tw = TweenService:Create(Button, TweenInfo.new(0.08), {BackgroundColor3 = clickBg})
+            local tw = TweenService:Create(Button, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(48, 52, 78)})
             tw:Play()
             tw.Completed:Connect(function()
-                local normalBg = getThemeColor("Secondary", Color3.fromRGB(25, 25, 25))
-                TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = normalBg}):Play()
+                TweenService:Create(Button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(22, 24, 34)}):Play()
             end)
             pcall(options.Callback)
         end)

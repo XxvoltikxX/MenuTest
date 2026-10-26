@@ -132,7 +132,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Lewa strona nagłówka (Kasetka z ikoną + Tytuł + Opis)
     local LeftContainer = Instance.new("Frame")
     LeftContainer.Name = "LeftContainer"
-    LeftContainer.Size = UDim2.new(1, -110, 1, 0)
+    LeftContainer.Size = UDim2.new(1, -(sectionBadge and 85 or 35), 1, 0)
     LeftContainer.Position = UDim2.new(0, 0, 0, 0)
     LeftContainer.BackgroundTransparency = 1
     LeftContainer.Parent = Header
@@ -145,8 +145,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Zaokrąglona kasetka na ikonę sekcji
     local IconBox = Instance.new("Frame")
     IconBox.Name = "IconBox"
-    IconBox.Size = UDim2.new(0, 28, 0, 28)
-    IconBox.BackgroundColor3 = Color3.fromRGB(26, 28, 42)
+    IconBox.Size = UDim2.new(0, 30, 0, 30)
+    IconBox.BackgroundColor3 = Color3.fromRGB(24, 26, 38)
     IconBox.BorderSizePixel = 0
     IconBox.Parent = LeftContainer
     Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 7)
@@ -169,14 +169,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local TextContainer = Instance.new("Frame")
     TextContainer.Name = "TextContainer"
-    TextContainer.Size = UDim2.new(1, -38, 1, 0)
+    TextContainer.Size = UDim2.new(1, -40, 1, 0)
     TextContainer.BackgroundTransparency = 1
     TextContainer.Parent = LeftContainer
 
     local TextLayout = Instance.new("UIListLayout", TextContainer)
     TextLayout.FillDirection = Enum.FillDirection.Vertical
     TextLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    TextLayout.Padding = UDim.new(0, 2)
+    TextLayout.Padding = UDim.new(0, 1)
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Name = "Title"
@@ -185,7 +185,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     TitleLabel.TextSize = 13
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.Size = UDim2.new(1, 0, 0, 16)
+    TitleLabel.Size = UDim2.new(1, 0, 0, 18)
     TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Parent = TextContainer
