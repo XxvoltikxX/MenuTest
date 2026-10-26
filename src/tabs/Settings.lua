@@ -625,13 +625,15 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local function makePowerCard(titleText, descText, iconName, defaultVal, callback)
         local Card = Instance.new("Frame")
-        Card.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
+        Card.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+        Card.BackgroundTransparency = 0.35
         Card.BorderSizePixel = 0
         Card.Parent = PowerGrid
-        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 14)
         local cStroke = Instance.new("UIStroke", Card)
-        cStroke.Color = Color3.fromRGB(34, 36, 52)
+        cStroke.Color = Color3.fromRGB(60, 72, 105)
         cStroke.Thickness = 1.2
+        cStroke.Transparency = 0.55
 
         local cPad = Instance.new("UIPadding", Card)
         cPad.PaddingLeft = UDim.new(0, 12)
@@ -643,17 +645,22 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         IconBox.Size = UDim2.new(0, 28, 0, 28)
         IconBox.Position = UDim2.new(0, 0, 0.5, 0)
         IconBox.AnchorPoint = Vector2.new(0, 0.5)
-        IconBox.BackgroundColor3 = Color3.fromRGB(22, 24, 36)
+        IconBox.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
+        IconBox.BackgroundTransparency = 0.4
         IconBox.BorderSizePixel = 0
         IconBox.Parent = Card
-        Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 8)
+        local ibStroke = Instance.new("UIStroke", IconBox)
+        ibStroke.Color = Color3.fromRGB(70, 80, 120)
+        ibStroke.Thickness = 1
+        ibStroke.Transparency = 0.6
 
         local IcoImg = Instance.new("ImageLabel")
         IcoImg.Size = UDim2.new(0, 15, 0, 15)
         IcoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
         IcoImg.AnchorPoint = Vector2.new(0.5, 0.5)
         IcoImg.BackgroundTransparency = 1
-        IcoImg.ImageColor3 = Color3.fromRGB(129, 140, 248)
+        IcoImg.ImageColor3 = Color3.fromRGB(140, 160, 250)
         IcoImg.Parent = IconBox
         if Icons and Icons.Apply then Icons:Apply(IcoImg, iconName) end
 
@@ -672,7 +679,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         Desc.Text = descText
         Desc.Font = Enum.Font.GothamMedium
         Desc.TextSize = 10
-        Desc.TextColor3 = Color3.fromRGB(130, 135, 155)
+        Desc.TextColor3 = Color3.fromRGB(150, 160, 185)
         Desc.TextXAlignment = Enum.TextXAlignment.Left
         Desc.TextTruncate = Enum.TextTruncate.AtEnd
         Desc.Position = UDim2.new(0, 36, 0, 22)
@@ -682,23 +689,25 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         -- Pill switch
         local SwitchBtn = Instance.new("TextButton")
-        SwitchBtn.Size = UDim2.new(0, 40, 0, 22)
+        SwitchBtn.Size = UDim2.new(0, 42, 0, 22)
         SwitchBtn.Position = UDim2.new(1, 0, 0.5, 0)
         SwitchBtn.AnchorPoint = Vector2.new(1, 0.5)
-        SwitchBtn.BackgroundColor3 = defaultVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 30, 44)
+        SwitchBtn.BackgroundColor3 = defaultVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
+        SwitchBtn.BackgroundTransparency = 0.3
         SwitchBtn.Text = ""
         SwitchBtn.AutoButtonColor = false
         SwitchBtn.Parent = Card
         Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
         local swStroke = Instance.new("UIStroke", SwitchBtn)
-        swStroke.Color = defaultVal and Color3.fromRGB(129, 140, 248) or Color3.fromRGB(45, 48, 70)
+        swStroke.Color = defaultVal and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
         swStroke.Thickness = 1
+        swStroke.Transparency = 0.5
 
         local Dot = Instance.new("Frame")
         Dot.Size = UDim2.new(0, 14, 0, 14)
         Dot.Position = defaultVal and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
         Dot.AnchorPoint = Vector2.new(0, 0.5)
-        Dot.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 165, 185)
+        Dot.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
         Dot.BorderSizePixel = 0
         Dot.Parent = SwitchBtn
         Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
@@ -707,9 +716,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         SwitchBtn.MouseButton1Click:Connect(function()
             currentVal = not currentVal
             local destPos = currentVal and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
-            local destBg = currentVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 30, 44)
-            local destStrk = currentVal and Color3.fromRGB(129, 140, 248) or Color3.fromRGB(45, 48, 70)
-            local destDot = currentVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 165, 185)
+            local destBg = currentVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
+            local destStrk = currentVal and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
+            local destDot = currentVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
 
             TweenService:Create(Dot, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Position = destPos,
@@ -723,6 +732,23 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         return Card
     end
+
+    -- Liquid Glass Mode (Apple VisionOS) Toggle
+    local liquidGlassDefault = true
+    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
+        liquidGlassDefault = (UI.MenuConfig["LiquidGlass"] == true)
+    end
+    makePowerCard("Liquid Glass Mode", "Półprzezroczysta tafla szkła i zaokrąglone kapsuły VisionOS", "layers", liquidGlassDefault, function(state)
+        if UI and UI.SetLiquidGlass then
+            UI:SetLiquidGlass(state)
+        end
+        if UI and UI.MenuConfig then
+            UI.MenuConfig["LiquidGlass"] = state
+        end
+        if UI and UI.SaveMenuConfig then
+            pcall(function() UI.SaveMenuConfig("LiquidGlass", state) end)
+        end
+    end)
 
     -- AntiAFK
     local antiAfkConnection = nil

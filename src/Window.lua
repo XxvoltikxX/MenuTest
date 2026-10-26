@@ -873,6 +873,70 @@ function Window:Create(config)
     PagesContainer.Parent = MainFrame
     UI.PagesContainer = PagesContainer
 
+    -- // =====================================================================
+    -- // UI:SetLiquidGlass(enabled) – Dynamiczne włączanie/wyłączanie Liquid Glass
+    -- // =====================================================================
+    local isLiquidGlass = true
+    if UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
+        isLiquidGlass = (UI.MenuConfig["LiquidGlass"] == true)
+    end
+
+    function UI:SetLiquidGlass(enabled)
+        isLiquidGlass = (enabled ~= false)
+        local destMainTrans = isLiquidGlass and 0.20 or 0
+        local destStrokeTrans = isLiquidGlass and 0.45 or 0.85
+        local destDockTrans = isLiquidGlass and 0.22 or 0
+        local destStatusTrans = isLiquidGlass and 0.35 or 0
+        local destCorner = isLiquidGlass and 24 or 12
+
+        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundTransparency = destMainTrans
+        }):Play()
+
+        local mc = MainFrame:FindFirstChildOfClass("UICorner")
+        if mc then
+            TweenService:Create(mc, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                CornerRadius = UDim.new(0, destCorner)
+            }):Play()
+        end
+
+        local ms = MainFrame:FindFirstChildOfClass("UIStroke")
+        if ms then
+            TweenService:Create(ms, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Transparency = destStrokeTrans
+            }):Play()
+        end
+
+        local rim = MainFrame:FindFirstChild("RimLight")
+        if rim then
+            rim.Visible = isLiquidGlass
+        end
+
+        if HeaderFrame then
+            TweenService:Create(HeaderFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = destDockTrans
+            }):Play()
+        end
+
+        if StatusDock then
+            TweenService:Create(StatusDock, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = destStatusTrans
+            }):Play()
+        end
+
+        if UI.SaveMenuConfig then
+            pcall(function()
+                UI.SaveMenuConfig("LiquidGlass", isLiquidGlass)
+            end)
+        end
+    end
+
+    if UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
+        task.spawn(function()
+            UI:SetLiquidGlass(UI.MenuConfig["LiquidGlass"] == true)
+        end)
+    end
+
     -- Maximize/restore
     local maximized = false
     local lastSize, lastPos
