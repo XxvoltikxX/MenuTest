@@ -188,7 +188,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhTextFrame.Parent = GlassHero
 
     local GhTitle = Instance.new("TextLabel")
-    GhTitle.Text = "APPLE iPHONE (iOS 18) LIQUID GLASS"
+    GhTitle.Text = "APPLE iPHONE (iOS 27.2) LIQUID GLASS"
     GhTitle.Font = Enum.Font.GothamBold
     GhTitle.TextSize = 13
     GhTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -198,7 +198,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhTitle.Parent = GhTextFrame
 
     local GhSub = Instance.new("TextLabel")
-    GhSub.Text = "Dynamic Island, matowe szkło Control Center, krawędzie 26px squircle i przełącznik Apple Green #34C759"
+    GhSub.Text = "Dynamic Island 2.0, matowe szkło Liquid Glass z iOS 27.2, krawędzie 26px squircle i przełącznik Apple Green #34C759"
     GhSub.Font = Enum.Font.GothamMedium
     GhSub.TextSize = 10
     GhSub.TextColor3 = Color3.fromRGB(150, 165, 195)
@@ -856,12 +856,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         return Card
     end
 
-    -- Liquid Glass Mode (Apple iPhone iOS 18) Toggle
+    -- Liquid Glass Mode (Apple iPhone iOS 27.2) Toggle
     local liquidGlassDefault = true
     if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
         liquidGlassDefault = (UI.MenuConfig["LiquidGlass"] == true)
     end
-    makePowerCard("iPhone Liquid Glass", "Dynamic Island, matowe szkło Control Center i przełączniki iOS 18", "layers", liquidGlassDefault, function(state)
+    makePowerCard("iPhone Liquid Glass", "Dynamic Island 2.0, matowe szkło Control Center i przełączniki iOS 27.2", "layers", liquidGlassDefault, function(state)
         if UI and UI.SetLiquidGlass then
             UI:SetLiquidGlass(state)
         end

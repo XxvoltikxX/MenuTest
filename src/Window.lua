@@ -829,7 +829,7 @@ function Window:Create(config)
 
     local DockLeft = Instance.new("TextLabel")
     DockLeft.Name = "DockLeft"
-    DockLeft.Text = "iPhone 16 Pro • iOS 18 Liquid Glass"
+    DockLeft.Text = "iPhone 18 Pro Max • iOS 27.2 Liquid Glass"
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
     DockLeft.TextColor3 = Color3.fromRGB(52, 199, 89)

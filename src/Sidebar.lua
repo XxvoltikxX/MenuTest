@@ -1,6 +1,6 @@
 -- // ==========================================================================
--- // MENUTEST APPLE iPHONE (iOS 18) LIQUID GLASS FLOATING DOCK
--- // Styl: Dynamic Island, półprzezroczysta tafla akrylowego szkła Liquid Glass,
+-- // MENUTEST APPLE iPHONE (iOS 27.2) LIQUID GLASS FLOATING DOCK
+-- // Styl: Dynamic Island 2.0, tafla akrylowego szkła Liquid Glass z iOS 27.2,
 -- // zaokrąglone krawędzie (Squircle / Capsule), specular reflections i Apple Green #34C759.
 -- // ==========================================================================
 
@@ -81,7 +81,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local BrandSide = Instance.new("Frame")
     BrandSide.Name = "BrandSide"
-    BrandSide.Size = UDim2.new(0, 195, 1, 0)
+    BrandSide.Size = UDim2.new(0, 210, 1, 0)
     BrandSide.Position = UDim2.new(0, 0, 0, 0)
     BrandSide.BackgroundTransparency = 1
     BrandSide.ZIndex = 17
@@ -148,11 +148,11 @@ function Sidebar:Create(UI, theme, config, customWidth)
     TitleLabel.Parent = BrandSide
 
     local GlassBadge = Instance.new("TextLabel")
-    GlassBadge.Text = "iOS 18 GLASS"
+    GlassBadge.Text = "iOS 27.2 GLASS"
     GlassBadge.Font = Enum.Font.GothamBold
     GlassBadge.TextSize = 9
     GlassBadge.TextColor3 = Color3.fromRGB(52, 199, 89)
-    GlassBadge.Size = UDim2.new(0, 74, 0, 19)
+    GlassBadge.Size = UDim2.new(0, 84, 0, 19)
     GlassBadge.BackgroundColor3 = Color3.fromRGB(20, 36, 28)
     GlassBadge.BackgroundTransparency = 0.25
     GlassBadge.ZIndex = 18
@@ -168,8 +168,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "VisionTabBar"
-    TabList.Size = UDim2.new(1, -525, 0, 36)
-    TabList.Position = UDim2.new(0, 202, 0.5, 0)
+    TabList.Size = UDim2.new(1, -538, 0, 36)
+    TabList.Position = UDim2.new(0, 218, 0.5, 0)
     TabList.AnchorPoint = Vector2.new(0, 0.5)
     TabList.BackgroundColor3 = Color3.fromRGB(12, 14, 22)
     TabList.BackgroundTransparency = 0.5
