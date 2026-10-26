@@ -1,4 +1,10 @@
-return function(options, themeManager, parent, menuConfig, saveMenuConfig)
+-- // ==========================================================================
+-- // MENUTEST ULTRA-MODERN TOGGLE COMPONENT
+-- // Nowoczesny, gładki przełącznik (pill switch) z mikropowolnym przejściem kolorów,
+-- // akcentem poświaty oraz wsparciem dla bezpośredniego kliknięcia w całym obszarze wiersza.
+-- // ==========================================================================
+
+return function(options, themeManager, parent, menuConfig, saveMenuConfig, addConnection)
     local TweenService = game:GetService("TweenService")
 
     local function getThemeColor(colorKey, fallback)
@@ -9,42 +15,68 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
         return fallback
     end
 
+    options = options or {}
+    local toggleName = options.Name or "Toggle"
+
     local ToggleFrame = Instance.new("TextButton")
-    ToggleFrame.Name = options.Name or "Toggle"
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
+    ToggleFrame.Name = "Toggle_" .. toggleName
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
     ToggleFrame.BackgroundTransparency = 1
     ToggleFrame.Text = ""
+    ToggleFrame.AutoButtonColor = false
     ToggleFrame.Parent = parent
 
+    local Container = Instance.new("Frame")
+    Container.Name = "Container"
+    Container.Size = UDim2.new(1, 0, 1, 0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = ToggleFrame
+
     local Label = Instance.new("TextLabel")
-    Label.Text = options.Name or "Toggle"
+    Label.Name = "Label"
+    Label.Text = toggleName
     Label.Font = Enum.Font.GothamMedium
     Label.TextSize = 12
-    Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165))
+    Label.TextColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(170, 170, 180))
     Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Size = UDim2.new(1, -45, 1, 0)
+    Label.Size = UDim2.new(1, -55, 1, 0)
+    Label.Position = UDim2.new(0, 0, 0, 0)
     Label.BackgroundTransparency = 1
-    Label.Parent = ToggleFrame
+    Label.Parent = Container
 
+    -- Pill Switch
     local Switch = Instance.new("Frame")
-    Switch.Size = UDim2.new(0, 36, 0, 18)
+    Switch.Name = "Switch"
+    Switch.Size = UDim2.new(0, 40, 0, 20)
     Switch.Position = UDim2.new(1, 0, 0.5, 0)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.BackgroundColor3 = getThemeColor("Accent2", Color3.fromRGB(35, 35, 42))
-    Switch.Parent = ToggleFrame
-    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
+    Switch.BackgroundColor3 = getThemeColor("Accent2", Color3.fromRGB(32, 32, 40))
+    Switch.Parent = Container
+
+    local SwitchCorner = Instance.new("UICorner", Switch)
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
 
     local SwitchStroke = Instance.new("UIStroke", Switch)
-    SwitchStroke.Color = getThemeColor("Accent", Color3.fromRGB(55, 55, 62))
-    SwitchStroke.Thickness = 1
+    SwitchStroke.Color = getThemeColor("Accent", Color3.fromRGB(55, 55, 65))
+    SwitchStroke.Thickness = 1.2
     SwitchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+    local SwitchGradient = Instance.new("UIGradient", Switch)
+    SwitchGradient.Enabled = false
+    SwitchGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, getThemeColor("Accent2", Color3.fromRGB(100, 140, 255))),
+        ColorSequenceKeypoint.new(1, getThemeColor("Text", Color3.fromRGB(255, 255, 255)))
+    })
+
+    -- Knob (okrągły suwak)
     local Knob = Instance.new("Frame")
+    Knob.Name = "Knob"
     Knob.Size = UDim2.new(0, 14, 0, 14)
-    Knob.Position = UDim2.new(0, 2, 0.5, 0)
+    Knob.Position = UDim2.new(0, 3, 0.5, 0)
     Knob.AnchorPoint = Vector2.new(0, 0.5)
-    Knob.BackgroundColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 160))
+    Knob.BackgroundColor3 = getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 170))
     Knob.Parent = Switch
+
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
     local Value = options.CurrentValue or false
@@ -55,20 +87,34 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
         Value = menuConfig[options.Flag]
     end
 
+    local function updateThemeColors()
+        SwitchGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, getThemeColor("Accent2", Color3.fromRGB(100, 140, 255))),
+            ColorSequenceKeypoint.new(1, getThemeColor("Text", Color3.fromRGB(255, 255, 255)))
+        })
+    end
+
     local function Update(animate)
-        local targetPos = Value and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
-        local targetSwitchBg = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent2", Color3.fromRGB(35, 35, 42))
-        local targetSwitchStroke = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent", Color3.fromRGB(55, 55, 62))
-        local targetKnobBg = Value and getThemeColor("Main", Color3.fromRGB(20, 20, 24)) or getThemeColor("Text_Secondary", Color3.fromRGB(150, 150, 160))
-        local targetTextColor = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 165))
+        local targetPos = Value and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local targetSwitchBg = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent2", Color3.fromRGB(32, 32, 40))
+        local targetSwitchStroke = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Accent", Color3.fromRGB(55, 55, 65))
+        local targetKnobBg = Value and getThemeColor("Main", Color3.fromRGB(18, 18, 22)) or getThemeColor("Text_Secondary", Color3.fromRGB(160, 160, 170))
+        local targetTextColor = Value and getThemeColor("Text", Color3.fromRGB(255, 255, 255)) or getThemeColor("Text_Secondary", Color3.fromRGB(170, 170, 180))
 
         if animate then
-            pcall(function()
-                TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetSwitchBg}):Play()
-                TweenService:Create(SwitchStroke, TweenInfo.new(0.2), {Color = targetSwitchStroke}):Play()
-                TweenService:Create(Knob, TweenInfo.new(0.2), {BackgroundColor3 = targetKnobBg, Position = targetPos}):Play()
-                TweenService:Create(Label, TweenInfo.new(0.2), {TextColor3 = targetTextColor}):Play()
-            end)
+            TweenService:Create(Switch, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundColor3 = targetSwitchBg
+            }):Play()
+            TweenService:Create(SwitchStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Color = targetSwitchStroke
+            }):Play()
+            TweenService:Create(Knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundColor3 = targetKnobBg,
+                Position = targetPos
+            }):Play()
+            TweenService:Create(Label, TweenInfo.new(0.2), {
+                TextColor3 = targetTextColor
+            }):Play()
         else
             Switch.BackgroundColor3 = targetSwitchBg
             SwitchStroke.Color = targetSwitchStroke
@@ -87,11 +133,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
 
     if themeManager and themeManager.OnThemeChanged then
         themeManager:OnThemeChanged(function()
+            updateThemeColors()
             Update(false)
         end)
     end
 
-    -- Inicjalizacja bez animacji (zero błędów tweenowania)
+    updateThemeColors()
     Update(false)
 
     local API = {}
@@ -101,5 +148,9 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
         if options.Callback then options.Callback(Value) end
         if options.Flag and saveMenuConfig then saveMenuConfig(options.Flag, Value) end
     end
+    function API:GetValue()
+        return Value
+    end
+
     return API
 end

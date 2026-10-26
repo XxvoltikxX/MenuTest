@@ -1,4 +1,4 @@
-﻿local MenuLib = {}
+local MenuLib = {}
 
 -- // SERWISY
 local UserInputService = game:GetService("UserInputService")
@@ -670,6 +670,7 @@ function MenuLib:CreateWindow(options)
     local InputElement        = safeLoadUrl(baseUrl .. "elements/Input.lua",       dummyElementLoader)
     local DropdownElement     = safeLoadUrl(baseUrl .. "elements/Dropdown.lua",    dummyElementLoader)
     local ModuleElement       = safeLoadUrl(baseUrl .. "elements/Module.lua",      dummyElementLoader)
+    local SectionElement      = safeLoadUrl(baseUrl .. "elements/Section.lua",     dummyElementLoader)
 
     local elementsTable = {
         Button      = ButtonElement,
@@ -678,6 +679,9 @@ function MenuLib:CreateWindow(options)
         Slider      = SliderElement,
         Input       = InputElement,
         Dropdown    = DropdownElement,
+        Module      = ModuleElement,
+        Section     = SectionElement,
+        Category    = SectionElement,
         Icons       = UI.Icons,
     }
 
@@ -704,6 +708,18 @@ function MenuLib:CreateWindow(options)
     function WindowAPI:OnCleanup(callback)
         if type(callback) == "function" then
             table.insert(CustomCleanups, callback)
+        end
+        return WindowAPI
+    end
+    function WindowAPI:SetAnimatedTheme(mode, intensity, speed)
+        if UI and UI.SetAnimatedTheme then
+            UI:SetAnimatedTheme(mode, intensity, speed)
+        end
+        return WindowAPI
+    end
+    function WindowAPI:SetGifBackground(assetId, transparency)
+        if UI and UI.SetGifBackground then
+            UI:SetGifBackground(assetId, transparency)
         end
         return WindowAPI
     end
@@ -818,6 +834,22 @@ function MenuLib:CreateWindow(options)
             if opts and opts.Flag and UI.Flags then UI.Flags[opts.Flag] = inst end
             return inst
         end
+        function TabAPI:CreateSection(opts)
+            local targetSide = opts and opts.Side
+            local targetCol
+            if isMobile then
+                targetCol = LeftColumn
+            elseif targetSide == "Left" then
+                targetCol = LeftColumn
+            elseif targetSide == "Right" then
+                targetCol = RightColumn
+            else
+                itemCounter = itemCounter + 1
+                targetCol = (itemCounter % 2 == 1) and LeftColumn or RightColumn
+            end
+            return SectionElement(opts, UI.ThemeManager, targetCol, UI.MenuConfig, UI.SaveMenuConfig, AddConnection, UI, elementsTable)
+        end
+        TabAPI.CreateCategory = TabAPI.CreateSection
 
         return TabAPI
     end

@@ -1,4 +1,4 @@
-﻿-- // ==========================================================================
+-- // ==========================================================================
 -- // [UPD 3.1] TYCOON, BUT ONE DROPPER - ADVANCED AUTOMATION & VISUAL SUITE
 -- // Dedicated script for MenuTest UI Library
 -- // Categories: Player, AutoFarm, Render
@@ -1565,9 +1565,16 @@ end)
 -- =============================================================================
 -- === ZAKŁADKA 1: PLAYER ===
 -- =============================================================================
+local CatMovement = TabPlayer:CreateCategory({
+    Name = "Movement & Physics",
+    Icon = "wind",
+    Description = "Latanie, prędkość chodzenia oraz skoki postaci",
+    Badge = "PHYSICS",
+    Side = "Left"
+})
 
 -- Moduł: Fly
-local FlyMod = TabPlayer:CreateModule({
+local FlyMod = CatMovement:CreateModule({
     Name = "Fly",
     Icon = "plane",
     Default = false,
@@ -1607,7 +1614,7 @@ FlyMod:AddToggle({
 })
 
 -- Moduł: Speed
-local SpeedMod = TabPlayer:CreateModule({
+local SpeedMod = CatMovement:CreateModule({
     Name = "Speed",
     Icon = "zap",
     Default = false,
@@ -1640,7 +1647,7 @@ SpeedMod:AddToggle({
 })
 
 -- Moduł: InfJump
-local JumpMod = TabPlayer:CreateModule({
+local JumpMod = CatMovement:CreateModule({
     Name = "InfJump",
     Icon = "arrow-up-circle",
     Default = false,
@@ -1664,16 +1671,24 @@ JumpMod:AddSlider({
     end
 })
 
+local CatSurvival = TabPlayer:CreateCategory({
+    Name = "Shortcuts & Actions",
+    Icon = "shield-alert",
+    Description = "Teleportacja do własnej działki oraz reset postaci",
+    Badge = "ACTIONS",
+    Side = "Right"
+})
+
 -- Narzędzia dla gracza
-TabPlayer:CreateButton({
+CatSurvival:AddButton({
     Name = "My Plot",
     Callback = function()
         TeleportToMyPlot()
     end
 })
 
-TabPlayer:CreateButton({
-    Name = "Reset",
+CatSurvival:AddButton({
+    Name = "Reset Player",
     Callback = function()
         SetFlyState(false)
         SetSpeedState(false)
@@ -1692,9 +1707,16 @@ TabPlayer:CreateButton({
 -- =============================================================================
 -- === ZAKŁADKA 2: AUTOFARM ===
 -- =============================================================================
+local CatTycoon = TabAutoFarm:CreateCategory({
+    Name = "Tycoon Automation",
+    Icon = "badge-dollar-sign",
+    Description = "Automatyczny zakup dropperów oraz ulepszeń bazy",
+    Badge = "FARM",
+    Side = "Left"
+})
 
 -- Moduł: AutoBuy
-local AutoBuyMod = TabAutoFarm:CreateModule({
+local AutoBuyMod = CatTycoon:CreateModule({
     Name = "AutoBuy",
     Icon = "badge-dollar-sign",
     Default = false,
@@ -1747,8 +1769,16 @@ AutoBuyMod:AddSlider({
     end
 })
 
+local CatPrestige = TabAutoFarm:CreateCategory({
+    Name = "Prestige & Rewards",
+    Icon = "trophy",
+    Description = "Auto Rebirth, koło fortuny, skrzynie i questy",
+    Badge = "PROGRESS",
+    Side = "Right"
+})
+
 -- Moduł: AutoRebirth
-local AutoRebirthMod = TabAutoFarm:CreateModule({
+local AutoRebirthMod = CatPrestige:CreateModule({
     Name = "AutoRebirth",
     Icon = "recycle",
     Default = false,
@@ -1782,7 +1812,7 @@ AutoRebirthMod:AddButton({
 })
 
 -- Moduł: AutoSpin
-local AutoSpinMod = TabAutoFarm:CreateModule({
+local AutoSpinMod = CatPrestige:CreateModule({
     Name = "AutoSpin",
     Icon = "disc-2",
     Default = false,
@@ -1807,7 +1837,7 @@ AutoSpinMod:AddSlider({
 })
 
 -- Moduł: AutoPrize
-local AutoPrizeMod = TabAutoFarm:CreateModule({
+local AutoPrizeMod = CatPrestige:CreateModule({
     Name = "AutoPrize",
     Icon = "candy",
     Default = false,
@@ -1866,7 +1896,7 @@ AutoPrizeMod:AddToggle({
 })
 
 -- Moduł: AutoQuests
-local AutoQuestsMod = TabAutoFarm:CreateModule({
+local AutoQuestsMod = CatPrestige:CreateModule({
     Name = "AutoQuests",
     Icon = "clipboard",
     Default = false,
@@ -1893,9 +1923,16 @@ AutoQuestsMod:AddSlider({
 -- =============================================================================
 -- === ZAKŁADKA 3: RENDER ===
 -- =============================================================================
+local CatVFX = TabRender:CreateCategory({
+    Name = "Visual Effects & Auras",
+    Icon = "sparkles",
+    Description = "Orbity, gwiazdy, pierścienie, poświata oraz smuga",
+    Badge = "VFX",
+    Side = "Left"
+})
 
 -- Moduł 1: Stars
-local StarsMod = TabRender:CreateModule({
+local StarsMod = CatVFX:CreateModule({
     Name = "Stars",
     Icon = "sparkles",
     Default = false,
@@ -1948,7 +1985,7 @@ StarsMod:AddColorPicker({
 })
 
 -- Moduł 2: Rings
-local RingsMod = TabRender:CreateModule({
+local RingsMod = CatVFX:CreateModule({
     Name = "Rings",
     Icon = "rotate-cw",
     Default = false,
@@ -1990,7 +2027,7 @@ RingsMod:AddColorPicker({
 })
 
 -- Moduł 3: Aura
-local AuraMod = TabRender:CreateModule({
+local AuraMod = CatVFX:CreateModule({
     Name = "Aura",
     Icon = "sun",
     Default = false,
@@ -2022,7 +2059,7 @@ AuraMod:AddColorPicker({
 })
 
 -- Moduł 4: Trail
-local TrailMod = TabRender:CreateModule({
+local TrailMod = CatVFX:CreateModule({
     Name = "Trail",
     Icon = "activity",
     Default = false,
@@ -2054,8 +2091,16 @@ TrailMod:AddColorPicker({
     end
 })
 
+local CatVision = TabRender:CreateCategory({
+    Name = "Vision & World ESP",
+    Icon = "eye",
+    Description = "Wykrywanie graczy, Tracers, Obby oraz działka",
+    Badge = "VISION",
+    Side = "Right"
+})
+
 -- Moduł 5: ESP
-local EspMod = TabRender:CreateModule({
+local EspMod = CatVision:CreateModule({
     Name = "ESP",
     Icon = "users",
     Default = false,
@@ -2116,7 +2161,7 @@ EspMod:AddColorPicker({
 })
 
 -- Moduł 6: Tracers
-local TracersMod = TabRender:CreateModule({
+local TracersMod = CatVision:CreateModule({
     Name = "Tracers",
     Icon = "navigation",
     Default = false,
@@ -2151,7 +2196,7 @@ TracersMod:AddColorPicker({
 })
 
 -- Moduł 7: ObbyESP
-local ObbyMod = TabRender:CreateModule({
+local ObbyMod = CatVision:CreateModule({
     Name = "ObbyESP",
     Icon = "flag",
     Default = false,
@@ -2192,7 +2237,7 @@ ObbyMod:AddColorPicker({
 })
 
 -- Moduł 8: PlotESP
-local PlotMod = TabRender:CreateModule({
+local PlotMod = CatVision:CreateModule({
     Name = "PlotESP",
     Icon = "layers",
     Default = false,

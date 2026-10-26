@@ -1,4 +1,4 @@
-﻿local Settings = {}
+local Settings = {}
 
 -- Serwisy
 local HttpService = game:GetService("HttpService")
@@ -47,6 +47,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     if not ToggleElement then
         ToggleElement = safeLoadSub("elements/Toggle.lua", baseUrl .. "elements/Toggle.lua")
     end
+
+    local SliderElement = safeLoadSub("elements/Slider.lua", baseUrl .. "elements/Slider.lua")
+    local DropdownElement = safeLoadSub("elements/Dropdown.lua", baseUrl .. "elements/Dropdown.lua")
 
     -- Tworzymy dedykowaną stronę Settings bezpośrednio w PagesContainer z pełną obsługą przewijania
     local Page = Instance.new("ScrollingFrame")
@@ -294,10 +297,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             ["dark"] = { Main = {15, 15, 15}, Secondary = {25, 25, 25}, Accent = {60, 60, 60}, Accent2 = {40, 40, 40}, Success = {100, 255, 100}, Text = {255, 255, 255}, Text_Secondary = {160, 160, 160}, Close = {200, 50, 50} },
             ["light"] = { Main = {245, 245, 248}, Secondary = {232, 232, 238}, Accent = {195, 195, 205}, Accent2 = {215, 215, 225}, Success = {45, 175, 75}, Text = {20, 20, 25}, Text_Secondary = {110, 110, 125}, Close = {220, 55, 55} },
             ["midnight"] = { Main = {10, 13, 20}, Secondary = {16, 21, 32}, Accent = {42, 54, 78}, Accent2 = {25, 34, 50}, Success = {80, 230, 160}, Text = {240, 246, 255}, Text_Secondary = {130, 148, 178}, Close = {235, 70, 85} },
-            ["amethyst"] = { Main = {16, 12, 24}, Secondary = {26, 20, 38}, Accent = {68, 50, 98}, Accent2 = {40, 28, 58}, Success = {130, 245, 160}, Text = {250, 244, 255}, Text_Secondary = {172, 150, 198}, Close = {235, 60, 90} }
+            ["amethyst"] = { Main = {16, 12, 24}, Secondary = {26, 20, 38}, Accent = {68, 50, 98}, Accent2 = {40, 28, 58}, Success = {130, 245, 160}, Text = {250, 244, 255}, Text_Secondary = {172, 150, 198}, Close = {235, 60, 90} },
+            ["cyberpunk"] = { Main = {12, 10, 20}, Secondary = {24, 16, 40}, Accent = {255, 0, 128}, Accent2 = {0, 240, 255}, Success = {0, 255, 170}, Text = {255, 255, 255}, Text_Secondary = {180, 160, 220}, Close = {255, 50, 80} },
+            ["emerald"] = { Main = {10, 18, 14}, Secondary = {16, 28, 22}, Accent = {0, 230, 120}, Accent2 = {0, 90, 50}, Success = {80, 255, 160}, Text = {240, 255, 248}, Text_Secondary = {140, 185, 160}, Close = {240, 70, 70} },
+            ["sunset"] = { Main = {18, 12, 16}, Secondary = {30, 18, 26}, Accent = {255, 90, 60}, Accent2 = {180, 50, 90}, Success = {255, 180, 60}, Text = {255, 245, 245}, Text_Secondary = {200, 160, 175}, Close = {255, 60, 80} },
+            ["tokyo"] = { Main = {15, 17, 26}, Secondary = {22, 26, 40}, Accent = {122, 162, 247}, Accent2 = {65, 72, 104}, Success = {158, 206, 106}, Text = {192, 202, 245}, Text_Secondary = {130, 140, 180}, Close = {247, 118, 142} }
         }
 
-        for _, tName in ipairs({"dark", "light", "midnight", "amethyst"}) do
+        for _, tName in ipairs({"dark", "light", "midnight", "amethyst", "cyberpunk", "emerald", "sunset", "tokyo"}) do
             registerTheme(tName, function()
                 if builtins[tName] then ThemeManager:Apply(builtins[tName]) end
             end)
@@ -342,13 +349,103 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     LoadThemes()
 
-    -- Sekcja: Other Settings (LayoutOrder = 2)
+    -- Sekcja: Animated Background FX (LayoutOrder = 2)
+    local AnimSection = Instance.new("Frame")
+    AnimSection.Name = "AnimatedThemesSection"
+    AnimSection.Size = UDim2.new(1, 0, 0, 0)
+    AnimSection.AutomaticSize = Enum.AutomaticSize.Y
+    AnimSection.BackgroundTransparency = 1
+    AnimSection.LayoutOrder = 2
+    AnimSection.ZIndex = 40
+    AnimSection.Parent = Page
+
+    local AnimHeader = Instance.new("TextLabel")
+    AnimHeader.Text = "ANIMATED THEMES & LIVE BACKGROUND FX"
+    AnimHeader.Font = Enum.Font.GothamBold
+    AnimHeader.TextSize = 12
+    AnimHeader.Size = UDim2.new(1, 0, 0, 20)
+    AnimHeader.BackgroundTransparency = 1
+    AnimHeader.TextXAlignment = Enum.TextXAlignment.Left
+    AnimHeader.Parent = AnimSection
+    ThemeManager:Register(AnimHeader, "TextColor3", "Text_Secondary")
+
+    local AnimContainer = Instance.new("Frame")
+    AnimContainer.Name = "Container"
+    AnimContainer.Size = UDim2.new(1, 0, 0, 0)
+    AnimContainer.AutomaticSize = Enum.AutomaticSize.Y
+    AnimContainer.Position = UDim2.new(0, 0, 0, 25)
+    AnimContainer.Parent = AnimSection
+    ThemeManager:Register(AnimContainer, "BackgroundColor3", "Secondary")
+
+    Instance.new("UICorner", AnimContainer).CornerRadius = UDim.new(0, 6)
+    local AnimStroke = Instance.new("UIStroke", AnimContainer)
+    AnimStroke.Thickness = 1
+    AnimStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    ThemeManager:Register(AnimStroke, "Color", "Accent")
+
+    local AnimLayout = Instance.new("UIListLayout", AnimContainer)
+    AnimLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    AnimLayout.Padding = UDim.new(0, 6)
+
+    local AnimPadding = Instance.new("UIPadding", AnimContainer)
+    AnimPadding.PaddingTop = UDim.new(0, 10)
+    AnimPadding.PaddingBottom = UDim.new(0, 10)
+    AnimPadding.PaddingLeft = UDim.new(0, 12)
+    AnimPadding.PaddingRight = UDim.new(0, 12)
+
+    if DropdownElement then
+        local currentAnim = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedTheme"]) or "Aurora"
+        DropdownElement({
+            Name = "Live Wave Preset",
+            Options = {"Aurora", "Cyberpunk", "Cosmic", "Sunset", "Emerald", "None"},
+            CurrentOption = currentAnim,
+            Flag = "AnimatedTheme",
+            Callback = function(selected)
+                if UI and UI.SetAnimatedTheme then
+                    UI:SetAnimatedTheme(selected)
+                end
+            end
+        }, ThemeManager, AnimContainer, UI.MenuConfig, UI.SaveMenuConfig, UI.AddConnection, Icons)
+    end
+
+    if SliderElement then
+        local savedInt = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeIntensity"]) or 12
+        SliderElement({
+            Name = "Live Glow Intensity",
+            Min = 2,
+            Max = 35,
+            Default = math.floor(savedInt <= 1 and (savedInt * 100) or savedInt),
+            Suffix = "%",
+            Flag = "AnimatedThemeIntensity",
+            Callback = function(val)
+                if UI and UI.SetAnimatedTheme then
+                    UI:SetAnimatedTheme(nil, val / 100, nil)
+                end
+            end
+        }, ThemeManager, AnimContainer, UI.MenuConfig, UI.SaveMenuConfig)
+
+        local savedSpeed = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeSpeed"]) or 5
+        SliderElement({
+            Name = "Wave Animation Speed",
+            Min = 1,
+            Max = 25,
+            Default = math.floor(savedSpeed <= 2.5 and (savedSpeed * 10) or savedSpeed),
+            Suffix = "x",
+            Callback = function(val)
+                if UI and UI.SetAnimatedTheme then
+                    UI:SetAnimatedTheme(nil, nil, val / 10)
+                end
+            end
+        }, ThemeManager, AnimContainer, UI.MenuConfig, UI.SaveMenuConfig)
+    end
+
+    -- Sekcja: Other Settings (LayoutOrder = 3)
     local SettingsSection = Instance.new("Frame")
     SettingsSection.Name = "SettingsSection"
     SettingsSection.Size = UDim2.new(1, 0, 0, 0)
     SettingsSection.AutomaticSize = Enum.AutomaticSize.Y
     SettingsSection.BackgroundTransparency = 1
-    SettingsSection.LayoutOrder = 2
+    SettingsSection.LayoutOrder = 3
     SettingsSection.ZIndex = 1
     SettingsSection.Parent = Page
 
@@ -711,14 +808,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
 
     -- ============================================================
-    -- Sekcja: Configs (LayoutOrder = 3)
+    -- Sekcja: Configs (LayoutOrder = 4)
     -- ============================================================
     local ConfigsSection = Instance.new("Frame")
     ConfigsSection.Name = "ConfigsSection"
     ConfigsSection.Size = UDim2.new(1, 0, 0, 0)
     ConfigsSection.AutomaticSize = Enum.AutomaticSize.Y
     ConfigsSection.BackgroundTransparency = 1
-    ConfigsSection.LayoutOrder = 3
+    ConfigsSection.LayoutOrder = 4
     ConfigsSection.ZIndex = 1
     ConfigsSection.Parent = Page
 

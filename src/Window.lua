@@ -1,4 +1,4 @@
-﻿local Window = {}
+local Window = {}
 
 -- Serwisy
 local UserInputService = game:GetService("UserInputService")
@@ -304,6 +304,154 @@ function Window:Create(config)
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     MainStroke.Thickness = 1.6
     ThemeManager:Register(MainStroke, "Color", "Accent")
+
+    -- // ============================================================
+    -- // ANIMATED BACKGROUND & LIVE THEME GIF ENGINE
+    -- // ============================================================
+    local BackgroundContainer = Instance.new("Frame")
+    BackgroundContainer.Name = "AnimatedBackground"
+    BackgroundContainer.Size = UDim2.new(1, 0, 1, 0)
+    BackgroundContainer.Position = UDim2.new(0, 0, 0, 0)
+    BackgroundContainer.BackgroundTransparency = 1
+    BackgroundContainer.ClipsDescendants = true
+    BackgroundContainer.ZIndex = 1
+    BackgroundContainer.Parent = MainFrame
+    UI.BackgroundContainer = BackgroundContainer
+
+    local WaveLayer = Instance.new("Frame")
+    WaveLayer.Name = "WaveLayer"
+    WaveLayer.Size = UDim2.new(1.6, 0, 1.6, 0)
+    WaveLayer.Position = UDim2.new(0.5, 0, 0.5, 0)
+    WaveLayer.AnchorPoint = Vector2.new(0.5, 0.5)
+    WaveLayer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    WaveLayer.BackgroundTransparency = 0.90
+    WaveLayer.BorderSizePixel = 0
+    WaveLayer.ZIndex = 1
+    WaveLayer.Parent = BackgroundContainer
+
+    local WaveGradient = Instance.new("UIGradient", WaveLayer)
+    WaveGradient.Rotation = 45
+
+    local GifImageLayer = Instance.new("ImageLabel")
+    GifImageLayer.Name = "GifImageLayer"
+    GifImageLayer.Size = UDim2.new(1, 0, 1, 0)
+    GifImageLayer.BackgroundTransparency = 1
+    GifImageLayer.ImageTransparency = 0.88
+    GifImageLayer.ScaleType = Enum.ScaleType.Crop
+    GifImageLayer.Visible = false
+    GifImageLayer.ZIndex = 1
+    GifImageLayer.Parent = BackgroundContainer
+
+    local animPresets = {
+        ["Aurora"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 240, 150)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 180, 255)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(130, 40, 240)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 20, 60))
+            }),
+            DefaultTransparency = 0.90
+        },
+        ["Cyberpunk"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 0, 128)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(120, 0, 255)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(0, 240, 255)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(20, 10, 40))
+            }),
+            DefaultTransparency = 0.88
+        },
+        ["Cosmic"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(150, 60, 255)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(70, 40, 180)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(20, 80, 200)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(10, 12, 30))
+            }),
+            DefaultTransparency = 0.90
+        },
+        ["Sunset"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 80, 60)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(255, 160, 40)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(180, 40, 100)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(30, 15, 25))
+            }),
+            DefaultTransparency = 0.90
+        },
+        ["Emerald"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 255, 120)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 180, 80)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(10, 80, 50)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(5, 20, 12))
+            }),
+            DefaultTransparency = 0.90
+        },
+        ["None"] = {
+            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)),
+            DefaultTransparency = 1.0
+        }
+    }
+
+    local currentAnimMode = (config and config.AnimatedTheme) or "Aurora"
+    local animSpeed = 0.5
+    local animIntensity = 0.12
+
+    local function applyAnimPreset(mode)
+        local p = animPresets[mode] or animPresets["Aurora"]
+        WaveGradient.Color = p.Color
+        if mode == "None" then
+            WaveLayer.Visible = false
+        else
+            WaveLayer.Visible = true
+            WaveLayer.BackgroundTransparency = 1 - animIntensity
+        end
+    end
+
+    applyAnimPreset(currentAnimMode)
+
+    local animHeartbeat
+    animHeartbeat = RunService.Heartbeat:Connect(function()
+        if not MainFrame or not MainFrame.Parent then
+            if animHeartbeat then animHeartbeat:Disconnect() end
+            return
+        end
+        if currentAnimMode == "None" or not WaveLayer.Visible then return end
+        local t = tick() * animSpeed
+        WaveGradient.Offset = Vector2.new(math.sin(t * 0.4) * 0.22, math.cos(t * 0.3) * 0.22)
+        WaveGradient.Rotation = (45 + math.sin(t * 0.25) * 25) % 360
+    end)
+
+    function UI:SetAnimatedTheme(mode, intensity, speed)
+        if mode and animPresets[mode] then
+            currentAnimMode = mode
+        end
+        if intensity then
+            animIntensity = math.clamp(tonumber(intensity) or 0.12, 0.02, 0.35)
+        end
+        if speed then
+            animSpeed = math.clamp(tonumber(speed) or 0.5, 0.1, 2.5)
+        end
+        applyAnimPreset(currentAnimMode)
+        if UI.SaveMenuConfig then
+            pcall(function()
+                UI.SaveMenuConfig("AnimatedTheme", currentAnimMode)
+                UI.SaveMenuConfig("AnimatedThemeIntensity", animIntensity)
+                UI.SaveMenuConfig("AnimatedThemeSpeed", animSpeed)
+            end)
+        end
+    end
+
+    function UI:SetGifBackground(assetId, transparency)
+        if assetId and assetId ~= "" then
+            GifImageLayer.Image = assetId
+            GifImageLayer.ImageTransparency = transparency or 0.88
+            GifImageLayer.Visible = true
+        else
+            GifImageLayer.Visible = false
+        end
+    end
 
     -- TopBar
     local TopBar = Instance.new("Frame")

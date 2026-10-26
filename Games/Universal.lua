@@ -1,4 +1,4 @@
-﻿-- // ==========================================================================
+-- // ==========================================================================
 -- // UNIVERSAL SUITE - LIGHTWEIGHT RENDER & ESP MODULE
 -- // Dedicated Universal Script for MenuTest UI Library
 -- // Category: Render (Player ESP, Chams, Billboards, Tracers)
@@ -206,8 +206,18 @@ end)
 
 Players.PlayerRemoving:Connect(CleanupPlayerESP)
 
--- // Budowa UI Modułu Render
-local ESPMod = TabRender:CreateModule({
+-- // ==========================================================================
+-- // BUDOWA ELEMENTÓW UI W KATEGORIACH
+-- // ==========================================================================
+local CatVisuals = TabRender:CreateCategory({
+    Name = "Player Visuals",
+    Icon = "eye",
+    Description = "Zarządzanie widocznością graczy i podświetleniem",
+    Badge = "ESP",
+    Side = "Left"
+})
+
+local ESPMod = CatVisuals:CreateModule({
     Name = "Player ESP",
     Icon = "eye",
     Default = false,
@@ -269,8 +279,28 @@ ESPMod:AddColorPicker({
     end
 })
 
--- Moduł: Tracers
-local TracerMod = TabRender:CreateModule({
+CatVisuals:AddSlider({
+    Name = "Max Render Distance",
+    Min = 100,
+    Max = 3000,
+    Default = 1500,
+    Step = 50,
+    Suffix = " studs",
+    Flag = "Universal_MaxDist",
+    Callback = function(val)
+        -- Limit dystansu renderowania
+    end
+})
+
+local CatTracers = TabRender:CreateCategory({
+    Name = "Targeting & Tracers",
+    Icon = "crosshair",
+    Description = "Linie celownicze i wektory namierzania",
+    Badge = "BEAMS",
+    Side = "Right"
+})
+
+local TracerMod = CatTracers:CreateModule({
     Name = "Tracers",
     Icon = "navigation",
     Default = false,
@@ -302,5 +332,18 @@ TracerMod:AddColorPicker({
     Callback = function(col, alpha)
         tracerColor = col
         tracerAlpha = (alpha ~= nil and alpha) or 1.0
+    end
+})
+
+CatTracers:AddSlider({
+    Name = "Tracer Thickness",
+    Min = 1,
+    Max = 5,
+    Default = 1.5,
+    Step = 0.5,
+    Suffix = " px",
+    Flag = "Universal_TracerThick",
+    Callback = function(val)
+        -- Grubość linii
     end
 })

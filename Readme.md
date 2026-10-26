@@ -1,4 +1,4 @@
-﻿# 💎 MenuTest UI Library
+# 💎 MenuTest UI Library
 
 Nowoczesna, ultra-szybka i w pełni responsywna biblioteka interfejsu użytkownika dla środowiska **Roblox**. Zaprojektowana z myślą o maksymalnej płynności (pamięć podręczna modułów, zerowe zacięcia), dark-mode, systemie dynamicznych modułów (inspirowanych klientami PvP), dolnym pasku profilu w stylu **Discord** z dedykowaną zębatką ustawień oraz inteligentnym Master Loaderze z automatyczną detekcją gier.
 
@@ -278,6 +278,64 @@ Tab:CreateDropdown({ Name = "Cel", Options = {"Najbliższy", "Najsłabszy"}, Def
 Tab:CreateColorPicker({ Name = "ESP Kolor", Default = Color3.fromRGB(255, 50, 50), Flag = "ESP_Color", Callback = function(v) end })
 Tab:CreateInput({ Name = "Webhook", Placeholder = "URL...", Default = "", Flag = "Webhook", Callback = function(v) end })
 Tab:CreateButton({ Name = "Teleport", Callback = function() end })
+```
+
+---
+
+## 🗂️ Nowoczesny System Kategorii i Sekcji (Categories & Sections)
+
+Możesz podzielić dowolną zakładkę na eleganckie, zwijane karty kategorii (Category Cards) z nagłówkami, ikonami Lucide, opisami i plakietkami (badges):
+
+```lua
+local CombatCat = Tab:CreateCategory({
+    Name = "Walka i Aimbot",
+    Icon = "crosshair",
+    Description = "Zaawansowane moduły namierzania przeciwników",
+    Badge = "PVP",
+    Side = "Left",          -- "Left" | "Right" | "Auto"
+    Collapsible = true,     -- Możliwość zwijania kliknięciem w nagłówek
+    DefaultOpen = true      -- Domyślnie rozwinięta
+})
+
+-- Dodawanie modułów i kontrolek bezpośrednio do kategorii:
+local AimbotMod = CombatCat:CreateModule({
+    Name = "Silent Aim",
+    Default = false,
+    DefaultKeybind = "C",
+    Flag = "Combat_SilentAim",
+    Callback = function(state) end
+})
+
+CombatCat:CreateSlider({
+    Name = "Field of View (FOV)",
+    Min = 10,
+    Max = 180,
+    Default = 90,
+    Step = 1,
+    Suffix = "°",
+    Flag = "Combat_FOV",
+    Callback = function(val) end
+})
+
+CombatCat:CreateToggle({
+    Name = "Draw FOV Circle",
+    Default = true,
+    Flag = "Combat_DrawFOV",
+    Callback = function(v) end
+})
+```
+
+---
+
+## 🌈 Żywe Animowane Motywy i Efekty Tła (Animated Themes & FX)
+
+Menu posiada wbudowany silnik animacji tła w 60 FPS (`RunService.Heartbeat`), który tworzy płynne, holograficzne fale gradientu i poświaty:
+- **Dostępne presety animacji**: `Aurora`, `Cyberpunk`, `Cosmic`, `Sunset`, `Emerald`, `None`.
+- **Wbudowane motywy**: `dark`, `midnight`, `amethyst`, `cyberpunk`, `emerald`, `sunset`, `tokyo`, `light`.
+- **Kontrola programowa**:
+```lua
+Window:SetAnimatedTheme("Cyberpunk", 0.15, 0.8) -- Tryb, intensywność poświaty (0.02 - 0.35), prędkość fal (0.1 - 2.5)
+Window:SetGifBackground("rbxassetid://12345678", 0.85) -- Tło GIF / Spritesheet
 ```
 
 ---
