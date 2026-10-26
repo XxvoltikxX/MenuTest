@@ -203,11 +203,13 @@ function Window:Create(config)
         viewport = Vector2.new(1280, 720)
     end
 
-    local isMobile = (config and (config.TestMobile or config.Mobile or config.IsMobile))
-        or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
-        or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
-        or (UserInputService.TouchEnabled and (viewport.X < 950 or viewport.Y < 550))
-    local isTouch = UserInputService.TouchEnabled or isMobile
+    local isMobile = false
+    if config and (config.TestMobile or config.Mobile or config.IsMobile) then
+        isMobile = true
+    elseif UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled then
+        isMobile = true
+    end
+    local isTouch = isMobile
     UI.IsMobile = isMobile
     UI.IsTouch = isTouch
 
@@ -262,8 +264,8 @@ function Window:Create(config)
     end
 
     -- Dynamiczny rozmiar początkowy dopasowany do ekranu
-    local defaultW = 700
-    local defaultH = 400
+    local defaultW = 750
+    local defaultH = 460
     if isMobile then
         -- Na urządzeniach mobilnych zgrabny, kompaktowy rozmiar z wygodnymi marginesami dookoła
         defaultW = math.clamp(math.floor(viewport.X * 0.72), 340, 500)
@@ -394,9 +396,9 @@ function Window:Create(config)
         }
     }
 
-    local currentAnimMode = (config and config.AnimatedTheme) or "Aurora"
-    local animSpeed = 0.5
-    local animIntensity = 0.12
+    local currentAnimMode = (config and config.AnimatedTheme) or "None"
+    local animSpeed = 0.4
+    local animIntensity = 0.04
 
     local function applyAnimPreset(mode)
         local p = animPresets[mode] or animPresets["Aurora"]

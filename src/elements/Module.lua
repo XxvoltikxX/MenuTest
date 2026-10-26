@@ -1,4 +1,4 @@
-﻿-- Fast pre-load helper with local readfile support (tylko jako fallback)
+-- Fast pre-load helper with local readfile support (tylko jako fallback)
 local function safeLoadSubElement(relativePath, remoteUrl)
     local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
     if isDev and typeof(readfile) == "function" then
@@ -443,6 +443,14 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     end)
 
     UpdateVisuals(true)
+
+    if options.Expanded or options.DefaultExpanded then
+        task.defer(function()
+            if not Expanded then
+                ToggleExpand()
+            end
+        end)
+    end
 
     -- Rejestracja w UI dla Keybinds Overlay
     if UI and UI.RegisterModule then

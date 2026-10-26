@@ -168,11 +168,7 @@ end
 -- Funkcja precyzyjnie wykrywająca urządzenia dotykowe i mobilne
 local function isMobileDevice(cfg)
     if cfg and (cfg.TestMobile or cfg.Mobile or cfg.IsMobile) then return true end
-    if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then return true end
-    if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then return true end
-    local camera = workspace.CurrentCamera
-    local vp = camera and camera.ViewportSize
-    if UserInputService.TouchEnabled and vp and (vp.X < 950 or vp.Y < 550) then
+    if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled then
         return true
     end
     return false
