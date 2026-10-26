@@ -1,6 +1,6 @@
-local Dashboard = {}
+﻿local Dashboard = {}
 
-local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
+local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
 
 local function getLocalVersion()
     if typeof(readfile) == "function" then
@@ -135,7 +135,7 @@ function Dashboard:Render(UI, order, passedIcons)
     local versionStr = "v" .. getLocalVersion()
     createCard("Discord", "Join community", "users", "Copy", "https://dsc.gg/xeno-scripts-pl")
     createCard("Version", versionStr, "package", "Copy", versionStr)
-    createCard("GitHub", "View source", "github", "Copy", "https://github.com/xxCichyxx/MenuTest")
+    createCard("GitHub", "View source", "github", "Copy", "https://github.com/XxvoltikxX/MenuTest")
 
     local UpdatesContainer = Instance.new("Frame")
     UpdatesContainer.Name = "UpdatesContainer"

@@ -1,4 +1,4 @@
--- // ==========================================================================
+﻿-- // ==========================================================================
 -- // MenuTest - EmoteMenu Controller Module
 -- // Manages the full Emotes & Animations Overlay System (OpenEmote + Emotes)
 -- // ==========================================================================
@@ -8,7 +8,7 @@ local EmoteMenu = {}
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
-local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/"
+local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/emotes/"
 
 local function destroyAllStrayEmoteButtons()
     local names = {

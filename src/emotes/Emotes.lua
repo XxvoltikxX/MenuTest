@@ -1,4 +1,4 @@
---[[ 
+﻿--[[ 
     Source script taken from: https://github.com/Roblox/creator-docs/blob/main/content/en-us/characters/emotes.md
 
     scriptblox: https://scriptblox.com/script/Universal-Script-7yd7-I-Emote-Script-48024
@@ -702,7 +702,7 @@ AnimationSystem.ResetRandomSlot = function(frontFrame)
 end
 
 
-local emotesBaseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/"
+local emotesBaseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/emotes/"
 
 local function safeLoadEmoteFile(relPath, remoteUrl)
     local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
@@ -761,7 +761,7 @@ function SafeLoad(url, name)
 end
 
 
-SafeLoad("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/Notify.lua", "Notify System")
+SafeLoad("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/emotes/Notify.lua", "Notify System")
 
 local function getAssetCustom(filePath)
     if not filePath or filePath == "" then return nil end
@@ -1014,7 +1014,7 @@ getgenv().Notify = function(data)
     end
 end
 
-local SettingsLib = SafeLoad("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/SettingsLib.lua", "Settings Library")
+local SettingsLib = SafeLoad("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/emotes/SettingsLib.lua", "Settings Library")
 
 local ToggleContainer = Instance.new("Frame")
 ToggleContainer.Name = "open/Close"
@@ -8982,7 +8982,7 @@ end
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 if isMobile then
-    SafeLoad("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/emotes/OpenEmote.lua", "Open Emote")
+    SafeLoad("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/emotes/OpenEmote.lua", "Open Emote")
 else
     destroyAllStrayEmoteButtons()
 end

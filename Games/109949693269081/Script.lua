@@ -1,11 +1,11 @@
--- // ==========================================================================
+﻿-- // ==========================================================================
 -- // [UPD 3.1] TYCOON, BUT ONE DROPPER - ADVANCED AUTOMATION & VISUAL SUITE
 -- // Dedicated script for MenuTest UI Library
 -- // Categories: Player, AutoFarm, Render
 -- // ==========================================================================
 
 -- 1. Pobranie głównej biblioteki UI
-local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
+local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua"))()
 
 -- 2. Stworzenie okna menu
 local Window = MENU:CreateWindow({

@@ -1,10 +1,10 @@
--- // ==========================================================================
+﻿-- // ==========================================================================
 -- // MENUTEST MASTER LOADER
 -- // Automatyczny system detekcji gry i ładowania dedykowanych skryptów
 -- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub Universal Suite
 -- // ==========================================================================
 
-local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/"
+local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"
 
 -- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych
 if typeof(getgenv) == "function" then

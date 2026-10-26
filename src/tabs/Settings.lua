@@ -1,4 +1,4 @@
-local Settings = {}
+﻿local Settings = {}
 
 -- Serwisy
 local HttpService = game:GetService("HttpService")
@@ -7,7 +7,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
-local baseUrl = "https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/src/"
+local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
 
 local function safeLoadSub(relativePath, remoteUrl)
     local isDev = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)

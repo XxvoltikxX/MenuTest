@@ -1,4 +1,4 @@
-# 💎 MenuTest UI Library
+﻿# 💎 MenuTest UI Library
 
 Nowoczesna, ultra-szybka i w pełni responsywna biblioteka interfejsu użytkownika dla środowiska **Roblox**. Zaprojektowana z myślą o maksymalnej płynności (pamięć podręczna modułów, zerowe zacięcia), dark-mode, systemie dynamicznych modułów (inspirowanych klientami PvP), dolnym pasku profilu w stylu **Discord** z dedykowaną zębatką ustawień oraz inteligentnym Master Loaderze z automatyczną detekcją gier.
 
@@ -60,7 +60,7 @@ Nowoczesna, ultra-szybka i w pełni responsywna biblioteka interfejsu użytkowni
 Podstawowy skrypt uruchomieniowy:
 
 ```lua
-local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
+local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua"))()
 
 local Window = MENU:CreateWindow({
     Name = "MyHub",
@@ -362,7 +362,7 @@ Skopiuj poniższy szablon przy tworzeniu skryptu dla dowolnej nowej gry:
 -- 1. Pobranie biblioteki
 local MENU = (typeof(getgenv) == "function" and getgenv()._MenuTestLibrary) or _G._MenuTestLibrary
 if not MENU then
-    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Main.lua"))()
+    MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua"))()
 end
 
 -- 2. Utworzenie okna
@@ -442,5 +442,5 @@ local FarmModule = TabAutoFarm:CreateModule({
 Aby uruchomić skrypt z automatyczną detekcją gry w swoim executorze:
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/xxCichyxx/MenuTest/refs/heads/main/Loader.lua?t=" .. tostring(tick())))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Loader.lua?t=" .. tostring(tick())))()
 ```
