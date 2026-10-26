@@ -71,41 +71,46 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.BackgroundTransparency = 1
     Label.Parent = Container
 
-    -- Apple VisionOS Liquid Pill Switch
+    -- Apple iPhone iOS Liquid Glass Switch
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
-    Switch.Size = UDim2.new(0, 42, 0, 22)
+    Switch.Size = UDim2.new(0, 46, 0, 24)
     Switch.Position = UDim2.new(1, 0, 0.5, 0)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
-    Switch.BackgroundTransparency = 0.3
+    Switch.BackgroundColor3 = Color3.fromRGB(50, 54, 66)
+    Switch.BackgroundTransparency = 0.2
     Switch.Parent = Container
 
     local SwitchCorner = Instance.new("UICorner", Switch)
     SwitchCorner.CornerRadius = UDim.new(1, 0)
 
     local SwitchStroke = Instance.new("UIStroke", Switch)
-    SwitchStroke.Color = Color3.fromRGB(60, 72, 105)
+    SwitchStroke.Color = Color3.fromRGB(70, 75, 90)
     SwitchStroke.Thickness = 1
-    SwitchStroke.Transparency = 0.5
+    SwitchStroke.Transparency = 0.4
     SwitchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local SwitchGradient = Instance.new("UIGradient", Switch)
     SwitchGradient.Enabled = false
     SwitchGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(52, 199, 89)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 209, 88))
     })
 
-    -- Knob (okrągły suwak)
+    -- Knob (okrągły suwak Apple iOS)
     local Knob = Instance.new("Frame")
     Knob.Name = "Knob"
-    Knob.Size = UDim2.new(0, 14, 0, 14)
-    Knob.Position = UDim2.new(0, 4, 0.5, 0)
+    Knob.Size = UDim2.new(0, 18, 0, 18)
+    Knob.Position = UDim2.new(0, 3, 0.5, 0)
     Knob.AnchorPoint = Vector2.new(0, 0.5)
-    Knob.BackgroundColor3 = Color3.fromRGB(160, 165, 185)
+    Knob.BackgroundColor3 = Color3.fromRGB(240, 242, 250)
     Knob.Parent = Switch
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+
+    local KnobStroke = Instance.new("UIStroke", Knob)
+    KnobStroke.Color = Color3.fromRGB(200, 205, 220)
+    KnobStroke.Thickness = 1
+    KnobStroke.Transparency = 0.6
 
     ToggleFrame.MouseEnter:Connect(function()
         TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(65, 70, 105) }):Play()
@@ -126,27 +131,27 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local function updateThemeColors()
         SwitchGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, getThemeColor("Accent", Color3.fromRGB(99, 102, 241))),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
+            ColorSequenceKeypoint.new(0, getThemeColor("Accent", Color3.fromRGB(52, 199, 89))),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 209, 88))
         })
     end
 
     local function Update(animate)
-        local targetPos = Value and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
-        local targetSwitchBg = Value and (getThemeColor("Accent") or Color3.fromRGB(99, 102, 241)) or Color3.fromRGB(30, 31, 44)
-        local targetSwitchStroke = Value and Color3.fromRGB(129, 140, 248) or Color3.fromRGB(48, 50, 70)
-        local targetKnobBg = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 165, 185)
+        local targetPos = Value and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local targetSwitchBg = Value and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
+        local targetSwitchStroke = Value and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
+        local targetKnobBg = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
         local targetTextColor = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 175, 195)
-        local targetLedColor = Value and Color3.fromRGB(16, 185, 129) or Color3.fromRGB(50, 52, 70)
+        local targetLedColor = Value and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 52, 70)
 
         if animate then
-            TweenService:Create(Switch, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            TweenService:Create(Switch, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 BackgroundColor3 = targetSwitchBg
             }):Play()
-            TweenService:Create(SwitchStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            TweenService:Create(SwitchStroke, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Color = targetSwitchStroke
             }):Play()
-            TweenService:Create(Knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            TweenService:Create(Knob, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 BackgroundColor3 = targetKnobBg,
                 Position = targetPos
             }):Play()

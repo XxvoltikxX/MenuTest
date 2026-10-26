@@ -359,27 +359,27 @@ function Dashboard:Render(UI, order, passedIcons)
 
     local QmBadge = Instance.new("TextButton")
     QmBadge.Name = "LiquidGlassQuickBtn"
-    QmBadge.Text = isGlassOn and "💎 LIQUID GLASS: ON" or "⬛ GLASS: OFF"
+    QmBadge.Text = isGlassOn and "🍏 iPHONE GLASS: ON" or "⬛ GLASS: OFF"
     QmBadge.Font = Enum.Font.GothamBold
     QmBadge.TextSize = 9
-    QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(160, 165, 185)
+    QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(160, 165, 185)
     QmBadge.Size = UDim2.new(0, 130, 0, 22)
     QmBadge.Position = UDim2.new(1, 0, 0.5, 0)
     QmBadge.AnchorPoint = Vector2.new(1, 0.5)
-    QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(36, 42, 68) or Color3.fromRGB(25, 27, 40)
+    QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(20, 36, 28) or Color3.fromRGB(25, 27, 40)
     QmBadge.AutoButtonColor = false
     QmBadge.Parent = QmHeader
     Instance.new("UICorner", QmBadge).CornerRadius = UDim.new(1, 0)
     local QmbStroke = Instance.new("UIStroke", QmBadge)
-    QmbStroke.Color = isGlassOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(50, 55, 80)
+    QmbStroke.Color = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 55, 80)
     QmbStroke.Thickness = 1
 
     QmBadge.MouseButton1Click:Connect(function()
         isGlassOn = not isGlassOn
-        QmBadge.Text = isGlassOn and "💎 LIQUID GLASS: ON" or "⬛ GLASS: OFF"
-        QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(160, 165, 185)
-        QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(36, 42, 68) or Color3.fromRGB(25, 27, 40)
-        QmbStroke.Color = isGlassOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(50, 55, 80)
+        QmBadge.Text = isGlassOn and "🍏 iPHONE GLASS: ON" or "⬛ GLASS: OFF"
+        QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(160, 165, 185)
+        QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(20, 36, 28) or Color3.fromRGB(25, 27, 40)
+        QmbStroke.Color = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 55, 80)
 
         if UI and UI.SetLiquidGlass then
             UI:SetLiquidGlass(isGlassOn)

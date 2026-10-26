@@ -803,16 +803,19 @@ function Window:Create(config)
     -- =========================================================================
     -- STATUS DOCK (Pływająca dolna kapsuła VisionOS: 28px)
     -- =========================================================================
+    -- STATUS DOCK (Pływająca dolna kapsuła Apple iPhone Glass: 28px)
+    -- =========================================================================
     local dockHeight = 28
     local StatusDock = Instance.new("Frame")
     StatusDock.Name = "StatusDock"
     StatusDock.Size = UDim2.new(1, -28, 0, dockHeight)
-    StatusDock.Position = UDim2.new(0, 14, 1, -(dockHeight + 10))
-    StatusDock.BackgroundColor3 = Color3.fromRGB(18, 21, 33)
-    StatusDock.BackgroundTransparency = 0.35
+    StatusDock.Position = UDim2.new(0, 14, 1, -(dockHeight + 14))
+    StatusDock.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
+    StatusDock.BackgroundTransparency = 0.30
     StatusDock.BorderSizePixel = 0
     StatusDock.ZIndex = 6
     StatusDock.Parent = MainFrame
+    UI.StatusDock = StatusDock
 
     Instance.new("UICorner", StatusDock).CornerRadius = UDim.new(1, 0)
     local SdStroke = Instance.new("UIStroke", StatusDock)
@@ -826,14 +829,28 @@ function Window:Create(config)
 
     local DockLeft = Instance.new("TextLabel")
     DockLeft.Name = "DockLeft"
-    DockLeft.Text = "MenuTest Liquid Glass • VisionOS 3.5"
+    DockLeft.Text = "iPhone 16 Pro • iOS 18 Liquid Glass"
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
-    DockLeft.TextColor3 = Color3.fromRGB(130, 140, 170)
+    DockLeft.TextColor3 = Color3.fromRGB(52, 199, 89)
     DockLeft.TextXAlignment = Enum.TextXAlignment.Left
     DockLeft.Size = UDim2.new(0.4, 0, 1, 0)
     DockLeft.BackgroundTransparency = 1
     DockLeft.Parent = StatusDock
+
+    -- Apple iPhone Home Bar Indicator (Pasek gestów iOS na dole okna)
+    local HomeIndicator = Instance.new("Frame")
+    HomeIndicator.Name = "HomeIndicator"
+    HomeIndicator.Size = UDim2.new(0, 125, 0, 4.5)
+    HomeIndicator.Position = UDim2.new(0.5, 0, 1, -5)
+    HomeIndicator.AnchorPoint = Vector2.new(0.5, 1)
+    HomeIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    HomeIndicator.BackgroundTransparency = 0.45
+    HomeIndicator.BorderSizePixel = 0
+    HomeIndicator.ZIndex = 30
+    HomeIndicator.Parent = MainFrame
+    Instance.new("UICorner", HomeIndicator).CornerRadius = UDim.new(1, 0)
+    UI.HomeIndicator = HomeIndicator
 
     local DockCenter = Instance.new("TextLabel")
     DockCenter.Name = "DockCenter"
@@ -1622,6 +1639,59 @@ function Window:Create(config)
         GridLayout.SortOrder   = Enum.SortOrder.LayoutOrder
 
         return GridFrame
+    end
+
+    -- // ============================================================
+    -- // UI:SetLiquidGlass – dynamiczne przełączanie stylu Apple iPhone Liquid Glass
+    -- // ============================================================
+    function UI:SetLiquidGlass(enabled)
+        local isEnabled = (enabled == true)
+        local targetBgTrans = isEnabled and 0.20 or 0
+        local targetCorner = isEnabled and 26 or 12
+        local targetStrokeTrans = isEnabled and 0.40 or 0.70
+        local targetTopBarTrans = isEnabled and 0.20 or 0.05
+        local targetStatusTrans = isEnabled and 0.30 or 0.05
+
+        if MainFrame then
+            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = targetBgTrans
+            }):Play()
+        end
+        if MainCorner then
+            TweenService:Create(MainCorner, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                CornerRadius = UDim.new(0, targetCorner)
+            }):Play()
+        end
+        if MainStroke then
+            TweenService:Create(MainStroke, TweenInfo.new(0.3), {
+                Transparency = targetStrokeTrans
+            }):Play()
+        end
+        if RimLight then
+            RimLight.Visible = isEnabled
+        end
+        if UI.Sidebar then
+            TweenService:Create(UI.Sidebar, TweenInfo.new(0.3), {
+                BackgroundTransparency = targetTopBarTrans
+            }):Play()
+        end
+        if UI.StatusDock then
+            TweenService:Create(UI.StatusDock, TweenInfo.new(0.3), {
+                BackgroundTransparency = targetStatusTrans
+            }):Play()
+        end
+        if UI.HomeIndicator then
+            UI.HomeIndicator.Visible = isEnabled
+        end
+
+        if UI.MenuConfig then
+            UI.MenuConfig["LiquidGlass"] = isEnabled
+        end
+        if UI.SaveMenuConfig then
+            pcall(function()
+                UI.SaveMenuConfig("LiquidGlass", isEnabled)
+            end)
+        end
     end
 
     return UI

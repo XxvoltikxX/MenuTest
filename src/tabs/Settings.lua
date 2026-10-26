@@ -127,27 +127,28 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
 
     -- // =========================================================================
-    -- // 0. HERO APPLE LIQUID GLASS (VISIONOS) SHOWCASE CARD
+    -- // =========================================================================
+    -- // 0. HERO APPLE iPHONE (iOS 18) LIQUID GLASS SHOWCASE CARD
     -- // =========================================================================
     local GlassHero = Instance.new("Frame")
     GlassHero.Name = "GlassHero"
     GlassHero.Size = UDim2.new(1, 0, 0, 74)
-    GlassHero.BackgroundColor3 = Color3.fromRGB(18, 22, 36)
-    GlassHero.BackgroundTransparency = 0.35
+    GlassHero.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
+    GlassHero.BackgroundTransparency = 0.30
     GlassHero.BorderSizePixel = 0
     GlassHero.LayoutOrder = 0
     GlassHero.Parent = Page
     Instance.new("UICorner", GlassHero).CornerRadius = UDim.new(0, 18)
 
     local GhStroke = Instance.new("UIStroke", GlassHero)
-    GhStroke.Color = Color3.fromRGB(110, 130, 190)
+    GhStroke.Color = Color3.fromRGB(90, 120, 150)
     GhStroke.Thickness = 1.2
     GhStroke.Transparency = 0.5
 
     local GhGrad = Instance.new("UIGradient", GlassHero)
     GhGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 32, 54)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 28))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 30, 44)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 26))
     })
 
     local GhPadding = Instance.new("UIPadding", GlassHero)
@@ -160,13 +161,13 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhIconBox.Size = UDim2.new(0, 44, 0, 44)
     GhIconBox.Position = UDim2.new(0, 0, 0.5, 0)
     GhIconBox.AnchorPoint = Vector2.new(0, 0.5)
-    GhIconBox.BackgroundColor3 = Color3.fromRGB(32, 38, 62)
-    GhIconBox.BackgroundTransparency = 0.4
+    GhIconBox.BackgroundColor3 = Color3.fromRGB(20, 36, 28)
+    GhIconBox.BackgroundTransparency = 0.3
     GhIconBox.BorderSizePixel = 0
     GhIconBox.Parent = GlassHero
     Instance.new("UICorner", GhIconBox).CornerRadius = UDim.new(1, 0)
     local GibStroke = Instance.new("UIStroke", GhIconBox)
-    GibStroke.Color = Color3.fromRGB(129, 140, 248)
+    GibStroke.Color = Color3.fromRGB(52, 199, 89)
     GibStroke.Thickness = 1.2
     GibStroke.Transparency = 0.4
 
@@ -175,7 +176,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     GhIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     GhIcon.BackgroundTransparency = 1
-    GhIcon.ImageColor3 = Color3.fromRGB(165, 180, 252)
+    GhIcon.ImageColor3 = Color3.fromRGB(52, 199, 89)
     GhIcon.Parent = GhIconBox
     if Icons and Icons.Apply then Icons:Apply(GhIcon, "layers") end
 
@@ -187,7 +188,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhTextFrame.Parent = GlassHero
 
     local GhTitle = Instance.new("TextLabel")
-    GhTitle.Text = "APPLE LIQUID GLASS (VISIONOS)"
+    GhTitle.Text = "APPLE iPHONE (iOS 18) LIQUID GLASS"
     GhTitle.Font = Enum.Font.GothamBold
     GhTitle.TextSize = 13
     GhTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -197,17 +198,17 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhTitle.Parent = GhTextFrame
 
     local GhSub = Instance.new("TextLabel")
-    GhSub.Text = "Półprzezroczysta tafla akrylowego szkła, zaokrąglone kapsuły 24px i specularne odbicia świetlne"
+    GhSub.Text = "Dynamic Island, matowe szkło Control Center, krawędzie 26px squircle i przełącznik Apple Green #34C759"
     GhSub.Font = Enum.Font.GothamMedium
     GhSub.TextSize = 10
-    GhSub.TextColor3 = Color3.fromRGB(160, 170, 205)
+    GhSub.TextColor3 = Color3.fromRGB(150, 165, 195)
     GhSub.TextXAlignment = Enum.TextXAlignment.Left
     GhSub.Size = UDim2.new(1, 0, 0, 16)
     GhSub.Position = UDim2.new(0, 0, 0, 20)
     GhSub.BackgroundTransparency = 1
     GhSub.Parent = GhTextFrame
 
-    -- Główny przełącznik Liquid Glass
+    -- Główny przełącznik Liquid Glass (Apple iOS Switch)
     local isLgOn = true
     if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
         isLgOn = (UI.MenuConfig["LiquidGlass"] == true)
@@ -217,39 +218,39 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhSwitch.Size = UDim2.new(0, 52, 0, 28)
     GhSwitch.Position = UDim2.new(1, 0, 0.5, 0)
     GhSwitch.AnchorPoint = Vector2.new(1, 0.5)
-    GhSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
-    GhSwitch.BackgroundTransparency = 0.2
+    GhSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
+    GhSwitch.BackgroundTransparency = 0.15
     GhSwitch.Text = ""
     GhSwitch.AutoButtonColor = false
     GhSwitch.Parent = GlassHero
     Instance.new("UICorner", GhSwitch).CornerRadius = UDim.new(1, 0)
     local GhsStroke = Instance.new("UIStroke", GhSwitch)
-    GhsStroke.Color = isLgOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
+    GhsStroke.Color = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
     GhsStroke.Thickness = 1.2
-    GhsStroke.Transparency = 0.4
+    GhsStroke.Transparency = 0.35
 
     local GhDot = Instance.new("Frame")
-    GhDot.Size = UDim2.new(0, 20, 0, 20)
-    GhDot.Position = isLgOn and UDim2.new(1, -24, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
+    GhDot.Size = UDim2.new(0, 22, 0, 22)
+    GhDot.Position = isLgOn and UDim2.new(1, -25, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
     GhDot.AnchorPoint = Vector2.new(0, 0.5)
-    GhDot.BackgroundColor3 = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+    GhDot.BackgroundColor3 = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
     GhDot.BorderSizePixel = 0
     GhDot.Parent = GhSwitch
     Instance.new("UICorner", GhDot).CornerRadius = UDim.new(1, 0)
 
     GhSwitch.MouseButton1Click:Connect(function()
         isLgOn = not isLgOn
-        local destPos = isLgOn and UDim2.new(1, -24, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
-        local destBg = isLgOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
-        local destStrk = isLgOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
-        local destDot = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+        local destPos = isLgOn and UDim2.new(1, -25, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local destBg = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
+        local destStrk = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
+        local destDot = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
 
-        TweenService:Create(GhDot, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        TweenService:Create(GhDot, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Position = destPos,
             BackgroundColor3 = destDot
         }):Play()
-        TweenService:Create(GhSwitch, TweenInfo.new(0.2), { BackgroundColor3 = destBg }):Play()
-        TweenService:Create(GhsStroke, TweenInfo.new(0.2), { Color = destStrk }):Play()
+        TweenService:Create(GhSwitch, TweenInfo.new(0.22), { BackgroundColor3 = destBg }):Play()
+        TweenService:Create(GhsStroke, TweenInfo.new(0.22), { Color = destStrk }):Play()
 
         if UI and UI.SetLiquidGlass then
             UI:SetLiquidGlass(isLgOn)
@@ -855,12 +856,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         return Card
     end
 
-    -- Liquid Glass Mode (Apple VisionOS) Toggle
+    -- Liquid Glass Mode (Apple iPhone iOS 18) Toggle
     local liquidGlassDefault = true
     if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
         liquidGlassDefault = (UI.MenuConfig["LiquidGlass"] == true)
     end
-    makePowerCard("Liquid Glass Mode", "Półprzezroczysta tafla szkła i zaokrąglone kapsuły VisionOS", "layers", liquidGlassDefault, function(state)
+    makePowerCard("iPhone Liquid Glass", "Dynamic Island, matowe szkło Control Center i przełączniki iOS 18", "layers", liquidGlassDefault, function(state)
         if UI and UI.SetLiquidGlass then
             UI:SetLiquidGlass(state)
         end

@@ -1,7 +1,7 @@
 -- // ==========================================================================
--- // MENUTEST APPLE VISIONOS / LIQUID GLASS FLOATING DOCK
--- // Styl: Półprzezroczysta pływająca kapsuła (Floating Pill Dock),
--- // zaokrąglone krawędzie (20px+ / Pill), rozmyte szkło, specular reflections.
+-- // MENUTEST APPLE iPHONE (iOS 18) LIQUID GLASS FLOATING DOCK
+-- // Styl: Dynamic Island, półprzezroczysta tafla akrylowego szkła Liquid Glass,
+-- // zaokrąglone krawędzie (Squircle / Capsule), specular reflections i Apple Green #34C759.
 -- // ==========================================================================
 
 local Sidebar = {}
@@ -14,19 +14,19 @@ function Sidebar:Create(UI, theme, config, customWidth)
 
     local Icons = UI.Icons or (typeof(getgenv) == "function" and getgenv()._MenuTestIconsModule) or _G._MenuTestIconsModule
 
-    -- Główny kontener pływającego docka (Floating Glass Island)
+    -- Główny kontener pływającego docka (Apple iPhone Glass Dock)
     local FloatingDock = Instance.new("Frame")
-    FloatingDock.Name = "VisionOS_FloatingDock"
+    FloatingDock.Name = "iPhone_FloatingDock"
     FloatingDock.Size = UDim2.new(1, -28, 0, 52)
     FloatingDock.Position = UDim2.new(0, 14, 0, 12)
-    FloatingDock.BackgroundColor3 = Color3.fromRGB(18, 21, 33)
-    FloatingDock.BackgroundTransparency = 0.22
+    FloatingDock.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
+    FloatingDock.BackgroundTransparency = 0.20
     FloatingDock.BorderSizePixel = 0
     FloatingDock.ZIndex = 15
     FloatingDock.Parent = UI.MainFrame
     UI.Sidebar = FloatingDock
 
-    -- Pełna kapsuła VisionOS (CornerRadius = 100px)
+    -- Pełna kapsuła Apple iPhone (CornerRadius = 26px)
     local DockCorner = Instance.new("UICorner", FloatingDock)
     DockCorner.CornerRadius = UDim.new(0, 26)
 
@@ -92,26 +92,26 @@ function Sidebar:Create(UI, theme, config, customWidth)
     BrandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     BrandLayout.Padding = UDim.new(0, 8)
 
-    -- Liquid Glass Orb
+    -- Apple Liquid Glass Orb (Green iOS Glow)
     local BrandOrb = Instance.new("Frame")
     BrandOrb.Name = "BrandOrb"
     BrandOrb.Size = UDim2.new(0, 30, 0, 30)
-    BrandOrb.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    BrandOrb.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
     BrandOrb.BorderSizePixel = 0
     BrandOrb.ZIndex = 18
     BrandOrb.Parent = BrandSide
     Instance.new("UICorner", BrandOrb).CornerRadius = UDim.new(1, 0)
 
     local OrbStroke = Instance.new("UIStroke", BrandOrb)
-    OrbStroke.Color = Color3.fromRGB(220, 230, 255)
+    OrbStroke.Color = Color3.fromRGB(200, 255, 220)
     OrbStroke.Thickness = 1.2
     OrbStroke.Transparency = 0.3
 
     local OrbGrad = Instance.new("UIGradient", BrandOrb)
     OrbGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(99, 102, 241)),
-        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(168, 85, 247)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(236, 72, 153))
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(52, 199, 89)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(48, 209, 88)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 199, 255))
     })
     OrbGrad.Rotation = 45
 
@@ -123,7 +123,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     OrbIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     OrbIcon.ZIndex = 19
     OrbIcon.Parent = BrandOrb
-    if Icons and Icons.Apply then Icons:Apply(OrbIcon, "zap") end
+    if Icons and Icons.Apply then Icons:Apply(OrbIcon, "layers") end
 
     -- Pulsujący obrót orba
     task.spawn(function()
@@ -148,18 +148,18 @@ function Sidebar:Create(UI, theme, config, customWidth)
     TitleLabel.Parent = BrandSide
 
     local GlassBadge = Instance.new("TextLabel")
-    GlassBadge.Text = "VISION 3.5"
+    GlassBadge.Text = "iOS 18 GLASS"
     GlassBadge.Font = Enum.Font.GothamBold
     GlassBadge.TextSize = 9
-    GlassBadge.TextColor3 = Color3.fromRGB(165, 180, 252)
-    GlassBadge.Size = UDim2.new(0, 64, 0, 19)
-    GlassBadge.BackgroundColor3 = Color3.fromRGB(30, 34, 52)
-    GlassBadge.BackgroundTransparency = 0.3
+    GlassBadge.TextColor3 = Color3.fromRGB(52, 199, 89)
+    GlassBadge.Size = UDim2.new(0, 74, 0, 19)
+    GlassBadge.BackgroundColor3 = Color3.fromRGB(20, 36, 28)
+    GlassBadge.BackgroundTransparency = 0.25
     GlassBadge.ZIndex = 18
     GlassBadge.Parent = BrandSide
     Instance.new("UICorner", GlassBadge).CornerRadius = UDim.new(1, 0)
     local GbStroke = Instance.new("UIStroke", GlassBadge)
-    GbStroke.Color = Color3.fromRGB(70, 78, 115)
+    GbStroke.Color = Color3.fromRGB(52, 199, 89)
     GbStroke.Thickness = 1
     GbStroke.Transparency = 0.5
 
@@ -168,7 +168,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "VisionTabBar"
-    TabList.Size = UDim2.new(1, -490, 0, 36)
+    TabList.Size = UDim2.new(1, -525, 0, 36)
     TabList.Position = UDim2.new(0, 202, 0.5, 0)
     TabList.AnchorPoint = Vector2.new(0, 0.5)
     TabList.BackgroundColor3 = Color3.fromRGB(12, 14, 22)
@@ -202,11 +202,11 @@ function Sidebar:Create(UI, theme, config, customWidth)
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     -- // =====================================================================
-    -- // PRAWA STRONA: SZUKAJKI, TELEMETRIA, PROFIL, KONTROLKI OKNA
+    -- // PRAWA STRONA: SZUKAJKI, DYNAMIC ISLAND, PROFIL, KONTROLKI OKNA
     -- // =====================================================================
     local RightSide = Instance.new("Frame")
     RightSide.Name = "RightSide"
-    RightSide.Size = UDim2.new(0, 280, 1, 0)
+    RightSide.Size = UDim2.new(0, 310, 1, 0)
     RightSide.Position = UDim2.new(1, 0, 0.5, 0)
     RightSide.AnchorPoint = Vector2.new(1, 0.5)
     RightSide.BackgroundTransparency = 1
@@ -222,7 +222,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- Szukajka Glass Capsule
     local SearchBoxContainer = Instance.new("Frame")
     SearchBoxContainer.Name = "SearchBoxContainer"
-    SearchBoxContainer.Size = UDim2.new(0, 85, 0, 28)
+    SearchBoxContainer.Size = UDim2.new(0, 80, 0, 28)
     SearchBoxContainer.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
     SearchBoxContainer.BackgroundTransparency = 0.35
     SearchBoxContainer.BorderSizePixel = 0
@@ -262,55 +262,106 @@ function Sidebar:Create(UI, theme, config, customWidth)
     UI.SearchInput = SearchInput
 
     SearchInput.Focused:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 115, 0, 28), BackgroundTransparency = 0.1 }):Play()
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 105, 0, 28), BackgroundTransparency = 0.1 }):Play()
     end)
     SearchInput.FocusLost:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 85, 0, 28), BackgroundTransparency = 0.35 }):Play()
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 80, 0, 28), BackgroundTransparency = 0.35 }):Play()
     end)
 
-    -- Telemetria Capsule (FPS + Ping z kropką LED)
-    local TelemetryPill = Instance.new("Frame")
-    TelemetryPill.Name = "TelemetryPill"
-    TelemetryPill.Size = UDim2.new(0, 68, 0, 28)
-    TelemetryPill.BackgroundColor3 = Color3.fromRGB(20, 23, 35)
-    TelemetryPill.BackgroundTransparency = 0.4
-    TelemetryPill.BorderSizePixel = 0
-    TelemetryPill.ZIndex = 18
-    TelemetryPill.Parent = RightSide
-    Instance.new("UICorner", TelemetryPill).CornerRadius = UDim.new(1, 0)
-    local TpStroke = Instance.new("UIStroke", TelemetryPill)
-    TpStroke.Color = Color3.fromRGB(50, 58, 85)
-    TpStroke.Thickness = 1
-    TpStroke.Transparency = 0.6
+    -- // =====================================================================
+    -- // APPLE iPHONE DYNAMIC ISLAND (Pill z wycięciem kamery + wskaźnikami)
+    -- // =====================================================================
+    local DynamicIsland = Instance.new("Frame")
+    DynamicIsland.Name = "DynamicIsland"
+    DynamicIsland.Size = UDim2.new(0, 96, 0, 28)
+    DynamicIsland.BackgroundColor3 = Color3.fromRGB(8, 9, 14)
+    DynamicIsland.BackgroundTransparency = 0.05
+    DynamicIsland.BorderSizePixel = 0
+    DynamicIsland.ClipsDescendants = true
+    DynamicIsland.ZIndex = 18
+    DynamicIsland.Parent = RightSide
+    Instance.new("UICorner", DynamicIsland).CornerRadius = UDim.new(1, 0)
 
-    local FpsDot = Instance.new("Frame")
-    FpsDot.Size = UDim2.new(0, 5, 0, 5)
-    FpsDot.Position = UDim2.new(0, 8, 0.5, 0)
-    FpsDot.AnchorPoint = Vector2.new(0, 0.5)
-    FpsDot.BackgroundColor3 = Color3.fromRGB(52, 211, 153)
-    FpsDot.BorderSizePixel = 0
-    FpsDot.ZIndex = 19
-    FpsDot.Parent = TelemetryPill
-    Instance.new("UICorner", FpsDot).CornerRadius = UDim.new(1, 0)
+    local DiStroke = Instance.new("UIStroke", DynamicIsland)
+    DiStroke.Color = Color3.fromRGB(70, 75, 95)
+    DiStroke.Thickness = 1
+    DiStroke.Transparency = 0.55
+
+    -- Apple TrueDepth Camera Sensor Cutout
+    local CameraCutout = Instance.new("Frame")
+    CameraCutout.Name = "CameraCutout"
+    CameraCutout.Size = UDim2.new(0, 8, 0, 8)
+    CameraCutout.Position = UDim2.new(0, 8, 0.5, 0)
+    CameraCutout.AnchorPoint = Vector2.new(0, 0.5)
+    CameraCutout.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
+    CameraCutout.BorderSizePixel = 0
+    CameraCutout.ZIndex = 19
+    CameraCutout.Parent = DynamicIsland
+    Instance.new("UICorner", CameraCutout).CornerRadius = UDim.new(1, 0)
+
+    local CameraLens = Instance.new("Frame")
+    CameraLens.Size = UDim2.new(0, 4, 0, 4)
+    CameraLens.Position = UDim2.new(0.5, 0, 0.5, 0)
+    CameraLens.AnchorPoint = Vector2.new(0.5, 0.5)
+    CameraLens.BackgroundColor3 = Color3.fromRGB(8, 10, 16)
+    CameraLens.BorderSizePixel = 0
+    CameraLens.ZIndex = 20
+    CameraLens.Parent = CameraCutout
+    Instance.new("UICorner", CameraLens).CornerRadius = UDim.new(1, 0)
+
+    -- Apple Privacy Green Indicator LED
+    local PrivacyDot = Instance.new("Frame")
+    PrivacyDot.Name = "PrivacyDot"
+    PrivacyDot.Size = UDim2.new(0, 5, 0, 5)
+    PrivacyDot.Position = UDim2.new(0, 20, 0.5, 0)
+    PrivacyDot.AnchorPoint = Vector2.new(0, 0.5)
+    PrivacyDot.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
+    PrivacyDot.BorderSizePixel = 0
+    PrivacyDot.ZIndex = 19
+    PrivacyDot.Parent = DynamicIsland
+    Instance.new("UICorner", PrivacyDot).CornerRadius = UDim.new(1, 0)
 
     local FpsLabel = Instance.new("TextLabel")
+    FpsLabel.Name = "FpsLabel"
     FpsLabel.Text = "60 FPS"
     FpsLabel.Font = Enum.Font.GothamBold
     FpsLabel.TextSize = 9
-    FpsLabel.TextColor3 = Color3.fromRGB(220, 230, 250)
-    FpsLabel.Size = UDim2.new(1, -16, 1, 0)
-    FpsLabel.Position = UDim2.new(0, 16, 0, 0)
+    FpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FpsLabel.Size = UDim2.new(1, -30, 1, 0)
+    FpsLabel.Position = UDim2.new(0, 28, 0, 0)
     FpsLabel.BackgroundTransparency = 1
     FpsLabel.TextXAlignment = Enum.TextXAlignment.Left
     FpsLabel.ZIndex = 19
-    FpsLabel.Parent = TelemetryPill
+    FpsLabel.Parent = DynamicIsland
+
+    -- Interaktywna animacja rozwijania Dynamic Island (iOS Spring Feel)
+    local isHovered = false
+    local currentPing = "24ms"
+    DynamicIsland.MouseEnter:Connect(function()
+        isHovered = true
+        TweenService:Create(DynamicIsland, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 126, 0, 28)
+        }):Play()
+        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(52, 199, 89), Transparency = 0.3 }):Play()
+    end)
+    DynamicIsland.MouseLeave:Connect(function()
+        isHovered = false
+        TweenService:Create(DynamicIsland, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 96, 0, 28)
+        }):Play()
+        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(70, 75, 95), Transparency = 0.55 }):Play()
+    end)
 
     local fpsCount = 0
     local fpsTimer = tick()
     RunService.RenderStepped:Connect(function()
         fpsCount = fpsCount + 1
         if tick() - fpsTimer >= 1 then
-            FpsLabel.Text = tostring(fpsCount) .. "F"
+            if isHovered then
+                FpsLabel.Text = tostring(fpsCount) .. "F • " .. currentPing
+            else
+                FpsLabel.Text = tostring(fpsCount) .. " FPS"
+            end
             fpsCount = 0
             fpsTimer = tick()
         end

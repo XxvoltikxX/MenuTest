@@ -201,28 +201,28 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     BadgeStroke.Thickness = 1
     BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- Apple VisionOS Liquid Pill Switch
+    -- Apple iPhone iOS Liquid Glass Switch
     local SwitchBtn = Instance.new("TextButton")
     SwitchBtn.Name = "SwitchBtn"
-    SwitchBtn.Size = UDim2.new(0, 42, 0, 22)
-    SwitchBtn.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
-    SwitchBtn.BackgroundTransparency = 0.3
+    SwitchBtn.Size = UDim2.new(0, 44, 0, 24)
+    SwitchBtn.BackgroundColor3 = Color3.fromRGB(50, 54, 66)
+    SwitchBtn.BackgroundTransparency = 0.2
     SwitchBtn.Text = ""
     SwitchBtn.AutoButtonColor = false
     SwitchBtn.Parent = ControlsFrame
     Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
 
     local SwitchStroke = Instance.new("UIStroke", SwitchBtn)
-    SwitchStroke.Color = Color3.fromRGB(60, 72, 105)
+    SwitchStroke.Color = Color3.fromRGB(70, 75, 90)
     SwitchStroke.Thickness = 1
-    SwitchStroke.Transparency = 0.5
+    SwitchStroke.Transparency = 0.4
 
     local SwitchDot = Instance.new("Frame")
     SwitchDot.Name = "Dot"
-    SwitchDot.Size = UDim2.new(0, 14, 0, 14)
-    SwitchDot.Position = UDim2.new(0, 4, 0.5, 0)
+    SwitchDot.Size = UDim2.new(0, 18, 0, 18)
+    SwitchDot.Position = UDim2.new(0, 3, 0.5, 0)
     SwitchDot.AnchorPoint = Vector2.new(0, 0.5)
-    SwitchDot.BackgroundColor3 = Color3.fromRGB(215, 225, 245)
+    SwitchDot.BackgroundColor3 = Color3.fromRGB(240, 242, 250)
     SwitchDot.BorderSizePixel = 0
     SwitchDot.Parent = SwitchBtn
     Instance.new("UICorner", SwitchDot).CornerRadius = UDim.new(1, 0)
@@ -352,11 +352,11 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             }):Play()
         end
 
-        -- Animacja Pill Switcha
-        local dotPos = Enabled and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
-        local switchBg = Enabled and accentCol or Color3.fromRGB(30, 31, 44)
-        local switchStrokeCol = Enabled and accentCol or Color3.fromRGB(48, 50, 70)
-        local dotCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 185, 200)
+        -- Animacja Pill Switcha Apple iOS
+        local dotPos = Enabled and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local switchBg = Enabled and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
+        local switchStrokeCol = Enabled and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
+        local dotCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
 
         TweenService:Create(SwitchBtn, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             BackgroundColor3 = switchBg
