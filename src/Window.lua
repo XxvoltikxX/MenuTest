@@ -13,7 +13,7 @@ local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 local function safeHttpGet(url, maxRetries, retryDelay)
     maxRetries = maxRetries or 3
     retryDelay = retryDelay or 0.5
-    local buster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    local buster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
     local fetchUrl = url .. buster
     for attempt = 1, maxRetries do
         local ok, result = pcall(function()
@@ -72,10 +72,103 @@ end
 local IconsFallback = {
     Apply = function(self, imageLabel, iconName) end
 }
-local InteractionsFallback = {
-    MakeDraggable  = function(self, handle, target) end,
-    MakeResizable  = function(self, handle, target, minW, minH) end,
+local Interactions = {
+    MakeDraggable = function(self, clickObj, moveObj, onTapCallback)
+        if not clickObj or not moveObj then return end
+        local dragging = false
+        local dragStart, startPos
+        local dragInput = nil
+        local movedDistance = 0
+        local DRAG_THRESHOLD = 8
+
+        clickObj.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragInput = input
+                dragStart = input.Position
+                startPos = moveObj.Position
+                movedDistance = 0
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                local dist = math.sqrt(delta.X * delta.X + delta.Y * delta.Y)
+                if dist > movedDistance then
+                    movedDistance = dist
+                end
+                if movedDistance >= DRAG_THRESHOLD then
+                    moveObj.Position = UDim2.new(
+                        startPos.X.Scale, startPos.X.Offset + delta.X, 
+                        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                    )
+                end
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                local wasTap = (movedDistance < DRAG_THRESHOLD)
+                dragging = false
+                dragInput = nil
+                if wasTap and type(onTapCallback) == "function" then
+                    pcall(onTapCallback)
+                end
+            end
+        end)
+    end,
+
+    MakeResizable = function(self, handle, mainFrame, minX, minY)
+        if not handle or not mainFrame then return end
+        local resizing = false
+        minX = minX or 350
+        minY = minY or 230
+
+        handle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                resizing = true
+                local startSize = mainFrame.AbsoluteSize
+                local startPos = mainFrame.Position
+                local startInputPos = input.Position
+
+                local camera = workspace.CurrentCamera
+                local vp = camera and camera.ViewportSize or Vector2.new(1600, 900)
+                local dynamicMaxX = math.max(minX + 50, vp.X - 10)
+                local dynamicMaxY = math.max(minY + 50, vp.Y - 10)
+                
+                local moveCon
+                moveCon = UserInputService.InputChanged:Connect(function(moveInput)
+                    if resizing and (moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch) then
+                        local delta = moveInput.Position - startInputPos
+                        
+                        local newX = math.clamp(startSize.X + delta.X, minX, dynamicMaxX)
+                        local newY = math.clamp(startSize.Y + delta.Y, minY, dynamicMaxY)
+                        
+                        local diffX = newX - startSize.X
+                        local diffY = newY - startSize.Y
+                        
+                        mainFrame.Size = UDim2.new(0, newX, 0, newY)
+                        mainFrame.Position = UDim2.new(
+                            startPos.X.Scale, startPos.X.Offset + (diffX / 2), 
+                            startPos.Y.Scale, startPos.Y.Offset + (diffY / 2)
+                        )
+                    end
+                end)
+
+                local endCon
+                endCon = UserInputService.InputEnded:Connect(function(endInput)
+                    if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                        resizing = false
+                        moveCon:Disconnect()
+                        endCon:Disconnect()
+                    end
+                end)
+            end
+        end)
+    end
 }
+local InteractionsFallback = Interactions
 local SidebarFallback = {
     Create = function(self, UI, theme, config)
         local HeaderFrame = Instance.new("Frame")
@@ -147,7 +240,7 @@ local SidebarFallback = {
 -- Ładowanie modułów z fallbackami
 local Icons = safeLoadUrl(baseUrl .. "Icons.lua", IconsFallback)
 
-local Interactions = safeLoadUrl(baseUrl .. "Interactions.lua", InteractionsFallback)
+-- Interactions jest wbudowany powyżej na stałe, co gwarantuje 100% odporność na cache CDN
 local SidebarModule= safeLoadUrl(baseUrl .. "Sidebar.lua",      SidebarFallback)
 
 -- // ============================================================
@@ -873,13 +966,17 @@ function Window:Create(config)
 
     -- Minimalne wymiary okna (na telefonach można zmniejszyć do 340x230)
     local minW = isMobile and 340 or 440
-    local dragTarget = HeaderFrame or UI.TopBar
-    if dragTarget then
-        Interactions:MakeDraggable(dragTarget, MainFrame)
-    end
-    if ResizeHandle then
-        Interactions:MakeResizable(ResizeHandle, MainFrame, minW, minH)
-    end
+    pcall(function()
+        local dragTarget = HeaderFrame or UI.TopBar
+        if dragTarget and Interactions and Interactions.MakeDraggable then
+            Interactions:MakeDraggable(dragTarget, MainFrame)
+        end
+    end)
+    pcall(function()
+        if ResizeHandle and Interactions and Interactions.MakeResizable then
+            Interactions:MakeResizable(ResizeHandle, MainFrame, minW, minH)
+        end
+    end)
 
     -- Automatyczne dopasowanie, jeśli gracz obróci ekran telefonu
     if camera then

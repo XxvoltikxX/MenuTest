@@ -27,7 +27,7 @@ local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 local function safeHttpGet(url, maxRetries, retryDelay)
     maxRetries  = maxRetries  or 3
     retryDelay  = retryDelay  or 0.5
-    local cacheBuster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    local cacheBuster = (url:find("%?") and "&" or "?") .. "_nocache=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
     local fetchUrl = url .. cacheBuster
     for attempt = 1, maxRetries do
         local ok, result = pcall(function()

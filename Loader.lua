@@ -49,7 +49,7 @@ local function safeExecute(relativePath, remoteUrl)
     end
 
     -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN
-    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(os.time()) .. "_" .. tostring(math.random(10000, 99999))
+    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
     local ok, res = pcall(function()
         return game:HttpGet(remoteUrl .. cacheBuster)
     end)
