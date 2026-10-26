@@ -474,7 +474,7 @@ function Window:Create(config)
     Shadow.Parent = ScreenGui
     UI.Shadow = Shadow
 
-    -- MainFrame
+    -- MainFrame (Apple VisionOS Liquid Glass Shell)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, defaultW, 0, defaultH)
@@ -483,32 +483,49 @@ function Window:Create(config)
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.ZIndex = 1
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
+    MainFrame.BackgroundTransparency = 0.20
     MainFrame.Parent = ScreenGui
     UI.MainFrame = MainFrame
     ThemeManager:Register(MainFrame, "BackgroundColor3", "Main")
 
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
+    -- VisionOS Organic Rounded Corners (24px)
+    local MainCorner = Instance.new("UICorner", MainFrame)
+    MainCorner.CornerRadius = UDim.new(0, 24)
+
+    -- Specular Glass Rim Light Stroke
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    MainStroke.Thickness = 1.6
-    ThemeManager:Register(MainStroke, "Color", "Accent")
+    MainStroke.Thickness = 1.4
+    MainStroke.Color = Color3.fromRGB(180, 195, 240)
+    MainStroke.Transparency = 0.45
 
-    -- Frosted Glass Rim Light (1px highlight na górnej krawędzi)
+    local MainStrokeGrad = Instance.new("UIGradient", MainStroke)
+    MainStrokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(165, 180, 252)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(70, 80, 115)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(210, 225, 255))
+    })
+    MainStrokeGrad.Rotation = 65
+
+    -- Top Horizon Glass Horizon (1.5px subtle light reflection at the top curve)
     local RimLight = Instance.new("Frame")
     RimLight.Name = "RimLight"
-    RimLight.Size = UDim2.new(1, -24, 0, 1)
-    RimLight.Position = UDim2.new(0, 12, 0, 1)
+    RimLight.Size = UDim2.new(0.85, 0, 0, 1.5)
+    RimLight.Position = UDim2.new(0.5, 0, 0, 1)
+    RimLight.AnchorPoint = Vector2.new(0.5, 0)
     RimLight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    RimLight.BackgroundTransparency = 0.82
+    RimLight.BackgroundTransparency = 0.4
     RimLight.BorderSizePixel = 0
     RimLight.ZIndex = 25
     RimLight.Parent = MainFrame
     local RimGrad = Instance.new("UIGradient", RimLight)
     RimGrad.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.2, 0.5),
-        NumberSequenceKeypoint.new(0.5, 0.2),
-        NumberSequenceKeypoint.new(0.8, 0.5),
+        NumberSequenceKeypoint.new(0.2, 0.45),
+        NumberSequenceKeypoint.new(0.5, 0.1),
+        NumberSequenceKeypoint.new(0.8, 0.45),
         NumberSequenceKeypoint.new(1, 1)
     })
 
@@ -701,32 +718,37 @@ function Window:Create(config)
     UI.Controls = Controls
     local function createModernBtn(iconName, isClose)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 26, 0, 26)
-        btn.BackgroundColor3 = isClose and Color3.fromRGB(225, 29, 72) or Color3.fromRGB(30, 31, 44)
-        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(0, 24, 0, 24)
+        btn.BackgroundColor3 = isClose and Color3.fromRGB(244, 63, 94) or Color3.fromRGB(30, 35, 52)
+        btn.BackgroundTransparency = isClose and 0.5 or 0.6
         btn.Text = ""
         btn.AutoButtonColor = false
         btn.Parent = Controls
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+
+        local bStroke = Instance.new("UIStroke", btn)
+        bStroke.Color = isClose and Color3.fromRGB(251, 113, 133) or Color3.fromRGB(70, 80, 115)
+        bStroke.Thickness = 1
+        bStroke.Transparency = 0.5
 
         local iconImg = Instance.new("ImageLabel")
         iconImg.Name = "Icon"
-        iconImg.Size = UDim2.new(0, 13, 0, 13)
+        iconImg.Size = UDim2.new(0, 11, 0, 11)
         iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
         iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
         iconImg.BackgroundTransparency = 1
-        iconImg.ImageColor3 = isClose and Color3.fromRGB(220, 120, 130) or Color3.fromRGB(150, 150, 165)
+        iconImg.ImageColor3 = isClose and Color3.fromRGB(255, 220, 230) or Color3.fromRGB(160, 170, 200)
         iconImg.Parent = btn
         Icons:Apply(iconImg, iconName)
 
         btn.MouseEnter:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = isClose and 0 or 0.2 }):Play()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = isClose and 0.1 or 0.2 }):Play()
             TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
         end)
         btn.MouseLeave:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundTransparency = isClose and 0.5 or 0.6 }):Play()
             TweenService:Create(iconImg, TweenInfo.new(0.18), {
-                ImageColor3 = isClose and Color3.fromRGB(220, 120, 130) or Color3.fromRGB(150, 150, 165)
+                ImageColor3 = isClose and Color3.fromRGB(255, 220, 230) or Color3.fromRGB(160, 170, 200)
             }):Play()
         end)
         return btn
@@ -779,25 +801,24 @@ function Window:Create(config)
     end)
 
     -- =========================================================================
-    -- STATUS DOCK (Pasek dolny - stopka okna: 28px)
+    -- STATUS DOCK (Pływająca dolna kapsuła VisionOS: 28px)
     -- =========================================================================
     local dockHeight = 28
     local StatusDock = Instance.new("Frame")
     StatusDock.Name = "StatusDock"
-    StatusDock.Size = UDim2.new(1, 0, 0, dockHeight)
-    StatusDock.Position = UDim2.new(0, 0, 1, -dockHeight)
-    StatusDock.BackgroundColor3 = Color3.fromRGB(10, 11, 16)
+    StatusDock.Size = UDim2.new(1, -28, 0, dockHeight)
+    StatusDock.Position = UDim2.new(0, 14, 1, -(dockHeight + 10))
+    StatusDock.BackgroundColor3 = Color3.fromRGB(18, 21, 33)
+    StatusDock.BackgroundTransparency = 0.35
     StatusDock.BorderSizePixel = 0
     StatusDock.ZIndex = 6
     StatusDock.Parent = MainFrame
 
-    local DockLine = Instance.new("Frame")
-    DockLine.Name = "DockLine"
-    DockLine.Size = UDim2.new(1, 0, 0, 1)
-    DockLine.Position = UDim2.new(0, 0, 0, 0)
-    DockLine.BorderSizePixel = 0
-    DockLine.BackgroundColor3 = Color3.fromRGB(26, 28, 40)
-    DockLine.Parent = StatusDock
+    Instance.new("UICorner", StatusDock).CornerRadius = UDim.new(1, 0)
+    local SdStroke = Instance.new("UIStroke", StatusDock)
+    SdStroke.Color = Color3.fromRGB(50, 58, 85)
+    SdStroke.Thickness = 1
+    SdStroke.Transparency = 0.65
 
     local DockPadding = Instance.new("UIPadding", StatusDock)
     DockPadding.PaddingLeft = UDim.new(0, 16)
@@ -805,10 +826,10 @@ function Window:Create(config)
 
     local DockLeft = Instance.new("TextLabel")
     DockLeft.Name = "DockLeft"
-    DockLeft.Text = "MenuTest Framework • Build 2026.10"
+    DockLeft.Text = "MenuTest Liquid Glass • VisionOS 3.5"
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
-    DockLeft.TextColor3 = Color3.fromRGB(100, 105, 130)
+    DockLeft.TextColor3 = Color3.fromRGB(130, 140, 170)
     DockLeft.TextXAlignment = Enum.TextXAlignment.Left
     DockLeft.Size = UDim2.new(0.4, 0, 1, 0)
     DockLeft.BackgroundTransparency = 1
@@ -819,7 +840,7 @@ function Window:Create(config)
     DockCenter.Text = "Naciśnij [ " .. tostring(config.ToggleUIKeybind or "K") .. " ], aby ukryć menu"
     DockCenter.Font = Enum.Font.GothamMedium
     DockCenter.TextSize = 10
-    DockCenter.TextColor3 = Color3.fromRGB(140, 145, 170)
+    DockCenter.TextColor3 = Color3.fromRGB(160, 170, 200)
     DockCenter.TextXAlignment = Enum.TextXAlignment.Center
     DockCenter.Size = UDim2.new(0.3, 0, 1, 0)
     DockCenter.Position = UDim2.new(0.35, 0, 0, 0)
@@ -831,7 +852,7 @@ function Window:Create(config)
     DockRight.Text = "● System Aktywny • Chroniony"
     DockRight.Font = Enum.Font.GothamBold
     DockRight.TextSize = 10
-    DockRight.TextColor3 = Color3.fromRGB(16, 185, 129)
+    DockRight.TextColor3 = Color3.fromRGB(52, 211, 153)
     DockRight.TextXAlignment = Enum.TextXAlignment.Right
     DockRight.Size = UDim2.new(0.35, 0, 1, 0)
     DockRight.Position = UDim2.new(0.65, 0, 0, 0)
@@ -839,12 +860,13 @@ function Window:Create(config)
     DockRight.Parent = StatusDock
 
     -- =========================================================================
-    -- KONTENER STRON (PAGES CONTAINER) - PEŁNA SZEROKOŚĆ POD DUAL-DECK (86px)
+    -- KONTENER STRON (PAGES CONTAINER) - PŁYWAJĄCY POD DOCKIEM GÓRNYM
     -- =========================================================================
-    local totalHeaderSpace = 86
+    local totalHeaderSpace = 70
+    local bottomSpace = dockHeight + 18
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
-    PagesContainer.Size = UDim2.new(1, 0, 1, -(totalHeaderSpace + dockHeight))
+    PagesContainer.Size = UDim2.new(1, 0, 1, -(totalHeaderSpace + bottomSpace))
     PagesContainer.Position = UDim2.new(0, 0, 0, totalHeaderSpace)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.ClipsDescendants = true
@@ -1292,17 +1314,17 @@ function Window:Create(config)
             local prevStroke= prevBtn:FindFirstChildOfClass("UIStroke")
 
             TweenService:Create(prevBtn, TweenInfo.new(0.2), {
-                BackgroundColor3 = Color3.fromRGB(18, 19, 28),
-                BackgroundTransparency = 0.4
+                BackgroundColor3 = Color3.fromRGB(24, 28, 42),
+                BackgroundTransparency = 0.65
             }):Play()
             if prevStroke then
                 TweenService:Create(prevStroke, TweenInfo.new(0.2), {
-                    Color = Color3.fromRGB(40, 42, 60),
-                    Transparency = 0.5
+                    Color = Color3.fromRGB(50, 58, 85),
+                    Transparency = 0.7
                 }):Play()
             end
-            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(148, 163, 184) }):Play() end
-            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(148, 163, 184) }):Play() end
+            if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(150, 160, 185) }):Play() end
+            if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(150, 160, 185) }):Play() end
         end
 
         -- Ukryj wszystkie strony, pokaż wybraną
@@ -1310,7 +1332,7 @@ function Window:Create(config)
         targetPage.Visible = true
         UI.SelectedTab = targetButton
 
-        -- Podświetl wybrany przycisk
+        -- Podświetl wybrany przycisk (VisionOS Liquid Pill)
         local curStroke = targetButton:FindFirstChildOfClass("UIStroke")
         local TabIcon   = targetButton:FindFirstChild("Icon")
         local TabLabel  = targetButton:FindFirstChild("Label")
@@ -1318,11 +1340,11 @@ function Window:Create(config)
         local accentCol = Color3.fromRGB(99, 102, 241)
         TweenService:Create(targetButton, TweenInfo.new(0.2), {
             BackgroundColor3 = accentCol,
-            BackgroundTransparency = 0
+            BackgroundTransparency = 0.15
         }):Play()
         if curStroke then
-            curStroke.Color = Color3.fromRGB(165, 180, 252)
-            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.2 }):Play()
+            curStroke.Color = Color3.fromRGB(190, 205, 255)
+            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.25 }):Play()
         end
         if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play() end
         if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(255, 255, 255) }):Play() end
@@ -1412,16 +1434,16 @@ function Window:Create(config)
 
         local TabButton = Instance.new("TextButton")
         TabButton.Name = name
-        TabButton.Size = UDim2.new(0, 105, 0, 32)
+        TabButton.Size = UDim2.new(0, 95, 0, 28)
         TabButton.AutomaticSize = Enum.AutomaticSize.X
-        TabButton.BackgroundColor3 = Color3.fromRGB(18, 19, 28)
-        TabButton.BackgroundTransparency = 0.4
+        TabButton.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
+        TabButton.BackgroundTransparency = 0.65
         TabButton.Text = ""
         TabButton.AutoButtonColor = false
         TabButton.BorderSizePixel = 0
         TabButton.LayoutOrder = tabOrder
         TabButton.Parent = TabList
-        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 7)
+        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(1, 0)
 
         local TabBtnPadding = Instance.new("UIPadding", TabButton)
         TabBtnPadding.PaddingLeft = UDim.new(0, 10)
@@ -1430,19 +1452,19 @@ function Window:Create(config)
         local TabBtnLayout = Instance.new("UIListLayout", TabButton)
         TabBtnLayout.FillDirection = Enum.FillDirection.Horizontal
         TabBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        TabBtnLayout.Padding = UDim.new(0, 7)
+        TabBtnLayout.Padding = UDim.new(0, 6)
 
         local TabStroke = Instance.new("UIStroke", TabButton)
-        TabStroke.Color = Color3.fromRGB(40, 42, 60)
+        TabStroke.Color = Color3.fromRGB(50, 58, 85)
         TabStroke.Thickness = 1
-        TabStroke.Transparency = 0.5
+        TabStroke.Transparency = 0.7
         TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local TabIcon = Instance.new("ImageLabel")
         TabIcon.Name = "Icon"
-        TabIcon.Size = UDim2.new(0, 15, 0, 15)
+        TabIcon.Size = UDim2.new(0, 14, 0, 14)
         TabIcon.BackgroundTransparency = 1
-        TabIcon.ImageColor3 = Color3.fromRGB(148, 163, 184)
+        TabIcon.ImageColor3 = Color3.fromRGB(150, 160, 185)
         TabIcon.Parent = TabButton
         Icons:Apply(TabIcon, icon)
 
@@ -1454,22 +1476,22 @@ function Window:Create(config)
         TabLabel.Font = Enum.Font.GothamBold
         TabLabel.Text = name
         TabLabel.TextSize = 11
-        TabLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+        TabLabel.TextColor3 = Color3.fromRGB(150, 160, 185)
         TabLabel.TextXAlignment = Enum.TextXAlignment.Left
         TabLabel.Parent = TabButton
 
         TabButton.MouseEnter:Connect(function()
             if UI.SelectedTab ~= TabButton then
-                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.1, BackgroundColor3 = Color3.fromRGB(26, 28, 42) }):Play()
-                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(230, 235, 250) }):Play()
-                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(230, 235, 250) }):Play()
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.35, BackgroundColor3 = Color3.fromRGB(32, 38, 58) }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(240, 245, 255) }):Play()
+                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(240, 245, 255) }):Play()
             end
         end)
         TabButton.MouseLeave:Connect(function()
             if UI.SelectedTab ~= TabButton then
-                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(18, 19, 28) }):Play()
-                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(148, 163, 184) }):Play()
-                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(148, 163, 184) }):Play()
+                TweenService:Create(TabButton, TweenInfo.new(0.18), { BackgroundTransparency = 0.65, BackgroundColor3 = Color3.fromRGB(24, 28, 42) }):Play()
+                TweenService:Create(TabLabel, TweenInfo.new(0.18), { TextColor3 = Color3.fromRGB(150, 160, 185) }):Play()
+                TweenService:Create(TabIcon, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(150, 160, 185) }):Play()
             end
         end)
 

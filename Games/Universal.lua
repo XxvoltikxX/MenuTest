@@ -622,7 +622,7 @@ local CatUtilities = TabPlayer:CreateCategory({
     Icon = "crosshair",
     Description = "Narzędzia teleportacji i awaryjnego resetu postaci",
     Badge = "SHORTCUTS",
-    Side = "Right"
+    Side = "Left"
 })
 
 local ClickTpMod = CatUtilities:CreateModule({

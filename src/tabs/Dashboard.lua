@@ -57,25 +57,27 @@ function Dashboard:Render(UI, order, passedIcons)
     PageLayout.Padding = UDim.new(0, 14)
 
     -- // =====================================================================
-    -- // 1. HERO PLAYER HUD CARD (Panel tożsamości i telemetrii gracza na żywo)
+    -- // 1. HERO PLAYER HUD CARD (Apple VisionOS Liquid Glass Panel)
     -- // =====================================================================
     local HeroCard = Instance.new("Frame")
     HeroCard.Name = "HeroPlayerCard"
     HeroCard.Size = UDim2.new(1, 0, 0, 92)
-    HeroCard.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+    HeroCard.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+    HeroCard.BackgroundTransparency = 0.35
     HeroCard.BorderSizePixel = 0
     HeroCard.LayoutOrder = 1
     HeroCard.Parent = Page
 
-    Instance.new("UICorner", HeroCard).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", HeroCard).CornerRadius = UDim.new(0, 20)
     local HeroStroke = Instance.new("UIStroke", HeroCard)
-    HeroStroke.Color = Color3.fromRGB(40, 43, 62)
+    HeroStroke.Color = Color3.fromRGB(110, 130, 185)
     HeroStroke.Thickness = 1.2
+    HeroStroke.Transparency = 0.55
 
     local HeroGradient = Instance.new("UIGradient", HeroCard)
     HeroGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 20, 32)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 13, 19))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 28, 44)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 16, 26))
     })
     HeroGradient.Rotation = 90
 
@@ -308,13 +310,15 @@ function Dashboard:Render(UI, order, passedIcons)
     local QuickMatrixCard = Instance.new("Frame")
     QuickMatrixCard.Name = "QuickMatrixCard"
     QuickMatrixCard.Size = UDim2.new(0.58, -7, 1, 0)
-    QuickMatrixCard.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+    QuickMatrixCard.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+    QuickMatrixCard.BackgroundTransparency = 0.35
     QuickMatrixCard.BorderSizePixel = 0
     QuickMatrixCard.Parent = BentoRow
-    Instance.new("UICorner", QuickMatrixCard).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", QuickMatrixCard).CornerRadius = UDim.new(0, 18)
     local QmStroke = Instance.new("UIStroke", QuickMatrixCard)
-    QmStroke.Color = Color3.fromRGB(36, 38, 54)
-    QmStroke.Thickness = 1
+    QmStroke.Color = Color3.fromRGB(90, 105, 150)
+    QmStroke.Thickness = 1.2
+    QmStroke.Transparency = 0.55
 
     local QmPadding = Instance.new("UIPadding", QuickMatrixCard)
     QmPadding.PaddingTop = UDim.new(0, 12)
@@ -631,13 +635,15 @@ function Dashboard:Render(UI, order, passedIcons)
     local ServerCard = Instance.new("Frame")
     ServerCard.Name = "ServerCard"
     ServerCard.Size = UDim2.new(0.42, -7, 1, 0)
-    ServerCard.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+    ServerCard.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+    ServerCard.BackgroundTransparency = 0.35
     ServerCard.BorderSizePixel = 0
     ServerCard.Parent = BentoRow
-    Instance.new("UICorner", ServerCard).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", ServerCard).CornerRadius = UDim.new(0, 18)
     local ScStroke = Instance.new("UIStroke", ServerCard)
-    ScStroke.Color = Color3.fromRGB(36, 38, 54)
-    ScStroke.Thickness = 1
+    ScStroke.Color = Color3.fromRGB(90, 105, 150)
+    ScStroke.Thickness = 1.2
+    ScStroke.Transparency = 0.55
 
     local ScPadding = Instance.new("UIPadding", ServerCard)
     ScPadding.PaddingTop = UDim.new(0, 12)
@@ -798,15 +804,17 @@ function Dashboard:Render(UI, order, passedIcons)
     local function createLinkPill(title, sub, iconName, urlToCopy)
         local Pill = Instance.new("TextButton")
         Pill.Size = UDim2.new(0.333, -10, 1, 0)
-        Pill.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+        Pill.BackgroundColor3 = Color3.fromRGB(20, 24, 38)
+        Pill.BackgroundTransparency = 0.35
         Pill.BorderSizePixel = 0
         Pill.Text = ""
         Pill.AutoButtonColor = false
         Pill.Parent = BottomRow
-        Instance.new("UICorner", Pill).CornerRadius = UDim.new(0, 10)
+        Instance.new("UICorner", Pill).CornerRadius = UDim.new(1, 0)
         local pStroke = Instance.new("UIStroke", Pill)
-        pStroke.Color = Color3.fromRGB(34, 36, 52)
+        pStroke.Color = Color3.fromRGB(60, 72, 105)
         pStroke.Thickness = 1
+        pStroke.Transparency = 0.55
 
         local pIcon = Instance.new("ImageLabel")
         pIcon.Size = UDim2.new(0, 20, 0, 20)

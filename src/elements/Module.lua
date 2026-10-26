@@ -56,41 +56,43 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local function getColors()
         return {
-            Background       = Color3.fromRGB(22, 23, 33),
-            BackgroundActive = Color3.fromRGB(28, 30, 48),
-            Stroke           = Color3.fromRGB(40, 42, 58),
-            StrokeActive     = getThemeColor("Accent", Color3.fromRGB(99, 102, 241)),
+            Background       = Color3.fromRGB(20, 24, 38),
+            BackgroundActive = Color3.fromRGB(26, 32, 52),
+            Stroke           = Color3.fromRGB(55, 65, 95),
+            StrokeActive     = getThemeColor("Accent", Color3.fromRGB(129, 140, 248)),
             Text             = Color3.fromRGB(255, 255, 255),
-            TextDim          = Color3.fromRGB(150, 155, 175),
-            BadgeBg          = Color3.fromRGB(30, 32, 46),
-            BadgeStroke      = Color3.fromRGB(50, 54, 78)
+            TextDim          = Color3.fromRGB(155, 165, 195),
+            BadgeBg          = Color3.fromRGB(30, 36, 56),
+            BadgeStroke      = Color3.fromRGB(70, 80, 120)
         }
     end
 
     local Colors = getColors()
 
-    -- Ramka modułu (Elite Bento Module Card)
+    -- Ramka modułu (Apple VisionOS Liquid Glass Module Card)
     local ModuleFrame = Instance.new("Frame")
     ModuleFrame.Name = options.Name or "Module"
     ModuleFrame.Size = UDim2.new(1, 0, 0, 50)
     ModuleFrame.BackgroundColor3 = Colors.Background
+    ModuleFrame.BackgroundTransparency = 0.35
     ModuleFrame.ClipsDescendants = true
     ModuleFrame.Parent = parent
 
     local Corner = Instance.new("UICorner", ModuleFrame)
-    Corner.CornerRadius = UDim.new(0, 9)
+    Corner.CornerRadius = UDim.new(0, 14)
 
     local MainStroke = Instance.new("UIStroke", ModuleFrame)
     MainStroke.Color = Colors.Stroke
     MainStroke.Thickness = 1.2
+    MainStroke.Transparency = 0.6
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     -- Wskaźnik LED aktywności na lewej krawędzi modułu
     local LedIndicator = Instance.new("Frame")
     LedIndicator.Name = "LedIndicator"
-    LedIndicator.Size = UDim2.new(0, 3, 0, 24)
-    LedIndicator.Position = UDim2.new(0, 3, 0, 13)
-    LedIndicator.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    LedIndicator.Size = UDim2.new(0, 4, 0, 22)
+    LedIndicator.Position = UDim2.new(0, 4, 0, 14)
+    LedIndicator.BackgroundColor3 = Color3.fromRGB(129, 140, 248)
     LedIndicator.BackgroundTransparency = 1
     LedIndicator.BorderSizePixel = 0
     LedIndicator.ZIndex = 12
@@ -199,26 +201,28 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     BadgeStroke.Thickness = 1
     BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- Nowoczesny Cyber Pill Switch
+    -- Apple VisionOS Liquid Pill Switch
     local SwitchBtn = Instance.new("TextButton")
     SwitchBtn.Name = "SwitchBtn"
-    SwitchBtn.Size = UDim2.new(0, 40, 0, 22)
-    SwitchBtn.BackgroundColor3 = Color3.fromRGB(30, 31, 44)
+    SwitchBtn.Size = UDim2.new(0, 42, 0, 22)
+    SwitchBtn.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
+    SwitchBtn.BackgroundTransparency = 0.3
     SwitchBtn.Text = ""
     SwitchBtn.AutoButtonColor = false
     SwitchBtn.Parent = ControlsFrame
     Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
 
     local SwitchStroke = Instance.new("UIStroke", SwitchBtn)
-    SwitchStroke.Color = Color3.fromRGB(48, 50, 70)
+    SwitchStroke.Color = Color3.fromRGB(60, 72, 105)
     SwitchStroke.Thickness = 1
+    SwitchStroke.Transparency = 0.5
 
     local SwitchDot = Instance.new("Frame")
     SwitchDot.Name = "Dot"
     SwitchDot.Size = UDim2.new(0, 14, 0, 14)
     SwitchDot.Position = UDim2.new(0, 4, 0.5, 0)
     SwitchDot.AnchorPoint = Vector2.new(0, 0.5)
-    SwitchDot.BackgroundColor3 = Color3.fromRGB(200, 205, 220)
+    SwitchDot.BackgroundColor3 = Color3.fromRGB(215, 225, 245)
     SwitchDot.BorderSizePixel = 0
     SwitchDot.Parent = SwitchBtn
     Instance.new("UICorner", SwitchDot).CornerRadius = UDim.new(1, 0)
@@ -250,7 +254,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     InnerLine.Size = UDim2.new(1, -20, 0, 1)
     InnerLine.Position = UDim2.new(0, 10, 0, 49)
     InnerLine.BorderSizePixel = 0
-    InnerLine.BackgroundColor3 = Color3.fromRGB(34, 36, 52)
+    InnerLine.BackgroundColor3 = Color3.fromRGB(45, 52, 78)
     InnerLine.Visible = false
     InnerLine.Parent = ModuleFrame
 
@@ -261,22 +265,23 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         NumberSequenceKeypoint.new(1, 0.8)
     })
 
-    -- Kontener na opcje rozwijane (Luksusowy Inset Bento Sub-Card)
+    -- Kontener na opcje rozwijane (Apple VisionOS Inset Glass Sub-Card)
     local Content = Instance.new("Frame")
     Content.Name = "Content"
     Content.Position = UDim2.new(0, 8, 0, 52)
     Content.Size = UDim2.new(1, -16, 0, 0)
     Content.AutomaticSize = Enum.AutomaticSize.Y
-    Content.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
-    Content.BackgroundTransparency = 0.35
+    Content.BackgroundColor3 = Color3.fromRGB(14, 16, 26)
+    Content.BackgroundTransparency = 0.45
     Content.ClipsDescendants = false
     Content.Visible = false
     Content.Parent = ModuleFrame
 
-    Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 12)
     local ContentStroke = Instance.new("UIStroke", Content)
-    ContentStroke.Color = Color3.fromRGB(30, 32, 46)
+    ContentStroke.Color = Color3.fromRGB(48, 55, 82)
     ContentStroke.Thickness = 1
+    ContentStroke.Transparency = 0.6
     ContentStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local ContentLayout = Instance.new("UIListLayout", Content)

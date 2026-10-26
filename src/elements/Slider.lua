@@ -37,11 +37,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     SliderFrame.Parent = parent
 
     local FrameCorner = Instance.new("UICorner", SliderFrame)
-    FrameCorner.CornerRadius = UDim.new(0, 7)
+    FrameCorner.CornerRadius = UDim.new(0, 12)
 
     local FrameStroke = Instance.new("UIStroke", SliderFrame)
-    FrameStroke.Color = Color3.fromRGB(34, 36, 52)
+    FrameStroke.Color = Color3.fromRGB(50, 60, 90)
     FrameStroke.Thickness = 1
+    FrameStroke.Transparency = 0.6
     FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local FramePadding = Instance.new("UIPadding", SliderFrame)
@@ -51,12 +52,12 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     FramePadding.PaddingBottom = UDim.new(0, 10)
 
     SliderFrame.MouseEnter:Connect(function()
-        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(65, 70, 105) }):Play()
+        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(90, 105, 155), Transparency = 0.3 }):Play()
         TweenService:Create(SliderFrame, TweenInfo.new(0.18), { BackgroundTransparency = 0.25 }):Play()
     end)
     SliderFrame.MouseLeave:Connect(function()
-        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(34, 36, 52) }):Play()
-        TweenService:Create(SliderFrame, TweenInfo.new(0.18), { BackgroundTransparency = 0.5 }):Play()
+        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(50, 60, 90), Transparency = 0.6 }):Play()
+        TweenService:Create(SliderFrame, TweenInfo.new(0.18), { BackgroundTransparency = 0.4 }):Play()
     end)
 
     -- Górny wiersz: Tytuł + Plakietka wartości
@@ -78,21 +79,23 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     Label.BackgroundTransparency = 1
     Label.Parent = TopRow
 
-    -- Plakietka wartości (Value Pill Badge z obsługą edycji)
+    -- Plakietka wartości (Apple VisionOS Value Pill Capsule)
     local ValueBadge = Instance.new("Frame")
     ValueBadge.Name = "ValueBadge"
     ValueBadge.Size = UDim2.new(0, 80, 0, 20)
     ValueBadge.Position = UDim2.new(1, 0, 0, 0)
     ValueBadge.AnchorPoint = Vector2.new(1, 0)
-    ValueBadge.BackgroundColor3 = Color3.fromRGB(25, 27, 42)
+    ValueBadge.BackgroundColor3 = Color3.fromRGB(28, 33, 52)
+    ValueBadge.BackgroundTransparency = 0.35
     ValueBadge.Parent = TopRow
 
     local BadgeCorner = Instance.new("UICorner", ValueBadge)
-    BadgeCorner.CornerRadius = UDim.new(0, 5)
+    BadgeCorner.CornerRadius = UDim.new(1, 0)
 
     local BadgeStroke = Instance.new("UIStroke", ValueBadge)
-    BadgeStroke.Color = Color3.fromRGB(50, 55, 80)
+    BadgeStroke.Color = Color3.fromRGB(75, 88, 130)
     BadgeStroke.Thickness = 1
+    BadgeStroke.Transparency = 0.5
     BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local ValueLabel = Instance.new("TextLabel")

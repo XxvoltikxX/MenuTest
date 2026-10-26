@@ -32,23 +32,33 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local isCollapsible = (options.Collapsible ~= false)
     local isOpen        = (options.DefaultOpen ~= false)
 
-    -- Karta sekcji (Card Frame)
+    -- Karta sekcji (Apple VisionOS Liquid Glass Panel)
     local SectionCard = Instance.new("Frame")
     SectionCard.Name = "Category_" .. sectionName
     SectionCard.Size = UDim2.new(1, 0, 0, 0)
     SectionCard.AutomaticSize = Enum.AutomaticSize.Y
-    SectionCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    SectionCard.BackgroundTransparency = 0.25
+    SectionCard.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+    SectionCard.BackgroundTransparency = 0.32
     SectionCard.ClipsDescendants = false
     SectionCard.Parent = parent
 
     local CardCorner = Instance.new("UICorner", SectionCard)
-    CardCorner.CornerRadius = UDim.new(0, 10)
+    CardCorner.CornerRadius = UDim.new(0, 20)
 
     local CardStroke = Instance.new("UIStroke", SectionCard)
-    CardStroke.Color = Color3.fromRGB(34, 36, 52)
+    CardStroke.Color = Color3.fromRGB(110, 130, 185)
     CardStroke.Thickness = 1.2
+    CardStroke.Transparency = 0.55
     CardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local CardStrokeGrad = Instance.new("UIGradient", CardStroke)
+    CardStrokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(240, 245, 255)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(140, 160, 230)),
+        ColorSequenceKeypoint.new(0.8, Color3.fromRGB(60, 70, 100)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(180, 200, 255))
+    })
+    CardStrokeGrad.Rotation = 45
 
     local CardLayout = Instance.new("UIListLayout", SectionCard)
     CardLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -57,7 +67,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- =========================================================================
     -- NAGŁÓWEK KATEGORII (HEADER)
     -- =========================================================================
-    local headerHeight = sectionDesc and 50 or 42
+    local headerHeight = sectionDesc and 52 or 44
     local Header = Instance.new("TextButton")
     Header.Name = "Header"
     Header.Size = UDim2.new(1, 0, 0, headerHeight)
@@ -68,10 +78,10 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Header.Parent = SectionCard
 
     local HeaderPadding = Instance.new("UIPadding", Header)
-    HeaderPadding.PaddingLeft = UDim.new(0, 12)
-    HeaderPadding.PaddingRight = UDim.new(0, 12)
-    HeaderPadding.PaddingTop = UDim.new(0, 7)
-    HeaderPadding.PaddingBottom = UDim.new(0, 7)
+    HeaderPadding.PaddingLeft = UDim.new(0, 14)
+    HeaderPadding.PaddingRight = UDim.new(0, 14)
+    HeaderPadding.PaddingTop = UDim.new(0, 8)
+    HeaderPadding.PaddingBottom = UDim.new(0, 8)
 
     -- Prawa strona nagłówka (Badge + Chevron zwijania)
     local RightContainer = Instance.new("Frame")
@@ -94,18 +104,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         BadgeFrame.Name = "Badge"
         BadgeFrame.Size = UDim2.new(0, 0, 0, 20)
         BadgeFrame.AutomaticSize = Enum.AutomaticSize.X
-        BadgeFrame.BackgroundColor3 = Color3.fromRGB(28, 30, 46)
+        BadgeFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 56)
+        BadgeFrame.BackgroundTransparency = 0.35
         BadgeFrame.BorderSizePixel = 0
         BadgeFrame.Parent = RightContainer
-        Instance.new("UICorner", BadgeFrame).CornerRadius = UDim.new(0, 5)
+        Instance.new("UICorner", BadgeFrame).CornerRadius = UDim.new(1, 0)
 
         local BadgeStroke = Instance.new("UIStroke", BadgeFrame)
-        BadgeStroke.Color = Color3.fromRGB(55, 60, 90)
+        BadgeStroke.Color = Color3.fromRGB(80, 95, 145)
         BadgeStroke.Thickness = 1
+        BadgeStroke.Transparency = 0.5
 
         local BadgePadding = Instance.new("UIPadding", BadgeFrame)
-        BadgePadding.PaddingLeft = UDim.new(0, 7)
-        BadgePadding.PaddingRight = UDim.new(0, 7)
+        BadgePadding.PaddingLeft = UDim.new(0, 8)
+        BadgePadding.PaddingRight = UDim.new(0, 8)
 
         local BadgeLabel = Instance.new("TextLabel")
         BadgeLabel.Text = string.upper(tostring(sectionBadge))
@@ -122,7 +134,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Chevron.Name = "Chevron"
     Chevron.Size = UDim2.new(0, 16, 0, 16)
     Chevron.BackgroundTransparency = 1
-    Chevron.ImageColor3 = Color3.fromRGB(160, 165, 185)
+    Chevron.ImageColor3 = Color3.fromRGB(160, 170, 200)
     Chevron.Rotation = isOpen and 0 or -90
     Chevron.Parent = RightContainer
     if Icons and Icons.Apply then
@@ -132,7 +144,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Lewa strona nagłówka (Kasetka z ikoną + Tytuł + Opis)
     local LeftContainer = Instance.new("Frame")
     LeftContainer.Name = "LeftContainer"
-    LeftContainer.Size = UDim2.new(1, -(sectionBadge and 85 or 35), 1, 0)
+    LeftContainer.Size = UDim2.new(1, -(sectionBadge and 95 or 40), 1, 0)
     LeftContainer.Position = UDim2.new(0, 0, 0, 0)
     LeftContainer.BackgroundTransparency = 1
     LeftContainer.Parent = Header
@@ -142,18 +154,20 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     LeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     LeftLayout.Padding = UDim.new(0, 10)
 
-    -- Zaokrąglona kasetka na ikonę sekcji
+    -- Zaokrąglona szklana kasetka na ikonę sekcji
     local IconBox = Instance.new("Frame")
     IconBox.Name = "IconBox"
-    IconBox.Size = UDim2.new(0, 30, 0, 30)
-    IconBox.BackgroundColor3 = Color3.fromRGB(24, 26, 38)
+    IconBox.Size = UDim2.new(0, 32, 0, 32)
+    IconBox.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
+    IconBox.BackgroundTransparency = 0.4
     IconBox.BorderSizePixel = 0
     IconBox.Parent = LeftContainer
-    Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 7)
+    Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 10)
 
     local IconBoxStroke = Instance.new("UIStroke", IconBox)
-    IconBoxStroke.Color = Color3.fromRGB(48, 52, 75)
+    IconBoxStroke.Color = Color3.fromRGB(80, 95, 145)
     IconBoxStroke.Thickness = 1
+    IconBoxStroke.Transparency = 0.5
 
     local IconLabel = Instance.new("ImageLabel")
     IconLabel.Name = "Icon"
@@ -161,7 +175,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     IconLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
     IconLabel.AnchorPoint = Vector2.new(0.5, 0.5)
     IconLabel.BackgroundTransparency = 1
-    IconLabel.ImageColor3 = Color3.fromRGB(129, 140, 248)
+    IconLabel.ImageColor3 = Color3.fromRGB(165, 180, 252)
     IconLabel.Parent = IconBox
     if Icons and Icons.Apply then
         Icons:Apply(IconLabel, sectionIcon)

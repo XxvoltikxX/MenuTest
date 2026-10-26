@@ -21,18 +21,19 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local ToggleFrame = Instance.new("TextButton")
     ToggleFrame.Name = "Toggle_" .. toggleName
     ToggleFrame.Size = UDim2.new(1, 0, 0, 38)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(18, 19, 29)
-    ToggleFrame.BackgroundTransparency = 0.5
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(22, 26, 40)
+    ToggleFrame.BackgroundTransparency = 0.4
     ToggleFrame.Text = ""
     ToggleFrame.AutoButtonColor = false
     ToggleFrame.Parent = parent
 
     local FrameCorner = Instance.new("UICorner", ToggleFrame)
-    FrameCorner.CornerRadius = UDim.new(0, 7)
+    FrameCorner.CornerRadius = UDim.new(0, 12)
 
     local FrameStroke = Instance.new("UIStroke", ToggleFrame)
-    FrameStroke.Color = Color3.fromRGB(34, 36, 52)
+    FrameStroke.Color = Color3.fromRGB(50, 60, 90)
     FrameStroke.Thickness = 1
+    FrameStroke.Transparency = 0.6
     FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local FramePadding = Instance.new("UIPadding", ToggleFrame)
@@ -70,21 +71,23 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.BackgroundTransparency = 1
     Label.Parent = Container
 
-    -- Pill Switch
+    -- Apple VisionOS Liquid Pill Switch
     local Switch = Instance.new("Frame")
     Switch.Name = "Switch"
-    Switch.Size = UDim2.new(0, 40, 0, 22)
+    Switch.Size = UDim2.new(0, 42, 0, 22)
     Switch.Position = UDim2.new(1, 0, 0.5, 0)
     Switch.AnchorPoint = Vector2.new(1, 0.5)
-    Switch.BackgroundColor3 = Color3.fromRGB(30, 31, 44)
+    Switch.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
+    Switch.BackgroundTransparency = 0.3
     Switch.Parent = Container
 
     local SwitchCorner = Instance.new("UICorner", Switch)
     SwitchCorner.CornerRadius = UDim.new(1, 0)
 
     local SwitchStroke = Instance.new("UIStroke", Switch)
-    SwitchStroke.Color = Color3.fromRGB(48, 50, 70)
+    SwitchStroke.Color = Color3.fromRGB(60, 72, 105)
     SwitchStroke.Thickness = 1
+    SwitchStroke.Transparency = 0.5
     SwitchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local SwitchGradient = Instance.new("UIGradient", Switch)
