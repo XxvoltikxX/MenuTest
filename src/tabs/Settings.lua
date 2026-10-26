@@ -141,14 +141,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     Instance.new("UICorner", GlassHero).CornerRadius = UDim.new(0, 18)
 
     local GhStroke = Instance.new("UIStroke", GlassHero)
-    GhStroke.Color = Color3.fromRGB(90, 120, 150)
-    GhStroke.Thickness = 1.2
-    GhStroke.Transparency = 0.5
+    GhStroke.Color = Color3.fromRGB(48, 54, 76)
+    GhStroke.Thickness = 1
+    GhStroke.Transparency = 0.65
 
     local GhGrad = Instance.new("UIGradient", GlassHero)
     GhGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 30, 44)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 26))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 23, 34)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 15, 22))
     })
 
     local GhPadding = Instance.new("UIPadding", GlassHero)
@@ -161,22 +161,22 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     GhIconBox.Size = UDim2.new(0, 44, 0, 44)
     GhIconBox.Position = UDim2.new(0, 0, 0.5, 0)
     GhIconBox.AnchorPoint = Vector2.new(0, 0.5)
-    GhIconBox.BackgroundColor3 = Color3.fromRGB(20, 36, 28)
+    GhIconBox.BackgroundColor3 = Color3.fromRGB(24, 28, 40)
     GhIconBox.BackgroundTransparency = 0.3
     GhIconBox.BorderSizePixel = 0
     GhIconBox.Parent = GlassHero
     Instance.new("UICorner", GhIconBox).CornerRadius = UDim.new(1, 0)
     local GibStroke = Instance.new("UIStroke", GhIconBox)
-    GibStroke.Color = Color3.fromRGB(52, 199, 89)
-    GibStroke.Thickness = 1.2
-    GibStroke.Transparency = 0.4
+    GibStroke.Color = Color3.fromRGB(50, 60, 85)
+    GibStroke.Thickness = 1
+    GibStroke.Transparency = 0.6
 
     local GhIcon = Instance.new("ImageLabel")
     GhIcon.Size = UDim2.new(0, 22, 0, 22)
     GhIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     GhIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     GhIcon.BackgroundTransparency = 1
-    GhIcon.ImageColor3 = Color3.fromRGB(52, 199, 89)
+    GhIcon.ImageColor3 = Color3.fromRGB(150, 165, 195)
     GhIcon.Parent = GhIconBox
     if Icons and Icons.Apply then Icons:Apply(GhIcon, "layers") end
 

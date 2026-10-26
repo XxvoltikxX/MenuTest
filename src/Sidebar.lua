@@ -30,42 +30,12 @@ function Sidebar:Create(UI, theme, config, customWidth)
     local DockCorner = Instance.new("UICorner", FloatingDock)
     DockCorner.CornerRadius = UDim.new(0, 26)
 
-    -- Specular Glass Rim (Świetlny obrys szkła z gradientem odbicia)
+    -- Subtelny obrys kapsuły w stylu Apple Dark Mode
     local DockStroke = Instance.new("UIStroke", FloatingDock)
-    DockStroke.Thickness = 1.2
-    DockStroke.Color = Color3.fromRGB(140, 160, 215)
-    DockStroke.Transparency = 0.45
+    DockStroke.Thickness = 1
+    DockStroke.Color = Color3.fromRGB(48, 54, 74)
+    DockStroke.Transparency = 0.65
     DockStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-    local StrokeGrad = Instance.new("UIGradient", DockStroke)
-    StrokeGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(165, 180, 252)),
-        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(99, 102, 241)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(200, 215, 255))
-    })
-    StrokeGrad.Rotation = 45
-
-    -- Horizon Specular Highlight (Subtelny 1px błysk na górnej krawędzi kapsuły)
-    local TopGleam = Instance.new("Frame")
-    TopGleam.Name = "TopGleam"
-    TopGleam.Size = UDim2.new(0.75, 0, 0, 1.5)
-    TopGleam.Position = UDim2.new(0.5, 0, 0, 1)
-    TopGleam.AnchorPoint = Vector2.new(0.5, 0)
-    TopGleam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    TopGleam.BackgroundTransparency = 0.5
-    TopGleam.BorderSizePixel = 0
-    TopGleam.ZIndex = 16
-    TopGleam.Parent = FloatingDock
-
-    local GleamGrad = Instance.new("UIGradient", TopGleam)
-    GleamGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0.0, 1.0),
-        NumberSequenceKeypoint.new(0.2, 0.4),
-        NumberSequenceKeypoint.new(0.5, 0.1),
-        NumberSequenceKeypoint.new(0.8, 0.4),
-        NumberSequenceKeypoint.new(1.0, 1.0)
-    })
 
     -- Wewnętrzny kontener doka z paddingiem
     local DockInner = Instance.new("Frame")
@@ -93,54 +63,37 @@ function Sidebar:Create(UI, theme, config, customWidth)
     BrandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     BrandLayout.Padding = UDim.new(0, 6)
 
-    -- Apple Liquid Glass Orb (Green iOS Glow)
+    -- Apple Slate Glass Orb (Elegancki, matowy kapsułkowy identyfikator)
     local BrandOrb = Instance.new("Frame")
     BrandOrb.Name = "BrandOrb"
     BrandOrb.Size = UDim2.new(0, 26, 0, 26)
-    BrandOrb.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
+    BrandOrb.BackgroundColor3 = Color3.fromRGB(24, 28, 40)
+    BrandOrb.BackgroundTransparency = 0.2
     BrandOrb.BorderSizePixel = 0
     BrandOrb.ZIndex = 18
     BrandOrb.Parent = BrandSide
     Instance.new("UICorner", BrandOrb).CornerRadius = UDim.new(1, 0)
 
     local OrbStroke = Instance.new("UIStroke", BrandOrb)
-    OrbStroke.Color = Color3.fromRGB(200, 255, 220)
-    OrbStroke.Thickness = 1.2
-    OrbStroke.Transparency = 0.3
-
-    local OrbGrad = Instance.new("UIGradient", BrandOrb)
-    OrbGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(52, 199, 89)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(48, 209, 88)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 199, 255))
-    })
-    OrbGrad.Rotation = 45
+    OrbStroke.Color = Color3.fromRGB(48, 54, 76)
+    OrbStroke.Thickness = 1
+    OrbStroke.Transparency = 0.6
 
     local OrbIcon = Instance.new("ImageLabel")
-    OrbIcon.Size = UDim2.new(0, 14, 0, 14)
+    OrbIcon.Size = UDim2.new(0, 13, 0, 13)
     OrbIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     OrbIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     OrbIcon.BackgroundTransparency = 1
-    OrbIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    OrbIcon.ImageColor3 = Color3.fromRGB(150, 165, 195)
     OrbIcon.ZIndex = 19
     OrbIcon.Parent = BrandOrb
     if Icons and Icons.Apply then Icons:Apply(OrbIcon, "layers") end
-
-    -- Pulsujący obrót orba
-    task.spawn(function()
-        local rot = 0
-        while FloatingDock.Parent do
-            rot = (rot + 1.2) % 360
-            OrbGrad.Rotation = rot
-            task.wait(0.04)
-        end
-    end)
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Text = config.Name or "UNIVERSAL"
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.TextSize = 12
-    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
     TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     TitleLabel.AutomaticSize = Enum.AutomaticSize.X
     TitleLabel.Size = UDim2.new(0, 0, 1, 0)
@@ -153,17 +106,17 @@ function Sidebar:Create(UI, theme, config, customWidth)
     GlassBadge.Text = "27.2"
     GlassBadge.Font = Enum.Font.GothamBold
     GlassBadge.TextSize = 9
-    GlassBadge.TextColor3 = Color3.fromRGB(52, 199, 89)
+    GlassBadge.TextColor3 = Color3.fromRGB(140, 150, 175)
     GlassBadge.Size = UDim2.new(0, 36, 0, 17)
-    GlassBadge.BackgroundColor3 = Color3.fromRGB(20, 36, 28)
-    GlassBadge.BackgroundTransparency = 0.25
+    GlassBadge.BackgroundColor3 = Color3.fromRGB(22, 25, 36)
+    GlassBadge.BackgroundTransparency = 0.4
     GlassBadge.ZIndex = 18
     GlassBadge.Parent = BrandSide
     Instance.new("UICorner", GlassBadge).CornerRadius = UDim.new(1, 0)
     local GbStroke = Instance.new("UIStroke", GlassBadge)
-    GbStroke.Color = Color3.fromRGB(52, 199, 89)
+    GbStroke.Color = Color3.fromRGB(45, 52, 74)
     GbStroke.Thickness = 1
-    GbStroke.Transparency = 0.5
+    GbStroke.Transparency = 0.65
 
     -- // =====================================================================
     -- // ŚRODEK: PŁYWAJĄCY SEGMENTED PILL TAB BAR (ZAKŁADKI)
@@ -349,14 +302,14 @@ function Sidebar:Create(UI, theme, config, customWidth)
         TweenService:Create(DynamicIsland, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 114, 0, 28)
         }):Play()
-        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(52, 199, 89), Transparency = 0.3 }):Play()
+        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(80, 95, 130), Transparency = 0.5 }):Play()
     end)
     DynamicIsland.MouseLeave:Connect(function()
         isHovered = false
         TweenService:Create(DynamicIsland, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 84, 0, 28)
         }):Play()
-        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(70, 75, 95), Transparency = 0.55 }):Play()
+        TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(48, 54, 76), Transparency = 0.65 }):Play()
     end)
 
     local fpsCount = 0

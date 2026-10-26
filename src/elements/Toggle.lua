@@ -138,11 +138,11 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local function Update(animate)
         local targetPos = Value and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local targetSwitchBg = Value and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
-        local targetSwitchStroke = Value and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
-        local targetKnobBg = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
-        local targetTextColor = Value and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 175, 195)
-        local targetLedColor = Value and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 52, 70)
+        local targetSwitchBg = Value and Color3.fromRGB(46, 160, 78) or Color3.fromRGB(40, 44, 56)
+        local targetSwitchStroke = Value and Color3.fromRGB(56, 175, 90) or Color3.fromRGB(55, 60, 75)
+        local targetKnobBg = Value and Color3.fromRGB(245, 248, 255) or Color3.fromRGB(220, 224, 235)
+        local targetTextColor = Value and Color3.fromRGB(240, 245, 255) or Color3.fromRGB(160, 165, 185)
+        local targetLedColor = Value and Color3.fromRGB(46, 160, 78) or Color3.fromRGB(45, 48, 62)
 
         if animate then
             TweenService:Create(Switch, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {

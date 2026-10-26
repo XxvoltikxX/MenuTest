@@ -67,17 +67,16 @@ function Dashboard:Render(UI, order, passedIcons)
     HeroCard.BorderSizePixel = 0
     HeroCard.LayoutOrder = 1
     HeroCard.Parent = Page
-
     Instance.new("UICorner", HeroCard).CornerRadius = UDim.new(0, 20)
     local HeroStroke = Instance.new("UIStroke", HeroCard)
-    HeroStroke.Color = Color3.fromRGB(110, 130, 185)
-    HeroStroke.Thickness = 1.2
-    HeroStroke.Transparency = 0.55
+    HeroStroke.Color = Color3.fromRGB(42, 48, 68)
+    HeroStroke.Thickness = 1
+    HeroStroke.Transparency = 0.65
 
     local HeroGradient = Instance.new("UIGradient", HeroCard)
     HeroGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 28, 44)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 16, 26))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 23, 34)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 15, 22))
     })
     HeroGradient.Rotation = 90
 
@@ -93,8 +92,8 @@ function Dashboard:Render(UI, order, passedIcons)
     Instance.new("UICorner", AvatarFrame).CornerRadius = UDim.new(1, 0)
 
     local AvatarStroke = Instance.new("UIStroke", AvatarFrame)
-    AvatarStroke.Color = Color3.fromRGB(99, 102, 241)
-    AvatarStroke.Thickness = 1.8
+    AvatarStroke.Color = Color3.fromRGB(48, 54, 76)
+    AvatarStroke.Thickness = 1
 
     local AvatarImg = Instance.new("ImageLabel")
     AvatarImg.Name = "AvatarImg"
@@ -117,7 +116,7 @@ function Dashboard:Render(UI, order, passedIcons)
     OnlineDot.Size = UDim2.new(0, 13, 0, 13)
     OnlineDot.Position = UDim2.new(1, -2, 1, -2)
     OnlineDot.AnchorPoint = Vector2.new(1, 1)
-    OnlineDot.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+    OnlineDot.BackgroundColor3 = Color3.fromRGB(46, 160, 78)
     OnlineDot.BorderSizePixel = 0
     OnlineDot.Parent = AvatarFrame
     Instance.new("UICorner", OnlineDot).CornerRadius = UDim.new(1, 0)
@@ -130,7 +129,7 @@ function Dashboard:Render(UI, order, passedIcons)
     InfoContainer.Name = "InfoContainer"
     InfoContainer.Size = UDim2.new(0, 260, 1, -20)
     InfoContainer.Position = UDim2.new(0, 88, 0.5, 0)
-    InfoContainer.AnchorPoint = Vector2.new(0, 0.5)
+    InfoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
     InfoContainer.BackgroundTransparency = 1
     InfoContainer.Parent = HeroCard
 
@@ -162,20 +161,20 @@ function Dashboard:Render(UI, order, passedIcons)
 
     local VipPill = Instance.new("Frame")
     VipPill.Size = UDim2.new(0, 72, 0, 18)
-    VipPill.BackgroundColor3 = Color3.fromRGB(245, 158, 11)
-    VipPill.BackgroundTransparency = 0.85
+    VipPill.BackgroundColor3 = Color3.fromRGB(36, 32, 22)
+    VipPill.BackgroundTransparency = 0.5
     VipPill.BorderSizePixel = 0
     VipPill.Parent = NameRow
     Instance.new("UICorner", VipPill).CornerRadius = UDim.new(0, 5)
     local VipStroke = Instance.new("UIStroke", VipPill)
-    VipStroke.Color = Color3.fromRGB(245, 158, 11)
+    VipStroke.Color = Color3.fromRGB(75, 62, 35)
     VipStroke.Thickness = 1
 
     local VipText = Instance.new("TextLabel")
     VipText.Text = "👑 VIP ELITE"
     VipText.Font = Enum.Font.GothamBold
     VipText.TextSize = 9
-    VipText.TextColor3 = Color3.fromRGB(251, 191, 36)
+    VipText.TextColor3 = Color3.fromRGB(210, 175, 90)
     VipText.Size = UDim2.new(1, 0, 1, 0)
     VipText.BackgroundTransparency = 1
     VipText.Parent = VipPill
@@ -316,9 +315,9 @@ function Dashboard:Render(UI, order, passedIcons)
     QuickMatrixCard.Parent = BentoRow
     Instance.new("UICorner", QuickMatrixCard).CornerRadius = UDim.new(0, 18)
     local QmStroke = Instance.new("UIStroke", QuickMatrixCard)
-    QmStroke.Color = Color3.fromRGB(90, 105, 150)
-    QmStroke.Thickness = 1.2
-    QmStroke.Transparency = 0.55
+    QmStroke.Color = Color3.fromRGB(42, 48, 68)
+    QmStroke.Thickness = 1
+    QmStroke.Transparency = 0.65
 
     local QmPadding = Instance.new("UIPadding", QuickMatrixCard)
     QmPadding.PaddingTop = UDim.new(0, 12)
@@ -337,7 +336,7 @@ function Dashboard:Render(UI, order, passedIcons)
     QmHeaderIcon.Position = UDim2.new(0, 0, 0.5, 0)
     QmHeaderIcon.AnchorPoint = Vector2.new(0, 0.5)
     QmHeaderIcon.BackgroundTransparency = 1
-    QmHeaderIcon.ImageColor3 = Color3.fromRGB(99, 102, 241)
+    QmHeaderIcon.ImageColor3 = Color3.fromRGB(140, 155, 195)
     QmHeaderIcon.Parent = QmHeader
     if Icons and Icons.Apply then Icons:Apply(QmHeaderIcon, "zap") end
 
@@ -422,13 +421,13 @@ function Dashboard:Render(UI, order, passedIcons)
         local function updateVisual(state)
             isEnabled = state
             if state then
-                TweenService:Create(SwitchPill, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(99, 102, 241) }):Play()
+                TweenService:Create(SwitchPill, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(46, 160, 78) }):Play()
                 TweenService:Create(SwitchKnob, TweenInfo.new(0.2), {
                     Position = UDim2.new(1, -15, 0.5, 0),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 }):Play()
-                TweenService:Create(TStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(99, 102, 241) }):Play()
-                TweenService:Create(TIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+                TweenService:Create(TStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(46, 160, 78) }):Play()
+                TweenService:Create(TIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(240, 245, 255) }):Play()
             else
                 TweenService:Create(SwitchPill, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(30, 32, 46) }):Play()
                 TweenService:Create(SwitchKnob, TweenInfo.new(0.2), {
@@ -629,9 +628,9 @@ function Dashboard:Render(UI, order, passedIcons)
     ServerCard.Parent = BentoRow
     Instance.new("UICorner", ServerCard).CornerRadius = UDim.new(0, 18)
     local ScStroke = Instance.new("UIStroke", ServerCard)
-    ScStroke.Color = Color3.fromRGB(90, 105, 150)
-    ScStroke.Thickness = 1.2
-    ScStroke.Transparency = 0.55
+    ScStroke.Color = Color3.fromRGB(42, 48, 68)
+    ScStroke.Thickness = 1
+    ScStroke.Transparency = 0.65
 
     local ScPadding = Instance.new("UIPadding", ServerCard)
     ScPadding.PaddingTop = UDim.new(0, 12)
@@ -649,7 +648,7 @@ function Dashboard:Render(UI, order, passedIcons)
     ScIcon.Position = UDim2.new(0, 0, 0.5, 0)
     ScIcon.AnchorPoint = Vector2.new(0, 0.5)
     ScIcon.BackgroundTransparency = 1
-    ScIcon.ImageColor3 = Color3.fromRGB(56, 189, 248)
+    ScIcon.ImageColor3 = Color3.fromRGB(130, 165, 205)
     ScIcon.Parent = ScHeader
     if Icons and Icons.Apply then Icons:Apply(ScIcon, "globe") end
 
@@ -800,16 +799,16 @@ function Dashboard:Render(UI, order, passedIcons)
         Pill.Parent = BottomRow
         Instance.new("UICorner", Pill).CornerRadius = UDim.new(1, 0)
         local pStroke = Instance.new("UIStroke", Pill)
-        pStroke.Color = Color3.fromRGB(60, 72, 105)
+        pStroke.Color = Color3.fromRGB(36, 40, 56)
         pStroke.Thickness = 1
-        pStroke.Transparency = 0.55
+        pStroke.Transparency = 0.70
 
         local pIcon = Instance.new("ImageLabel")
         pIcon.Size = UDim2.new(0, 16, 0, 16)
         pIcon.Position = UDim2.new(0, 12, 0.5, 0)
         pIcon.AnchorPoint = Vector2.new(0, 0.5)
         pIcon.BackgroundTransparency = 1
-        pIcon.ImageColor3 = Color3.fromRGB(99, 102, 241)
+        pIcon.ImageColor3 = Color3.fromRGB(130, 145, 180)
         pIcon.Parent = Pill
         if Icons and Icons.Apply then Icons:Apply(pIcon, iconName) end
 
@@ -837,11 +836,11 @@ function Dashboard:Render(UI, order, passedIcons)
 
         Pill.MouseEnter:Connect(function()
             TweenService:Create(Pill, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(20, 22, 34) }):Play()
-            TweenService:Create(pStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(99, 102, 241) }):Play()
+            TweenService:Create(pStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(55, 62, 85) }):Play()
         end)
         Pill.MouseLeave:Connect(function()
             TweenService:Create(Pill, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(13, 14, 21) }):Play()
-            TweenService:Create(pStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(34, 36, 52) }):Play()
+            TweenService:Create(pStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(36, 40, 56) }):Play()
         end)
         Pill.MouseButton1Click:Connect(function()
             if urlToCopy and typeof(setclipboard) == "function" then

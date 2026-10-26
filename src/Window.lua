@@ -494,41 +494,12 @@ function Window:Create(config)
     local MainCorner = Instance.new("UICorner", MainFrame)
     MainCorner.CornerRadius = UDim.new(0, 24)
 
-    -- Specular Glass Rim Light Stroke
+    -- Subtelny, wyważony obrys okna w stylu Apple Dark Mode
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    MainStroke.Thickness = 1.4
-    MainStroke.Color = Color3.fromRGB(180, 195, 240)
-    MainStroke.Transparency = 0.45
-
-    local MainStrokeGrad = Instance.new("UIGradient", MainStroke)
-    MainStrokeGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(165, 180, 252)),
-        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(70, 80, 115)),
-        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(210, 225, 255))
-    })
-    MainStrokeGrad.Rotation = 65
-
-    -- Top Horizon Glass Horizon (1.5px subtle light reflection at the top curve)
-    local RimLight = Instance.new("Frame")
-    RimLight.Name = "RimLight"
-    RimLight.Size = UDim2.new(0.85, 0, 0, 1.5)
-    RimLight.Position = UDim2.new(0.5, 0, 0, 1)
-    RimLight.AnchorPoint = Vector2.new(0.5, 0)
-    RimLight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    RimLight.BackgroundTransparency = 0.4
-    RimLight.BorderSizePixel = 0
-    RimLight.ZIndex = 25
-    RimLight.Parent = MainFrame
-    local RimGrad = Instance.new("UIGradient", RimLight)
-    RimGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.2, 0.45),
-        NumberSequenceKeypoint.new(0.5, 0.1),
-        NumberSequenceKeypoint.new(0.8, 0.45),
-        NumberSequenceKeypoint.new(1, 1)
-    })
+    MainStroke.Thickness = 1
+    MainStroke.Color = Color3.fromRGB(48, 54, 74)
+    MainStroke.Transparency = 0.65
 
     -- // ============================================================
     -- // ANIMATED BACKGROUND & LIVE THEME GIF ENGINE
@@ -811,8 +782,8 @@ function Window:Create(config)
     StatusDock.Name = "StatusDock"
     StatusDock.Size = UDim2.new(1, -28, 0, dockHeight)
     StatusDock.Position = UDim2.new(0, 14, 1, -(dockHeight + 14))
-    StatusDock.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
-    StatusDock.BackgroundTransparency = 0.30
+    StatusDock.BackgroundColor3 = Color3.fromRGB(16, 18, 26)
+    StatusDock.BackgroundTransparency = 0.35
     StatusDock.BorderSizePixel = 0
     StatusDock.ZIndex = 6
     StatusDock.Parent = MainFrame
@@ -820,9 +791,9 @@ function Window:Create(config)
 
     Instance.new("UICorner", StatusDock).CornerRadius = UDim.new(1, 0)
     local SdStroke = Instance.new("UIStroke", StatusDock)
-    SdStroke.Color = Color3.fromRGB(50, 58, 85)
+    SdStroke.Color = Color3.fromRGB(42, 48, 68)
     SdStroke.Thickness = 1
-    SdStroke.Transparency = 0.65
+    SdStroke.Transparency = 0.70
 
     local DockPadding = Instance.new("UIPadding", StatusDock)
     DockPadding.PaddingLeft = UDim.new(0, 16)
@@ -833,7 +804,7 @@ function Window:Create(config)
     DockLeft.Text = isMobile and "Apple iOS 27.2 Glass" or "iPhone 18 Pro Max • iOS 27.2 Liquid Glass"
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
-    DockLeft.TextColor3 = Color3.fromRGB(52, 199, 89)
+    DockLeft.TextColor3 = Color3.fromRGB(130, 142, 168)
     DockLeft.TextXAlignment = Enum.TextXAlignment.Left
     DockLeft.TextTruncate = Enum.TextTruncate.AtEnd
     DockLeft.Size = UDim2.new(0.33, 0, 1, 0)
@@ -847,7 +818,7 @@ function Window:Create(config)
     HomeIndicator.Position = UDim2.new(0.5, 0, 1, -5)
     HomeIndicator.AnchorPoint = Vector2.new(0.5, 1)
     HomeIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    HomeIndicator.BackgroundTransparency = 0.45
+    HomeIndicator.BackgroundTransparency = 0.75
     HomeIndicator.BorderSizePixel = 0
     HomeIndicator.ZIndex = 30
     HomeIndicator.Parent = MainFrame
@@ -859,7 +830,7 @@ function Window:Create(config)
     DockCenter.Text = isMobile and "Dotknij ikony, aby ukryć menu" or ("Naciśnij [ " .. tostring(config.ToggleUIKeybind or "K") .. " ], aby ukryć menu")
     DockCenter.Font = Enum.Font.GothamMedium
     DockCenter.TextSize = 10
-    DockCenter.TextColor3 = Color3.fromRGB(160, 170, 200)
+    DockCenter.TextColor3 = Color3.fromRGB(130, 140, 165)
     DockCenter.TextXAlignment = Enum.TextXAlignment.Center
     DockCenter.TextTruncate = Enum.TextTruncate.AtEnd
     DockCenter.Size = UDim2.new(0.34, 0, 1, 0)
@@ -872,7 +843,7 @@ function Window:Create(config)
     DockRight.Text = isMobile and "● Aktywny" or "● System Aktywny • Chroniony"
     DockRight.Font = Enum.Font.GothamBold
     DockRight.TextSize = 10
-    DockRight.TextColor3 = Color3.fromRGB(52, 211, 153)
+    DockRight.TextColor3 = Color3.fromRGB(100, 165, 130)
     DockRight.TextXAlignment = Enum.TextXAlignment.Right
     DockRight.TextTruncate = Enum.TextTruncate.AtEnd
     DockRight.Size = UDim2.new(0.33, 0, 1, 0)
@@ -1126,29 +1097,10 @@ function Window:Create(config)
 
         Instance.new("UICorner", MobileToggle).CornerRadius = UDim.new(1, 0)
         local MtStroke = Instance.new("UIStroke", MobileToggle)
-        MtStroke.Color = Color3.fromRGB(140, 165, 230)
-        MtStroke.Thickness = 1.4
-        MtStroke.Transparency = 0.40
+        MtStroke.Color = Color3.fromRGB(55, 62, 85)
+        MtStroke.Thickness = 1
+        MtStroke.Transparency = 0.60
         MtStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-        local MtGrad = Instance.new("UIGradient", MtStroke)
-        MtGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)),
-            ColorSequenceKeypoint.new(1.0, Color3.fromRGB(52, 199, 89))
-        })
-        MtGrad.Rotation = 45
-
-        local GlowGleam = Instance.new("Frame")
-        GlowGleam.Size = UDim2.new(0.6, 0, 0, 1.5)
-        GlowGleam.Position = UDim2.new(0.5, 0, 0, 2)
-        GlowGleam.AnchorPoint = Vector2.new(0.5, 0)
-        GlowGleam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        GlowGleam.BackgroundTransparency = 0.4
-        GlowGleam.BorderSizePixel = 0
-        GlowGleam.ZIndex = 201
-        GlowGleam.Parent = MobileToggle
-        Instance.new("UICorner", GlowGleam).CornerRadius = UDim.new(1, 0)
 
         local MobileIcon = Instance.new("ImageLabel")
         MobileIcon.Name = "Icon"
@@ -1451,22 +1403,21 @@ function Window:Create(config)
         targetPage.Visible = true
         UI.SelectedTab = targetButton
 
-        -- Podświetl wybrany przycisk (VisionOS Liquid Pill)
+        -- Podświetl wybrany przycisk (Apple Muted Glass Segment)
         local curStroke = targetButton:FindFirstChildOfClass("UIStroke")
         local TabIcon   = targetButton:FindFirstChild("Icon")
         local TabLabel  = targetButton:FindFirstChild("Label")
 
-        local accentCol = Color3.fromRGB(99, 102, 241)
         TweenService:Create(targetButton, TweenInfo.new(0.2), {
-            BackgroundColor3 = accentCol,
-            BackgroundTransparency = 0.15
+            BackgroundColor3 = Color3.fromRGB(36, 42, 60),
+            BackgroundTransparency = 0.35
         }):Play()
         if curStroke then
-            curStroke.Color = Color3.fromRGB(190, 205, 255)
-            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.25 }):Play()
+            curStroke.Color = Color3.fromRGB(65, 75, 105)
+            TweenService:Create(curStroke, TweenInfo.new(0.2), { Transparency = 0.5 }):Play()
         end
-        if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play() end
-        if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(255, 255, 255) }):Play() end
+        if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(240, 245, 255) }):Play() end
+        if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(240, 245, 255) }):Play() end
     end
 
     -- // ============================================================

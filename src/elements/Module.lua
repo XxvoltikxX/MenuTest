@@ -354,9 +354,9 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
         -- Animacja Pill Switcha Apple iOS
         local dotPos = Enabled and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local switchBg = Enabled and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
-        local switchStrokeCol = Enabled and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
-        local dotCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
+        local switchBg = Enabled and Color3.fromRGB(46, 160, 78) or Color3.fromRGB(40, 44, 56)
+        local switchStrokeCol = Enabled and Color3.fromRGB(56, 175, 90) or Color3.fromRGB(55, 60, 75)
+        local dotCol = Enabled and Color3.fromRGB(245, 248, 255) or Color3.fromRGB(220, 224, 235)
 
         TweenService:Create(SwitchBtn, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             BackgroundColor3 = switchBg
