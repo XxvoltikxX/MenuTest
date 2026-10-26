@@ -172,69 +172,118 @@ local Interactions = {
 local InteractionsFallback = Interactions
 local SidebarFallback = {
     Create = function(self, UI, theme, config)
-        local HeaderFrame = Instance.new("Frame")
-        HeaderFrame.Name = "MasterHeader"
-        HeaderFrame.Size = UDim2.new(1, 0, 0, 52)
-        HeaderFrame.BackgroundColor3 = Color3.fromRGB(12, 13, 19)
-        HeaderFrame.BorderSizePixel = 0
-        HeaderFrame.ZIndex = 8
+        -- Dual-Deck Fallback Implementation (Wysokość: 86px)
+        local MasterHub = Instance.new("Frame")
+        MasterHub.Name = "MasterHub"
+        MasterHub.Size = UDim2.new(1, 0, 0, 86)
+        MasterHub.BackgroundTransparency = 1
+        MasterHub.BorderSizePixel = 0
+        MasterHub.ZIndex = 8
 
-        local BrandContainer = Instance.new("Frame")
+        -- Deck 1: Titlebar (42px)
+        local Deck1 = Instance.new("Frame", MasterHub)
+        Deck1.Name = "Deck1_Titlebar"
+        Deck1.Size = UDim2.new(1, 0, 0, 42)
+        Deck1.BackgroundColor3 = Color3.fromRGB(11, 12, 18)
+        Deck1.BorderSizePixel = 0
+        Deck1.ZIndex = 9
+
+        local Deck1Div = Instance.new("Frame", Deck1)
+        Deck1Div.Size = UDim2.new(1, 0, 0, 1)
+        Deck1Div.Position = UDim2.new(0, 0, 1, -1)
+        Deck1Div.BackgroundColor3 = Color3.fromRGB(25, 27, 40)
+        Deck1Div.BorderSizePixel = 0
+
+        local BrandContainer = Instance.new("Frame", Deck1)
         BrandContainer.Name = "BrandContainer"
-        BrandContainer.Size = UDim2.new(0, 200, 1, 0)
+        BrandContainer.Size = UDim2.new(0, 220, 1, 0)
         BrandContainer.Position = UDim2.new(0, 14, 0, 0)
         BrandContainer.BackgroundTransparency = 1
-        BrandContainer.ZIndex = 9
-        BrandContainer.Parent = HeaderFrame
+        BrandContainer.ZIndex = 10
 
-        local BrandTitle = Instance.new("TextLabel")
+        local BrandLayout = Instance.new("UIListLayout", BrandContainer)
+        BrandLayout.FillDirection = Enum.FillDirection.Horizontal
+        BrandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        BrandLayout.Padding = UDim.new(0, 8)
+
+        local LogoBox = Instance.new("Frame", BrandContainer)
+        LogoBox.Size = UDim2.new(0, 26, 0, 26)
+        LogoBox.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+        LogoBox.BorderSizePixel = 0
+        Instance.new("UICorner", LogoBox).CornerRadius = UDim.new(0, 7)
+
+        local BrandTitle = Instance.new("TextLabel", BrandContainer)
         BrandTitle.Text = config.Name or "UNIVERSAL"
         BrandTitle.Font = Enum.Font.GothamBold
-        BrandTitle.TextSize = 14
+        BrandTitle.TextSize = 13
         BrandTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-        BrandTitle.Size = UDim2.new(1, 0, 1, 0)
-        BrandTitle.TextXAlignment = Enum.TextXAlignment.Left
+        BrandTitle.AutomaticSize = Enum.AutomaticSize.X
+        BrandTitle.Size = UDim2.new(0, 0, 1, 0)
         BrandTitle.BackgroundTransparency = 1
-        BrandTitle.Parent = BrandContainer
+        BrandTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-        local TabList = Instance.new("ScrollingFrame")
+        local VerBadge = Instance.new("TextLabel", BrandContainer)
+        VerBadge.Text = "v3.0 ELITE"
+        VerBadge.Font = Enum.Font.GothamBold
+        VerBadge.TextSize = 9
+        VerBadge.TextColor3 = Color3.fromRGB(129, 140, 248)
+        VerBadge.Size = UDim2.new(0, 58, 0, 18)
+        VerBadge.BackgroundColor3 = Color3.fromRGB(26, 28, 44)
+        Instance.new("UICorner", VerBadge).CornerRadius = UDim.new(0, 4)
+
+        local Deck1Right = Instance.new("Frame", Deck1)
+        Deck1Right.Name = "Deck1Right"
+        Deck1Right.Size = UDim2.new(0, 245, 1, 0)
+        Deck1Right.Position = UDim2.new(1, -12, 0.5, 0)
+        Deck1Right.AnchorPoint = Vector2.new(1, 0.5)
+        Deck1Right.BackgroundTransparency = 1
+        Deck1Right.ZIndex = 10
+
+        local Controls = Instance.new("Frame", Deck1Right)
+        Controls.Name = "Controls"
+        Controls.Size = UDim2.new(0, 95, 1, 0)
+        Controls.Position = UDim2.new(1, 0, 0.5, 0)
+        Controls.AnchorPoint = Vector2.new(1, 0.5)
+        Controls.BackgroundTransparency = 1
+        Controls.ZIndex = 11
+        UI.Controls = Controls
+
+        local CtrlLayout = Instance.new("UIListLayout", Controls)
+        CtrlLayout.FillDirection = Enum.FillDirection.Horizontal
+        CtrlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        CtrlLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        CtrlLayout.Padding = UDim.new(0, 5)
+
+        -- Deck 2: Navigation Dock (44px)
+        local Deck2 = Instance.new("Frame", MasterHub)
+        Deck2.Name = "Deck2_NavDock"
+        Deck2.Size = UDim2.new(1, 0, 0, 44)
+        Deck2.Position = UDim2.new(0, 0, 0, 42)
+        Deck2.BackgroundColor3 = Color3.fromRGB(9, 10, 15)
+        Deck2.BorderSizePixel = 0
+        Deck2.ZIndex = 9
+
+        local TabList = Instance.new("ScrollingFrame", Deck2)
         TabList.Name = "TopTabBar"
-        TabList.Size = UDim2.new(1, -440, 0, 38)
-        TabList.Position = UDim2.new(0, 215, 0.5, 0)
+        TabList.Size = UDim2.new(1, -280, 0, 34)
+        TabList.Position = UDim2.new(0, 14, 0.5, 0)
         TabList.AnchorPoint = Vector2.new(0, 0.5)
         TabList.BackgroundTransparency = 1
         TabList.BorderSizePixel = 0
-        pcall(function()
-            TabList.ScrollingDirection = Enum.ScrollingDirection.X
-        end)
+        pcall(function() TabList.ScrollingDirection = Enum.ScrollingDirection.X end)
         TabList.ScrollBarThickness = 0
-        TabList.ZIndex = 9
-        TabList.Parent = HeaderFrame
+        TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
+        TabList.AutomaticCanvasSize = Enum.AutomaticSize.X
+        TabList.ZIndex = 10
 
         local TabLayout = Instance.new("UIListLayout", TabList)
         TabLayout.FillDirection = Enum.FillDirection.Horizontal
         TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        TabLayout.Padding = UDim.new(0, 6)
+        TabLayout.Padding = UDim.new(0, 8)
+        TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-        local RightContainer = Instance.new("Frame")
-        RightContainer.Name = "RightContainer"
-        RightContainer.Size = UDim2.new(0, 200, 1, 0)
-        RightContainer.Position = UDim2.new(1, -10, 0.5, 0)
-        RightContainer.AnchorPoint = Vector2.new(1, 0.5)
-        RightContainer.BackgroundTransparency = 1
-        RightContainer.ZIndex = 9
-        RightContainer.Parent = HeaderFrame
-
-        local Controls = Instance.new("Frame")
-        Controls.Name = "Controls"
-        Controls.Size = UDim2.new(0, 80, 1, 0)
-        Controls.Position = UDim2.new(1, 0, 0.5, 0)
-        Controls.AnchorPoint = Vector2.new(1, 0.5)
-        Controls.BackgroundTransparency = 1
-        Controls.Parent = RightContainer
-        UI.Controls = Controls
-
-        return HeaderFrame, TabList
+        UI.TabList = TabList
+        return MasterHub, TabList
     end
 }
 
@@ -400,16 +449,16 @@ function Window:Create(config)
         getgenv()._MenuTestGui = ScreenGui
     end
 
-    -- Dynamiczny rozmiar początkowy dopasowany do ekranu (800x500 - przestronny bento layout)
-    local defaultW = 800
-    local defaultH = 500
+    -- Dynamiczny rozmiar początkowy dopasowany do ekranu (860x560 - cyber-command hub)
+    local defaultW = 860
+    local defaultH = 560
     if isMobile then
         -- Na urządzeniach mobilnych zgrabny, kompaktowy rozmiar z wygodnymi marginesami dookoła
-        defaultW = math.clamp(math.floor(viewport.X * 0.90), 340, 520)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.88), 260, 400)
-    elseif viewport.X < 850 or viewport.Y < 550 then
-        defaultW = math.clamp(math.floor(viewport.X * 0.90), 380, 680)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.86), 280, 440)
+        defaultW = math.clamp(math.floor(viewport.X * 0.92), 360, 560)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.90), 280, 440)
+    elseif viewport.X < 920 or viewport.Y < 620 then
+        defaultW = math.clamp(math.floor(viewport.X * 0.92), 400, 750)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.88), 300, 500)
     end
 
     -- Cień
@@ -687,161 +736,50 @@ function Window:Create(config)
     UI.MaxBtn   = createModernBtn("maximize-2", false)
     UI.CloseBtn = createModernBtn("x", true)
 
-    -- =========================================================================
-    -- SUB-HEADER: QUICK COMMAND & LIVE TELEMETRY BAR (Wysokość: 36px)
-    -- =========================================================================
-    local subBarHeight = 36
-    local SubBar = Instance.new("Frame")
-    SubBar.Name = "SubBar"
-    SubBar.Size = UDim2.new(1, 0, 0, subBarHeight)
-    SubBar.Position = UDim2.new(0, 0, 0, 52)
-    SubBar.BackgroundColor3 = Color3.fromRGB(11, 12, 17)
-    SubBar.BorderSizePixel = 0
-    SubBar.ZIndex = 6
-    SubBar.Parent = MainFrame
-    UI.SubBar = SubBar
-
-    local SubBarLine = Instance.new("Frame")
-    SubBarLine.Name = "SubBarLine"
-    SubBarLine.Size = UDim2.new(1, 0, 0, 1)
-    SubBarLine.Position = UDim2.new(0, 0, 1, -1)
-    SubBarLine.BorderSizePixel = 0
-    SubBarLine.BackgroundColor3 = Color3.fromRGB(28, 30, 42)
-    SubBarLine.Parent = SubBar
-
-    -- Lewa strona: Instant Search Box
-    local SearchBoxContainer = Instance.new("Frame")
-    SearchBoxContainer.Name = "SearchBoxContainer"
-    SearchBoxContainer.Size = UDim2.new(0, 240, 0, 24)
-    SearchBoxContainer.Position = UDim2.new(0, 16, 0.5, 0)
-    SearchBoxContainer.AnchorPoint = Vector2.new(0, 0.5)
-    SearchBoxContainer.BackgroundColor3 = Color3.fromRGB(18, 19, 28)
-    SearchBoxContainer.BorderSizePixel = 0
-    SearchBoxContainer.ZIndex = 7
-    SearchBoxContainer.Parent = SubBar
-    Instance.new("UICorner", SearchBoxContainer).CornerRadius = UDim.new(0, 6)
-
-    local SearchBoxStroke = Instance.new("UIStroke", SearchBoxContainer)
-    SearchBoxStroke.Color = Color3.fromRGB(36, 38, 54)
-    SearchBoxStroke.Thickness = 1
-
-    local SearchIcon = Instance.new("ImageLabel")
-    SearchIcon.Name = "SearchIcon"
-    SearchIcon.Size = UDim2.new(0, 13, 0, 13)
-    SearchIcon.Position = UDim2.new(0, 7, 0.5, 0)
-    SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
-    SearchIcon.BackgroundTransparency = 1
-    SearchIcon.ImageColor3 = Color3.fromRGB(120, 125, 145)
-    SearchIcon.ZIndex = 8
-    SearchIcon.Parent = SearchBoxContainer
-    if Icons and Icons.Apply then Icons:Apply(SearchIcon, "search") end
-
-    local SearchInput = Instance.new("TextBox")
-    SearchInput.Name = "SearchInput"
-    SearchInput.Size = UDim2.new(1, -26, 1, 0)
-    SearchInput.Position = UDim2.new(0, 24, 0, 0)
-    SearchInput.BackgroundTransparency = 1
-    SearchInput.Font = Enum.Font.GothamMedium
-    SearchInput.Text = ""
-    SearchInput.PlaceholderText = "Szukaj modułów i funkcji..."
-    SearchInput.PlaceholderColor3 = Color3.fromRGB(100, 105, 125)
-    SearchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SearchInput.TextSize = 11
-    SearchInput.TextXAlignment = Enum.TextXAlignment.Left
-    SearchInput.ClearTextOnFocus = false
-    SearchInput.ZIndex = 8
-    SearchInput.Parent = SearchBoxContainer
-    UI.SearchInput = SearchInput
-
-    -- Live Search Filter Logic
-    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
-        local query = string.lower(string.gsub(SearchInput.Text, "%s+", ""))
-        for _, page in ipairs(UI.Pages or {}) do
-            for _, desc in ipairs(page:GetDescendants()) do
-                if desc:IsA("Frame") and (desc.Name:match("^Category_") or desc.Name:match("^Module_") or desc:FindFirstChild("ClickBtn")) then
-                    if query == "" then
-                        desc.Visible = true
-                    else
-                        local match = string.find(string.lower(desc.Name), query, 1, true)
-                        local titleLbl = desc:FindFirstChild("Title") or desc:FindFirstChild("Label")
-                        if titleLbl and titleLbl:IsA("TextLabel") and string.find(string.lower(titleLbl.Text), query, 1, true) then
-                            match = true
-                        end
-                        desc.Visible = match and true or false
-                    end
-                end
-            end
+    -- Podpięcie kontrolek okna (Deck 1)
+    UI.MinBtn.MouseButton1Click:Connect(function()
+        UI:ToggleMenu(false)
+    end)
+    UI.CloseBtn.MouseButton1Click:Connect(function()
+        if UI.ShowExitModal then
+            UI.ShowExitModal()
+        else
+            ScreenGui:Destroy()
         end
     end)
 
-    -- Prawa strona: Live Telemetry Badges
-    local Telemetry = Instance.new("Frame")
-    Telemetry.Name = "Telemetry"
-    Telemetry.Size = UDim2.new(0, 260, 1, 0)
-    Telemetry.Position = UDim2.new(1, -16, 0.5, 0)
-    Telemetry.AnchorPoint = Vector2.new(1, 0.5)
-    Telemetry.BackgroundTransparency = 1
-    Telemetry.ZIndex = 7
-    Telemetry.Parent = SubBar
-
-    local TelemetryLayout = Instance.new("UIListLayout", Telemetry)
-    TelemetryLayout.FillDirection = Enum.FillDirection.Horizontal
-    TelemetryLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    TelemetryLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    TelemetryLayout.Padding = UDim.new(0, 8)
-
-    local function makeBadge(text, color)
-        local badge = Instance.new("Frame")
-        badge.Size = UDim2.new(0, 0, 0, 20)
-        badge.AutomaticSize = Enum.AutomaticSize.X
-        badge.BackgroundColor3 = Color3.fromRGB(16, 17, 25)
-        badge.BorderSizePixel = 0
-        badge.Parent = Telemetry
-        Instance.new("UICorner", badge).CornerRadius = UDim.new(0, 5)
-        local bStroke = Instance.new("UIStroke", badge)
-        bStroke.Color = Color3.fromRGB(32, 34, 48)
-        bStroke.Thickness = 1
-        local bPad = Instance.new("UIPadding", badge)
-        bPad.PaddingLeft = UDim.new(0, 7)
-        bPad.PaddingRight = UDim.new(0, 7)
-        local bLbl = Instance.new("TextLabel")
-        bLbl.Text = text
-        bLbl.Font = Enum.Font.GothamBold
-        bLbl.TextSize = 10
-        bLbl.TextColor3 = color
-        bLbl.Size = UDim2.new(0, 0, 1, 0)
-        bLbl.AutomaticSize = Enum.AutomaticSize.X
-        bLbl.BackgroundTransparency = 1
-        bLbl.Parent = badge
-        return bLbl
-    end
-
-    local FpsBadge = makeBadge("60 FPS", Color3.fromRGB(16, 185, 129))
-    local PingBadge = makeBadge("24 ms", Color3.fromRGB(129, 140, 248))
-    local SuiteBadge = makeBadge("UNIVERSAL", Color3.fromRGB(168, 85, 247))
-
-    -- Pętla live telemetry
-    local frameCount = 0
-    local lastFpsTime = tick()
-    RunService.RenderStepped:Connect(function()
-        frameCount = frameCount + 1
-        local now = tick()
-        if now - lastFpsTime >= 0.5 then
-            local fps = math.floor(frameCount / (now - lastFpsTime) + 0.5)
-            FpsBadge.Text = tostring(fps) .. " FPS"
-            frameCount = 0
-            lastFpsTime = now
-            pcall(function()
-                if LocalPlayer and LocalPlayer.GetNetworkPing then
-                    local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000 + 0.5)
-                    PingBadge.Text = tostring(ping) .. " ms"
+    -- Podpięcie Live Search Filter z Deck 2 (Sidebar.lua)
+    task.spawn(function()
+        local searchBox = UI.SearchInput
+        if not searchBox and HeaderFrame then
+            searchBox = HeaderFrame:FindFirstChild("SearchInput", true)
+            UI.SearchInput = searchBox
+        end
+        if searchBox then
+            searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+                local query = string.lower(string.gsub(searchBox.Text, "%s+", ""))
+                for _, page in ipairs(UI.Pages or {}) do
+                    for _, desc in ipairs(page:GetDescendants()) do
+                        if desc:IsA("Frame") and (desc.Name:match("^Category_") or desc.Name:match("^Module_") or desc:FindFirstChild("ClickBtn") or desc:FindFirstChild("ActionBtn")) then
+                            if query == "" then
+                                desc.Visible = true
+                            else
+                                local match = string.find(string.lower(desc.Name), query, 1, true)
+                                local titleLbl = desc:FindFirstChild("Title") or desc:FindFirstChild("Label")
+                                if titleLbl and titleLbl:IsA("TextLabel") and string.find(string.lower(titleLbl.Text), query, 1, true) then
+                                    match = true
+                                end
+                                desc.Visible = match and true or false
+                            end
+                        end
+                    end
                 end
             end)
         end
     end)
 
     -- =========================================================================
-    -- STATUS DOCK (Pasek dolny - stopka okna)
+    -- STATUS DOCK (Pasek dolny - stopka okna: 28px)
     -- =========================================================================
     local dockHeight = 28
     local StatusDock = Instance.new("Frame")
@@ -901,9 +839,9 @@ function Window:Create(config)
     DockRight.Parent = StatusDock
 
     -- =========================================================================
-    -- KONTENER STRON (PAGES CONTAINER) - PEŁNA SZEROKOŚĆ
+    -- KONTENER STRON (PAGES CONTAINER) - PEŁNA SZEROKOŚĆ POD DUAL-DECK (86px)
     -- =========================================================================
-    local totalHeaderSpace = 52 + subBarHeight
+    local totalHeaderSpace = 86
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
     PagesContainer.Size = UDim2.new(1, 0, 1, -(totalHeaderSpace + dockHeight))
@@ -965,8 +903,9 @@ function Window:Create(config)
     ThemeManager:Register(ResizeIcon, "ImageColor3", "Accent")
     Icons:Apply(ResizeIcon, "arrow-down-right")
 
-    -- Minimalne wymiary okna (na telefonach można zmniejszyć do 340x230)
-    local minW = isMobile and 340 or 440
+    -- Minimalne wymiary okna (na telefonach można zmniejszyć do 360x260)
+    local minW = isMobile and 360 or 520
+    local minH = isMobile and 260 or 380
     pcall(function()
         local dragTarget = HeaderFrame or UI.TopBar
         if dragTarget and Interactions and Interactions.MakeDraggable then
