@@ -1,4 +1,4 @@
-﻿-- // ==========================================================================
+-- // ==========================================================================
 -- // MENUTEST MASTER LOADER
 -- // Automatyczny system detekcji gry i ładowania dedykowanych skryptów
 -- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub Universal Suite
@@ -90,6 +90,14 @@ local function findGameMatch(id)
     if numId and Games[numId] then return numId, Games[numId] end
     if strId and Games[strId] then return numId or strId, Games[strId] end
     return nil, nil
+end
+
+-- Możliwość ręcznego wymuszenia Universal Suite w dowolnej grze
+local forceUniversal = (typeof(getgenv) == "function" and getgenv()._ForceUniversal == true) or (_G._ForceUniversal == true)
+if forceUniversal then
+    print("[Loader] Wymuszono uruchomienie Universal Suite...")
+    safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
+    return
 end
 
 local matchedId, matchedName = findGameMatch(placeId)
