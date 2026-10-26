@@ -30,24 +30,48 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
 
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Name = "Slider_" .. sliderName
-    SliderFrame.Size = UDim2.new(1, 0, 0, 52)
-    SliderFrame.BackgroundTransparency = 1
+    SliderFrame.Size = UDim2.new(1, 0, 0, 56)
+    SliderFrame.BackgroundColor3 = Color3.fromRGB(18, 19, 29)
+    SliderFrame.BackgroundTransparency = 0.5
     SliderFrame.ClipsDescendants = false
     SliderFrame.Parent = parent
+
+    local FrameCorner = Instance.new("UICorner", SliderFrame)
+    FrameCorner.CornerRadius = UDim.new(0, 7)
+
+    local FrameStroke = Instance.new("UIStroke", SliderFrame)
+    FrameStroke.Color = Color3.fromRGB(34, 36, 52)
+    FrameStroke.Thickness = 1
+    FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local FramePadding = Instance.new("UIPadding", SliderFrame)
+    FramePadding.PaddingLeft = UDim.new(0, 12)
+    FramePadding.PaddingRight = UDim.new(0, 12)
+    FramePadding.PaddingTop = UDim.new(0, 8)
+    FramePadding.PaddingBottom = UDim.new(0, 10)
+
+    SliderFrame.MouseEnter:Connect(function()
+        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(65, 70, 105) }):Play()
+        TweenService:Create(SliderFrame, TweenInfo.new(0.18), { BackgroundTransparency = 0.25 }):Play()
+    end)
+    SliderFrame.MouseLeave:Connect(function()
+        TweenService:Create(FrameStroke, TweenInfo.new(0.18), { Color = Color3.fromRGB(34, 36, 52) }):Play()
+        TweenService:Create(SliderFrame, TweenInfo.new(0.18), { BackgroundTransparency = 0.5 }):Play()
+    end)
 
     -- Górny wiersz: Tytuł + Plakietka wartości
     local TopRow = Instance.new("Frame")
     TopRow.Name = "TopRow"
-    TopRow.Size = UDim2.new(1, 0, 0, 22)
+    TopRow.Size = UDim2.new(1, 0, 0, 20)
     TopRow.BackgroundTransparency = 1
     TopRow.Parent = SliderFrame
 
     local Label = Instance.new("TextLabel")
     Label.Name = "Label"
     Label.Text = sliderName
-    Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 12
-    Label.TextColor3 = getThemeColor("Text", Color3.fromRGB(240, 240, 245))
+    Label.Font = Enum.Font.GothamBold
+    Label.TextSize = 11
+    Label.TextColor3 = getThemeColor("Text", Color3.fromRGB(225, 230, 245))
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Size = UDim2.new(1, -95, 1, 0)
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -57,17 +81,17 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     -- Plakietka wartości (Value Pill Badge z obsługą edycji)
     local ValueBadge = Instance.new("Frame")
     ValueBadge.Name = "ValueBadge"
-    ValueBadge.Size = UDim2.new(0, 85, 0, 20)
+    ValueBadge.Size = UDim2.new(0, 80, 0, 20)
     ValueBadge.Position = UDim2.new(1, 0, 0, 0)
     ValueBadge.AnchorPoint = Vector2.new(1, 0)
-    ValueBadge.BackgroundColor3 = getThemeColor("Accent2", Color3.fromRGB(30, 30, 36))
+    ValueBadge.BackgroundColor3 = Color3.fromRGB(25, 27, 42)
     ValueBadge.Parent = TopRow
 
     local BadgeCorner = Instance.new("UICorner", ValueBadge)
-    BadgeCorner.CornerRadius = UDim.new(0, 6)
+    BadgeCorner.CornerRadius = UDim.new(0, 5)
 
     local BadgeStroke = Instance.new("UIStroke", ValueBadge)
-    BadgeStroke.Color = getThemeColor("Accent", Color3.fromRGB(50, 50, 60))
+    BadgeStroke.Color = Color3.fromRGB(50, 55, 80)
     BadgeStroke.Thickness = 1
     BadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
@@ -75,7 +99,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     ValueLabel.Name = "ValueLabel"
     ValueLabel.Font = Enum.Font.GothamBold
     ValueLabel.TextSize = 11
-    ValueLabel.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+    ValueLabel.TextColor3 = Color3.fromRGB(165, 180, 252)
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Center
     ValueLabel.Size = UDim2.new(1, 0, 1, 0)
     ValueLabel.BackgroundTransparency = 1
@@ -85,7 +109,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     ValueBox.Name = "ValueBox"
     ValueBox.Font = Enum.Font.GothamBold
     ValueBox.TextSize = 11
-    ValueBox.TextColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+    ValueBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     ValueBox.TextXAlignment = Enum.TextXAlignment.Center
     ValueBox.Size = UDim2.new(1, 0, 1, 0)
     ValueBox.BackgroundTransparency = 1
@@ -97,8 +121,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local SliderBar = Instance.new("Frame")
     SliderBar.Name = "Track"
     SliderBar.Size = UDim2.new(1, 0, 0, 6)
-    SliderBar.Position = UDim2.new(0, 0, 0, 32)
-    SliderBar.BackgroundColor3 = getThemeColor("Main", Color3.fromRGB(18, 18, 22))
+    SliderBar.Position = UDim2.new(0, 0, 0, 30)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(12, 13, 20)
     SliderBar.ClipsDescendants = false
     SliderBar.Parent = SliderFrame
 
@@ -106,7 +130,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     BarCorner.CornerRadius = UDim.new(1, 0)
 
     local BarStroke = Instance.new("UIStroke", SliderBar)
-    BarStroke.Color = getThemeColor("Accent", Color3.fromRGB(42, 42, 50))
+    BarStroke.Color = Color3.fromRGB(30, 32, 46)
     BarStroke.Thickness = 1
     BarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
@@ -114,7 +138,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     local Fill = Instance.new("Frame")
     Fill.Name = "Fill"
     Fill.Size = UDim2.new(0, 0, 1, 0)
-    Fill.BackgroundColor3 = getThemeColor("Text", Color3.fromRGB(255, 255, 255))
+    Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Fill.ClipsDescendants = false
     Fill.Parent = SliderBar
 

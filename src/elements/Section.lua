@@ -37,8 +37,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     SectionCard.Name = "Category_" .. sectionName
     SectionCard.Size = UDim2.new(1, 0, 0, 0)
     SectionCard.AutomaticSize = Enum.AutomaticSize.Y
-    SectionCard.BackgroundColor3 = getThemeColor("Secondary", Color3.fromRGB(17, 18, 25))
-    SectionCard.BackgroundTransparency = 0.05
+    SectionCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
+    SectionCard.BackgroundTransparency = 0.25
     SectionCard.ClipsDescendants = false
     SectionCard.Parent = parent
 
@@ -46,7 +46,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     CardCorner.CornerRadius = UDim.new(0, 10)
 
     local CardStroke = Instance.new("UIStroke", SectionCard)
-    CardStroke.Color = getThemeColor("Accent", Color3.fromRGB(38, 40, 54))
+    CardStroke.Color = Color3.fromRGB(34, 36, 52)
     CardStroke.Thickness = 1.2
     CardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 

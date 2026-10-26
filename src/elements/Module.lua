@@ -69,7 +69,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     local Colors = getColors()
 
-    -- Ramka modułu
+    -- Ramka modułu (Elite Bento Module Card)
     local ModuleFrame = Instance.new("Frame")
     ModuleFrame.Name = options.Name or "Module"
     ModuleFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -78,12 +78,24 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     ModuleFrame.Parent = parent
 
     local Corner = Instance.new("UICorner", ModuleFrame)
-    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.CornerRadius = UDim.new(0, 9)
 
     local MainStroke = Instance.new("UIStroke", ModuleFrame)
     MainStroke.Color = Colors.Stroke
     MainStroke.Thickness = 1.2
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    -- Wskaźnik LED aktywności na lewej krawędzi modułu
+    local LedIndicator = Instance.new("Frame")
+    LedIndicator.Name = "LedIndicator"
+    LedIndicator.Size = UDim2.new(0, 3, 0, 24)
+    LedIndicator.Position = UDim2.new(0, 3, 0, 13)
+    LedIndicator.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    LedIndicator.BackgroundTransparency = 1
+    LedIndicator.BorderSizePixel = 0
+    LedIndicator.ZIndex = 12
+    LedIndicator.Parent = ModuleFrame
+    Instance.new("UICorner", LedIndicator).CornerRadius = UDim.new(1, 0)
 
     -- Nagłówek modułu
     local Header = Instance.new("Frame")
@@ -106,7 +118,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         Icon = Instance.new("ImageLabel")
         Icon.Name = "ModuleIcon"
         Icon.Size = UDim2.new(0, 18, 0, 18)
-        Icon.Position = UDim2.new(0, 12, 0.5, 0)
+        Icon.Position = UDim2.new(0, 14, 0.5, 0)
         Icon.AnchorPoint = Vector2.new(0, 0.5)
         Icon.BackgroundTransparency = 1
         Icon.ImageColor3 = Colors.TextDim
@@ -126,11 +138,11 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.TextTruncate = Enum.TextTruncate.AtEnd
     if hasDesc then
-        Label.Size = UDim2.new(1, (options.Icon and -155 or -130), 0, 18)
-        Label.Position = UDim2.new(0, options.Icon and 38 or 12, 0, 7)
+        Label.Size = UDim2.new(1, (options.Icon and -160 or -135), 0, 18)
+        Label.Position = UDim2.new(0, options.Icon and 40 or 14, 0, 7)
     else
-        Label.Size = UDim2.new(1, (options.Icon and -155 or -130), 1, 0)
-        Label.Position = UDim2.new(0, options.Icon and 38 or 12, 0, 0)
+        Label.Size = UDim2.new(1, (options.Icon and -160 or -135), 1, 0)
+        Label.Position = UDim2.new(0, options.Icon and 40 or 14, 0, 0)
     end
     Label.BackgroundTransparency = 1
     Label.ZIndex = 11
@@ -146,8 +158,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         DescLabel.TextColor3 = Colors.TextDim
         DescLabel.TextXAlignment = Enum.TextXAlignment.Left
         DescLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        DescLabel.Size = UDim2.new(1, (options.Icon and -155 or -130), 0, 15)
-        DescLabel.Position = UDim2.new(0, options.Icon and 38 or 12, 0, 26)
+        DescLabel.Size = UDim2.new(1, (options.Icon and -160 or -135), 0, 15)
+        DescLabel.Position = UDim2.new(0, options.Icon and 40 or 14, 0, 26)
         DescLabel.BackgroundTransparency = 1
         DescLabel.ZIndex = 11
         DescLabel.Parent = Header
@@ -156,7 +168,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Prawa strona nagłówka: [Bind] [PillSwitch] [ExpandBtn]
     local ControlsFrame = Instance.new("Frame")
     ControlsFrame.Name = "ControlsFrame"
-    ControlsFrame.Size = UDim2.new(0, 120, 1, 0)
+    ControlsFrame.Size = UDim2.new(0, 125, 1, 0)
     ControlsFrame.Position = UDim2.new(1, -10, 0.5, 0)
     ControlsFrame.AnchorPoint = Vector2.new(1, 0.5)
     ControlsFrame.BackgroundTransparency = 1
@@ -172,7 +184,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Keybind Badge
     local BindBadge = Instance.new("TextButton")
     BindBadge.Name = "BindBadge"
-    BindBadge.Size = UDim2.new(0, 32, 0, 20)
+    BindBadge.Size = UDim2.new(0, 32, 0, 22)
     BindBadge.BackgroundColor3 = Colors.BadgeBg
     BindBadge.Text = "..."
     BindBadge.TextColor3 = Colors.TextDim
@@ -190,8 +202,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     -- Nowoczesny Cyber Pill Switch
     local SwitchBtn = Instance.new("TextButton")
     SwitchBtn.Name = "SwitchBtn"
-    SwitchBtn.Size = UDim2.new(0, 38, 0, 20)
-    SwitchBtn.BackgroundColor3 = Color3.fromRGB(34, 35, 48)
+    SwitchBtn.Size = UDim2.new(0, 40, 0, 22)
+    SwitchBtn.BackgroundColor3 = Color3.fromRGB(30, 31, 44)
     SwitchBtn.Text = ""
     SwitchBtn.AutoButtonColor = false
     SwitchBtn.Parent = ControlsFrame
@@ -204,7 +216,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
     local SwitchDot = Instance.new("Frame")
     SwitchDot.Name = "Dot"
     SwitchDot.Size = UDim2.new(0, 14, 0, 14)
-    SwitchDot.Position = UDim2.new(0, 3, 0.5, 0)
+    SwitchDot.Position = UDim2.new(0, 4, 0.5, 0)
     SwitchDot.AnchorPoint = Vector2.new(0, 0.5)
     SwitchDot.BackgroundColor3 = Color3.fromRGB(200, 205, 220)
     SwitchDot.BorderSizePixel = 0
@@ -232,36 +244,50 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         Icons:Apply(ExpandIcon, "chevron-down")
     end
 
-    -- Kontener na opcje rozwijane
+    -- Rozdzielacz między nagłówkiem a wnętrzem opcji (Gradient Divider)
+    local InnerLine = Instance.new("Frame")
+    InnerLine.Name = "InnerLine"
+    InnerLine.Size = UDim2.new(1, -20, 0, 1)
+    InnerLine.Position = UDim2.new(0, 10, 0, 49)
+    InnerLine.BorderSizePixel = 0
+    InnerLine.BackgroundColor3 = Color3.fromRGB(34, 36, 52)
+    InnerLine.Visible = false
+    InnerLine.Parent = ModuleFrame
+
+    local InGrad = Instance.new("UIGradient", InnerLine)
+    InGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.8),
+        NumberSequenceKeypoint.new(0.5, 0.1),
+        NumberSequenceKeypoint.new(1, 0.8)
+    })
+
+    -- Kontener na opcje rozwijane (Luksusowy Inset Bento Sub-Card)
     local Content = Instance.new("Frame")
     Content.Name = "Content"
-    Content.Position = UDim2.new(0, 0, 0, 50)
-    Content.Size = UDim2.new(1, 0, 0, 0)
+    Content.Position = UDim2.new(0, 8, 0, 52)
+    Content.Size = UDim2.new(1, -16, 0, 0)
     Content.AutomaticSize = Enum.AutomaticSize.Y
-    Content.BackgroundTransparency = 1
+    Content.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+    Content.BackgroundTransparency = 0.35
     Content.ClipsDescendants = false
     Content.Visible = false
     Content.Parent = ModuleFrame
+
+    Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 8)
+    local ContentStroke = Instance.new("UIStroke", Content)
+    ContentStroke.Color = Color3.fromRGB(30, 32, 46)
+    ContentStroke.Thickness = 1
+    ContentStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
     local ContentLayout = Instance.new("UIListLayout", Content)
     ContentLayout.Padding = UDim.new(0, 8)
     ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     local ContentPadding = Instance.new("UIPadding", Content)
-    ContentPadding.PaddingLeft = UDim.new(0, 12)
-    ContentPadding.PaddingRight = UDim.new(0, 12)
-    ContentPadding.PaddingTop = UDim.new(0, 4)
-    ContentPadding.PaddingBottom = UDim.new(0, 12)
-
-    -- Rozdzielacz między nagłówkiem a wnętrzem opcji
-    local InnerLine = Instance.new("Frame")
-    InnerLine.Name = "InnerLine"
-    InnerLine.Size = UDim2.new(1, -24, 0, 1)
-    InnerLine.Position = UDim2.new(0, 12, 0, 49)
-    InnerLine.BorderSizePixel = 0
-    InnerLine.BackgroundColor3 = Color3.fromRGB(38, 40, 56)
-    InnerLine.Visible = false
-    InnerLine.Parent = ModuleFrame
+    ContentPadding.PaddingLeft = UDim.new(0, 10)
+    ContentPadding.PaddingRight = UDim.new(0, 10)
+    ContentPadding.PaddingTop = UDim.new(0, 10)
+    ContentPadding.PaddingBottom = UDim.new(0, 10)
 
     -- Stan modułu
     local Enabled = false
@@ -314,9 +340,16 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
             }):Play()
         end
 
+        if LedIndicator then
+            TweenService:Create(LedIndicator, TweenInfo.new(time), {
+                BackgroundTransparency = Enabled and 0 or 1,
+                BackgroundColor3 = accentCol
+            }):Play()
+        end
+
         -- Animacja Pill Switcha
-        local dotPos = Enabled and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local switchBg = Enabled and accentCol or Color3.fromRGB(34, 35, 48)
+        local dotPos = Enabled and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
+        local switchBg = Enabled and accentCol or Color3.fromRGB(30, 31, 44)
         local switchStrokeCol = Enabled and accentCol or Color3.fromRGB(48, 50, 70)
         local dotCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 185, 200)
 
@@ -349,7 +382,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
         Content.Visible = Expanded
         InnerLine.Visible = Expanded
 
-        local targetHeight = Expanded and (50 + ContentLayout.AbsoluteContentSize.Y + 16) or 50
+        local targetHeight = Expanded and (54 + ContentLayout.AbsoluteContentSize.Y + 18) or 50
         TweenService:Create(ModuleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 0, targetHeight)
         }):Play()
@@ -417,7 +450,7 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig, addCo
 
     ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         if Expanded then
-            local targetHeight = 50 + ContentLayout.AbsoluteContentSize.Y + 16
+            local targetHeight = 54 + ContentLayout.AbsoluteContentSize.Y + 18
             ModuleFrame.Size = UDim2.new(1, 0, 0, targetHeight)
         end
     end)
