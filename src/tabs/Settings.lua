@@ -54,40 +54,26 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local SliderElement = safeLoadSub("elements/Slider.lua", baseUrl .. "elements/Slider.lua")
 
-    -- Tworzymy dedykowaną stronę Settings w PagesContainer
-    local Page = Instance.new("ScrollingFrame")
+    -- Rejestrujemy pełną zakładkę Settings w głównym pasku zakładek (Dock)
+    local TabElements = UI:CreateTab("Settings", "settings", order or 999)
+    local Page = TabElements.Page
     Page.Name = "SettingsPage"
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.BorderSizePixel = 0
-    Page.Visible = false
-    Page.Active = true
-    Page.Selectable = false
-    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    Page.ScrollingDirection = Enum.ScrollingDirection.Y
-    Page.ScrollBarThickness = 5
-    Page.ScrollBarImageTransparency = 0
-    Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
-    Page.Parent = UI.PagesContainer
+    UI.SettingsPage = Page
 
     local ThemeManager = UI.ThemeManager
     if ThemeManager and ThemeManager.Register then
         ThemeManager:Register(Page, "ScrollBarImageColor3", "Accent")
     end
 
-    local PageLayout = Instance.new("UIListLayout", Page)
+    local PageLayout = Page:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout", Page)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
     PageLayout.Padding = UDim.new(0, 14)
 
-    local PagePadding = Instance.new("UIPadding", Page)
+    local PagePadding = Page:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding", Page)
     PagePadding.PaddingTop = UDim.new(0, 14)
     PagePadding.PaddingRight = UDim.new(0, 18)
     PagePadding.PaddingLeft = UDim.new(0, 18)
     PagePadding.PaddingBottom = UDim.new(0, 30)
-
-    table.insert(UI.Pages, Page)
-    UI.SettingsPage = Page
 
     -- Pomocnicza funkcja do tworzenia nagłówków sekcji Bento
     local function createSectionHeader(titleText, iconName, subtext)
@@ -139,6 +125,142 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         return SecHeader
     end
+
+    -- // =========================================================================
+    -- // 0. HERO APPLE LIQUID GLASS (VISIONOS) SHOWCASE CARD
+    -- // =========================================================================
+    local GlassHero = Instance.new("Frame")
+    GlassHero.Name = "GlassHero"
+    GlassHero.Size = UDim2.new(1, 0, 0, 74)
+    GlassHero.BackgroundColor3 = Color3.fromRGB(18, 22, 36)
+    GlassHero.BackgroundTransparency = 0.35
+    GlassHero.BorderSizePixel = 0
+    GlassHero.LayoutOrder = 0
+    GlassHero.Parent = Page
+    Instance.new("UICorner", GlassHero).CornerRadius = UDim.new(0, 18)
+
+    local GhStroke = Instance.new("UIStroke", GlassHero)
+    GhStroke.Color = Color3.fromRGB(110, 130, 190)
+    GhStroke.Thickness = 1.2
+    GhStroke.Transparency = 0.5
+
+    local GhGrad = Instance.new("UIGradient", GlassHero)
+    GhGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 32, 54)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 28))
+    })
+
+    local GhPadding = Instance.new("UIPadding", GlassHero)
+    GhPadding.PaddingLeft = UDim.new(0, 16)
+    GhPadding.PaddingRight = UDim.new(0, 16)
+    GhPadding.PaddingTop = UDim.new(0, 12)
+    GhPadding.PaddingBottom = UDim.new(0, 12)
+
+    local GhIconBox = Instance.new("Frame")
+    GhIconBox.Size = UDim2.new(0, 44, 0, 44)
+    GhIconBox.Position = UDim2.new(0, 0, 0.5, 0)
+    GhIconBox.AnchorPoint = Vector2.new(0, 0.5)
+    GhIconBox.BackgroundColor3 = Color3.fromRGB(32, 38, 62)
+    GhIconBox.BackgroundTransparency = 0.4
+    GhIconBox.BorderSizePixel = 0
+    GhIconBox.Parent = GlassHero
+    Instance.new("UICorner", GhIconBox).CornerRadius = UDim.new(1, 0)
+    local GibStroke = Instance.new("UIStroke", GhIconBox)
+    GibStroke.Color = Color3.fromRGB(129, 140, 248)
+    GibStroke.Thickness = 1.2
+    GibStroke.Transparency = 0.4
+
+    local GhIcon = Instance.new("ImageLabel")
+    GhIcon.Size = UDim2.new(0, 22, 0, 22)
+    GhIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+    GhIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    GhIcon.BackgroundTransparency = 1
+    GhIcon.ImageColor3 = Color3.fromRGB(165, 180, 252)
+    GhIcon.Parent = GhIconBox
+    if Icons and Icons.Apply then Icons:Apply(GhIcon, "layers") end
+
+    local GhTextFrame = Instance.new("Frame")
+    GhTextFrame.Size = UDim2.new(1, -160, 1, 0)
+    GhTextFrame.Position = UDim2.new(0, 56, 0.5, 0)
+    GhTextFrame.AnchorPoint = Vector2.new(0, 0.5)
+    GhTextFrame.BackgroundTransparency = 1
+    GhTextFrame.Parent = GlassHero
+
+    local GhTitle = Instance.new("TextLabel")
+    GhTitle.Text = "APPLE LIQUID GLASS (VISIONOS)"
+    GhTitle.Font = Enum.Font.GothamBold
+    GhTitle.TextSize = 13
+    GhTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GhTitle.TextXAlignment = Enum.TextXAlignment.Left
+    GhTitle.Size = UDim2.new(1, 0, 0, 18)
+    GhTitle.BackgroundTransparency = 1
+    GhTitle.Parent = GhTextFrame
+
+    local GhSub = Instance.new("TextLabel")
+    GhSub.Text = "Półprzezroczysta tafla akrylowego szkła, zaokrąglone kapsuły 24px i specularne odbicia świetlne"
+    GhSub.Font = Enum.Font.GothamMedium
+    GhSub.TextSize = 10
+    GhSub.TextColor3 = Color3.fromRGB(160, 170, 205)
+    GhSub.TextXAlignment = Enum.TextXAlignment.Left
+    GhSub.Size = UDim2.new(1, 0, 0, 16)
+    GhSub.Position = UDim2.new(0, 0, 0, 20)
+    GhSub.BackgroundTransparency = 1
+    GhSub.Parent = GhTextFrame
+
+    -- Główny przełącznik Liquid Glass
+    local isLgOn = true
+    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
+        isLgOn = (UI.MenuConfig["LiquidGlass"] == true)
+    end
+
+    local GhSwitch = Instance.new("TextButton")
+    GhSwitch.Size = UDim2.new(0, 52, 0, 28)
+    GhSwitch.Position = UDim2.new(1, 0, 0.5, 0)
+    GhSwitch.AnchorPoint = Vector2.new(1, 0.5)
+    GhSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
+    GhSwitch.BackgroundTransparency = 0.2
+    GhSwitch.Text = ""
+    GhSwitch.AutoButtonColor = false
+    GhSwitch.Parent = GlassHero
+    Instance.new("UICorner", GhSwitch).CornerRadius = UDim.new(1, 0)
+    local GhsStroke = Instance.new("UIStroke", GhSwitch)
+    GhsStroke.Color = isLgOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
+    GhsStroke.Thickness = 1.2
+    GhsStroke.Transparency = 0.4
+
+    local GhDot = Instance.new("Frame")
+    GhDot.Size = UDim2.new(0, 20, 0, 20)
+    GhDot.Position = isLgOn and UDim2.new(1, -24, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
+    GhDot.AnchorPoint = Vector2.new(0, 0.5)
+    GhDot.BackgroundColor3 = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+    GhDot.BorderSizePixel = 0
+    GhDot.Parent = GhSwitch
+    Instance.new("UICorner", GhDot).CornerRadius = UDim.new(1, 0)
+
+    GhSwitch.MouseButton1Click:Connect(function()
+        isLgOn = not isLgOn
+        local destPos = isLgOn and UDim2.new(1, -24, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
+        local destBg = isLgOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
+        local destStrk = isLgOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
+        local destDot = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+
+        TweenService:Create(GhDot, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = destPos,
+            BackgroundColor3 = destDot
+        }):Play()
+        TweenService:Create(GhSwitch, TweenInfo.new(0.2), { BackgroundColor3 = destBg }):Play()
+        TweenService:Create(GhsStroke, TweenInfo.new(0.2), { Color = destStrk }):Play()
+
+        if UI and UI.SetLiquidGlass then
+            UI:SetLiquidGlass(isLgOn)
+        end
+        if UI and UI.MenuConfig then
+            UI.MenuConfig["LiquidGlass"] = isLgOn
+        end
+        if UI and UI.SaveMenuConfig then
+            pcall(function() UI.SaveMenuConfig("LiquidGlass", isLgOn) end)
+        end
+    end)
 
     -- // =========================================================================
     -- // 1. HERO SYSTEM COMMAND HUD (TELEMETRIA SILNIKA)

@@ -352,17 +352,45 @@ function Dashboard:Render(UI, order, passedIcons)
     QmHeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
     QmHeaderTitle.Parent = QmHeader
 
-    local QmBadge = Instance.new("TextLabel")
-    QmBadge.Text = "⚡ 1-CLICK"
+    local isGlassOn = true
+    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
+        isGlassOn = (UI.MenuConfig["LiquidGlass"] == true)
+    end
+
+    local QmBadge = Instance.new("TextButton")
+    QmBadge.Name = "LiquidGlassQuickBtn"
+    QmBadge.Text = isGlassOn and "💎 LIQUID GLASS: ON" or "⬛ GLASS: OFF"
     QmBadge.Font = Enum.Font.GothamBold
     QmBadge.TextSize = 9
-    QmBadge.TextColor3 = Color3.fromRGB(99, 102, 241)
-    QmBadge.Size = UDim2.new(0, 60, 0, 18)
-    QmBadge.Position = UDim2.new(1, -60, 0.5, 0)
+    QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(160, 165, 185)
+    QmBadge.Size = UDim2.new(0, 130, 0, 22)
+    QmBadge.Position = UDim2.new(1, 0, 0.5, 0)
     QmBadge.AnchorPoint = Vector2.new(1, 0.5)
-    QmBadge.BackgroundColor3 = Color3.fromRGB(30, 31, 48)
+    QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(36, 42, 68) or Color3.fromRGB(25, 27, 40)
+    QmBadge.AutoButtonColor = false
     QmBadge.Parent = QmHeader
-    Instance.new("UICorner", QmBadge).CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", QmBadge).CornerRadius = UDim.new(1, 0)
+    local QmbStroke = Instance.new("UIStroke", QmBadge)
+    QmbStroke.Color = isGlassOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(50, 55, 80)
+    QmbStroke.Thickness = 1
+
+    QmBadge.MouseButton1Click:Connect(function()
+        isGlassOn = not isGlassOn
+        QmBadge.Text = isGlassOn and "💎 LIQUID GLASS: ON" or "⬛ GLASS: OFF"
+        QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(160, 165, 185)
+        QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(36, 42, 68) or Color3.fromRGB(25, 27, 40)
+        QmbStroke.Color = isGlassOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(50, 55, 80)
+
+        if UI and UI.SetLiquidGlass then
+            UI:SetLiquidGlass(isGlassOn)
+        end
+        if UI and UI.MenuConfig then
+            UI.MenuConfig["LiquidGlass"] = isGlassOn
+        end
+        if UI and UI.SaveMenuConfig then
+            pcall(function() UI.SaveMenuConfig("LiquidGlass", isGlassOn) end)
+        end
+    end)
 
     -- Siatka 6 szybkich przełączników
     local MatrixGrid = Instance.new("Frame")

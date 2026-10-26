@@ -1444,9 +1444,17 @@ function Window:Create(config)
     end
 
     -- // ============================================================
-    -- // UI:OpenSettings – otwiera stronę Ustawień w stylu Discord
+    -- // UI:OpenSettings – otwiera stronę Ustawień
     -- // ============================================================
     function UI:OpenSettings()
+        if UI.SettingsPage then
+            for _, tabObj in ipairs(UI.TabObjects) do
+                if (tabObj.Page == UI.SettingsPage or tabObj.Button.Name == "Settings") and tabObj.Button then
+                    UI:SelectTab(tabObj.Button)
+                    return
+                end
+            end
+        end
         if not UI.SettingsPage then return end
         UI.IsSettingsOpen = true
 
