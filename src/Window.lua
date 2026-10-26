@@ -389,15 +389,19 @@ function Window:Create(config)
         viewport = Vector2.new(1280, 720)
     end
 
+    local isTouch = UserInputService.TouchEnabled
     local isMobile = false
     if config and (config.TestMobile or config.Mobile or config.IsMobile) then
         isMobile = true
-    elseif UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled then
+    elseif isTouch then
+        if not UserInputService.KeyboardEnabled or not UserInputService.MouseEnabled or viewport.X < 920 or viewport.Y < 580 then
+            isMobile = true
+        end
+    elseif viewport.X < 840 or viewport.Y < 500 then
         isMobile = true
     end
-    local isTouch = isMobile
     UI.IsMobile = isMobile
-    UI.IsTouch = isTouch
+    UI.IsTouch = isTouch or isMobile
 
     local ProtectedLocation
     pcall(function() ProtectedLocation = CoreGui end)
@@ -452,13 +456,10 @@ function Window:Create(config)
     -- Dynamiczny rozmiar początkowy dopasowany do ekranu (860x560 - cyber-command hub)
     local defaultW = 860
     local defaultH = 560
-    if isMobile then
+    if isMobile or isTouch or viewport.X < 920 or viewport.Y < 620 then
         -- Na urządzeniach mobilnych zgrabny, kompaktowy rozmiar z wygodnymi marginesami dookoła
-        defaultW = math.clamp(math.floor(viewport.X * 0.92), 360, 560)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.90), 280, 440)
-    elseif viewport.X < 920 or viewport.Y < 620 then
-        defaultW = math.clamp(math.floor(viewport.X * 0.92), 400, 750)
-        defaultH = math.clamp(math.floor(viewport.Y * 0.88), 300, 500)
+        defaultW = math.clamp(math.floor(viewport.X * 0.94), 340, 680)
+        defaultH = math.clamp(math.floor(viewport.Y * 0.90), 260, 420)
     end
 
     -- Cień
@@ -718,7 +719,7 @@ function Window:Create(config)
     UI.Controls = Controls
     local function createModernBtn(iconName, isClose)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 24, 0, 24)
+        btn.Size = UDim2.new(0, 22, 0, 22)
         btn.BackgroundColor3 = isClose and Color3.fromRGB(244, 63, 94) or Color3.fromRGB(30, 35, 52)
         btn.BackgroundTransparency = isClose and 0.5 or 0.6
         btn.Text = ""
@@ -733,7 +734,7 @@ function Window:Create(config)
 
         local iconImg = Instance.new("ImageLabel")
         iconImg.Name = "Icon"
-        iconImg.Size = UDim2.new(0, 11, 0, 11)
+        iconImg.Size = UDim2.new(0, 10, 0, 10)
         iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
         iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
         iconImg.BackgroundTransparency = 1
@@ -829,12 +830,13 @@ function Window:Create(config)
 
     local DockLeft = Instance.new("TextLabel")
     DockLeft.Name = "DockLeft"
-    DockLeft.Text = "iPhone 18 Pro Max • iOS 27.2 Liquid Glass"
+    DockLeft.Text = isMobile and "Apple iOS 27.2 Glass" or "iPhone 18 Pro Max • iOS 27.2 Liquid Glass"
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
     DockLeft.TextColor3 = Color3.fromRGB(52, 199, 89)
     DockLeft.TextXAlignment = Enum.TextXAlignment.Left
-    DockLeft.Size = UDim2.new(0.4, 0, 1, 0)
+    DockLeft.TextTruncate = Enum.TextTruncate.AtEnd
+    DockLeft.Size = UDim2.new(0.33, 0, 1, 0)
     DockLeft.BackgroundTransparency = 1
     DockLeft.Parent = StatusDock
 
@@ -854,25 +856,27 @@ function Window:Create(config)
 
     local DockCenter = Instance.new("TextLabel")
     DockCenter.Name = "DockCenter"
-    DockCenter.Text = "Naciśnij [ " .. tostring(config.ToggleUIKeybind or "K") .. " ], aby ukryć menu"
+    DockCenter.Text = isMobile and "Dotknij ikony, aby ukryć menu" or ("Naciśnij [ " .. tostring(config.ToggleUIKeybind or "K") .. " ], aby ukryć menu")
     DockCenter.Font = Enum.Font.GothamMedium
     DockCenter.TextSize = 10
     DockCenter.TextColor3 = Color3.fromRGB(160, 170, 200)
     DockCenter.TextXAlignment = Enum.TextXAlignment.Center
-    DockCenter.Size = UDim2.new(0.3, 0, 1, 0)
-    DockCenter.Position = UDim2.new(0.35, 0, 0, 0)
+    DockCenter.TextTruncate = Enum.TextTruncate.AtEnd
+    DockCenter.Size = UDim2.new(0.34, 0, 1, 0)
+    DockCenter.Position = UDim2.new(0.33, 0, 0, 0)
     DockCenter.BackgroundTransparency = 1
     DockCenter.Parent = StatusDock
 
     local DockRight = Instance.new("TextLabel")
     DockRight.Name = "DockRight"
-    DockRight.Text = "● System Aktywny • Chroniony"
+    DockRight.Text = isMobile and "● Aktywny" or "● System Aktywny • Chroniony"
     DockRight.Font = Enum.Font.GothamBold
     DockRight.TextSize = 10
     DockRight.TextColor3 = Color3.fromRGB(52, 211, 153)
     DockRight.TextXAlignment = Enum.TextXAlignment.Right
-    DockRight.Size = UDim2.new(0.35, 0, 1, 0)
-    DockRight.Position = UDim2.new(0.65, 0, 0, 0)
+    DockRight.TextTruncate = Enum.TextTruncate.AtEnd
+    DockRight.Size = UDim2.new(0.33, 0, 1, 0)
+    DockRight.Position = UDim2.new(0.67, 0, 0, 0)
     DockRight.BackgroundTransparency = 1
     DockRight.Parent = StatusDock
 
@@ -1072,6 +1076,10 @@ function Window:Create(config)
             UI.MobileToggleText.TextColor3 = isMenuVisible and Color3.fromRGB(255, 100, 100) or getColor(ThemeManager.CurrentTheme.Success)
         end
 
+        if UI.MobileIcon then
+            Icons:Apply(UI.MobileIcon, isMenuVisible and "x" or "menu")
+        end
+
         if isMenuVisible then
             MainFrame.Visible = true
             Shadow.Visible = true
@@ -1101,52 +1109,82 @@ function Window:Create(config)
         end
     end
 
-    -- Mobile toggle (Pływający przycisk otwierania na telefonach/tabletach)
-    if isTouch then
+    -- Mobile Floating Action Button (Apple iOS Liquid Glass Capsule)
+    if isTouch or isMobile then
         local MobileToggle = Instance.new("TextButton")
         MobileToggle.Name = "MobileToggle"
-        MobileToggle.Size = UDim2.new(0, 55, 0, 65)
-        MobileToggle.Position = UDim2.new(0, 20, 0.5, -32)
+        MobileToggle.Size = UDim2.new(0, 48, 0, 48)
+        MobileToggle.Position = UDim2.new(0, 18, 0.5, -24)
+        MobileToggle.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
+        MobileToggle.BackgroundTransparency = 0.20
         MobileToggle.BorderSizePixel = 0
         MobileToggle.Text = ""
-        MobileToggle.ZIndex = 100
+        MobileToggle.AutoButtonColor = false
+        MobileToggle.ZIndex = 200
         MobileToggle.Parent = ScreenGui
         UI.MobileToggle = MobileToggle
-        ThemeManager:Register(MobileToggle, "BackgroundColor3", "Main")
-        Instance.new("UICorner", MobileToggle).CornerRadius = UDim.new(0, 10)
-        local Stroke = Instance.new("UIStroke", MobileToggle)
-        Stroke.Thickness = 1.5
-        ThemeManager:Register(Stroke, "Color", "Accent")
+
+        Instance.new("UICorner", MobileToggle).CornerRadius = UDim.new(1, 0)
+        local MtStroke = Instance.new("UIStroke", MobileToggle)
+        MtStroke.Color = Color3.fromRGB(140, 165, 230)
+        MtStroke.Thickness = 1.4
+        MtStroke.Transparency = 0.40
+        MtStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        local MtGrad = Instance.new("UIGradient", MtStroke)
+        MtGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(99, 102, 241)),
+            ColorSequenceKeypoint.new(1.0, Color3.fromRGB(52, 199, 89))
+        })
+        MtGrad.Rotation = 45
+
+        local GlowGleam = Instance.new("Frame")
+        GlowGleam.Size = UDim2.new(0.6, 0, 0, 1.5)
+        GlowGleam.Position = UDim2.new(0.5, 0, 0, 2)
+        GlowGleam.AnchorPoint = Vector2.new(0.5, 0)
+        GlowGleam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        GlowGleam.BackgroundTransparency = 0.4
+        GlowGleam.BorderSizePixel = 0
+        GlowGleam.ZIndex = 201
+        GlowGleam.Parent = MobileToggle
+        Instance.new("UICorner", GlowGleam).CornerRadius = UDim.new(1, 0)
 
         local MobileIcon = Instance.new("ImageLabel")
         MobileIcon.Name = "Icon"
         MobileIcon.Size = UDim2.new(0, 22, 0, 22)
-        MobileIcon.Position = UDim2.new(0.5, 0, 0.4, 0)
+        MobileIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
         MobileIcon.AnchorPoint = Vector2.new(0.5, 0.5)
         MobileIcon.BackgroundTransparency = 1
+        MobileIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        MobileIcon.ZIndex = 202
         MobileIcon.Parent = MobileToggle
-        ThemeManager:Register(MobileIcon, "ImageColor3", "Text")
         Icons:Apply(MobileIcon, "menu")
+        UI.MobileIcon = MobileIcon
 
-        local ToggleText = Instance.new("TextLabel")
-        ToggleText.Name = "MobileToggleText"
-        ToggleText.Size = UDim2.new(1, 0, 0, 20)
-        ToggleText.Position = UDim2.new(0.5, 0, 0.75, 0)
-        ToggleText.AnchorPoint = Vector2.new(0.5, 0.5)
-        ToggleText.BackgroundTransparency = 1
-        ToggleText.Text = "CLOSE"
-        ToggleText.Font = Enum.Font.GothamBold
-        ToggleText.TextSize = 9
-        ToggleText.TextColor3 = Color3.fromRGB(255, 100, 100)
-        ToggleText.Parent = MobileToggle
-        UI.MobileToggleText = ToggleText
+        local MobileBadge = Instance.new("Frame")
+        MobileBadge.Name = "StatusBadge"
+        MobileBadge.Size = UDim2.new(0, 8, 0, 8)
+        MobileBadge.Position = UDim2.new(1, -6, 0, 6)
+        MobileBadge.AnchorPoint = Vector2.new(0.5, 0.5)
+        MobileBadge.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
+        MobileBadge.BorderSizePixel = 0
+        MobileBadge.ZIndex = 203
+        MobileBadge.Parent = MobileToggle
+        Instance.new("UICorner", MobileBadge).CornerRadius = UDim.new(1, 0)
 
         MainFrame.Visible = true
 
         -- Bezkonfliktowe przeciąganie i tapnięcie: tap otwiera/zamyka menu, przeciąganie przesuwa przycisk
-        Interactions:MakeDraggable(MobileToggle, MobileToggle, function()
-            UI:ToggleMenu()
-        end)
+        if Interactions and Interactions.MakeDraggable then
+            Interactions:MakeDraggable(MobileToggle, MobileToggle, function()
+                UI:ToggleMenu()
+            end)
+        else
+            MobileToggle.MouseButton1Click:Connect(function()
+                UI:ToggleMenu()
+            end)
+        end
     end
 
     -- // ============================================================
@@ -1523,7 +1561,7 @@ function Window:Create(config)
 
         local TabButton = Instance.new("TextButton")
         TabButton.Name = name
-        TabButton.Size = UDim2.new(0, 95, 0, 28)
+        TabButton.Size = UDim2.new(0, 0, 0, 26)
         TabButton.AutomaticSize = Enum.AutomaticSize.X
         TabButton.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
         TabButton.BackgroundTransparency = 0.65
@@ -1535,13 +1573,13 @@ function Window:Create(config)
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(1, 0)
 
         local TabBtnPadding = Instance.new("UIPadding", TabButton)
-        TabBtnPadding.PaddingLeft = UDim.new(0, 10)
-        TabBtnPadding.PaddingRight = UDim.new(0, 12)
+        TabBtnPadding.PaddingLeft = UDim.new(0, 8)
+        TabBtnPadding.PaddingRight = UDim.new(0, 8)
 
         local TabBtnLayout = Instance.new("UIListLayout", TabButton)
         TabBtnLayout.FillDirection = Enum.FillDirection.Horizontal
         TabBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        TabBtnLayout.Padding = UDim.new(0, 6)
+        TabBtnLayout.Padding = UDim.new(0, 5)
 
         local TabStroke = Instance.new("UIStroke", TabButton)
         TabStroke.Color = Color3.fromRGB(50, 58, 85)
@@ -1551,7 +1589,7 @@ function Window:Create(config)
 
         local TabIcon = Instance.new("ImageLabel")
         TabIcon.Name = "Icon"
-        TabIcon.Size = UDim2.new(0, 14, 0, 14)
+        TabIcon.Size = UDim2.new(0, 13, 0, 13)
         TabIcon.BackgroundTransparency = 1
         TabIcon.ImageColor3 = Color3.fromRGB(150, 160, 185)
         TabIcon.Parent = TabButton
@@ -1564,7 +1602,7 @@ function Window:Create(config)
         TabLabel.BackgroundTransparency = 1
         TabLabel.Font = Enum.Font.GothamBold
         TabLabel.Text = name
-        TabLabel.TextSize = 11
+        TabLabel.TextSize = 10
         TabLabel.TextColor3 = Color3.fromRGB(150, 160, 185)
         TabLabel.TextXAlignment = Enum.TextXAlignment.Left
         TabLabel.Parent = TabButton
@@ -1595,9 +1633,12 @@ function Window:Create(config)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
         Page.ScrollingDirection = Enum.ScrollingDirection.Y
-        Page.ScrollBarThickness = 5
+        Page.ScrollBarThickness = isMobile and 3 or 5
         Page.ScrollBarImageTransparency = 0
         Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
+        pcall(function()
+            Page.ElasticBehavior = Enum.ElasticBehavior.Always
+        end)
         Page.Parent = UI.PagesContainer
         ThemeManager:Register(Page, "ScrollBarImageColor3", "Accent")
 

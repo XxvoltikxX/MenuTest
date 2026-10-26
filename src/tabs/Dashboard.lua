@@ -47,21 +47,21 @@ function Dashboard:Render(UI, order, passedIcons)
     Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
     local PagePadding = Page:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding", Page)
-    PagePadding.PaddingTop = UDim.new(0, 12)
-    PagePadding.PaddingBottom = UDim.new(0, 20)
+    PagePadding.PaddingTop = UDim.new(0, 10)
+    PagePadding.PaddingBottom = UDim.new(0, 32)
     PagePadding.PaddingLeft = UDim.new(0, 14)
     PagePadding.PaddingRight = UDim.new(0, 14)
 
     local PageLayout = Page:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout", Page)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    PageLayout.Padding = UDim.new(0, 14)
+    PageLayout.Padding = UDim.new(0, 12)
 
     -- // =====================================================================
-    -- // 1. HERO PLAYER HUD CARD (Apple VisionOS Liquid Glass Panel)
+    -- // 1. HERO PLAYER HUD CARD (Apple iPhone iOS 27.2 Liquid Glass Panel)
     -- // =====================================================================
     local HeroCard = Instance.new("Frame")
     HeroCard.Name = "HeroPlayerCard"
-    HeroCard.Size = UDim2.new(1, 0, 0, 92)
+    HeroCard.Size = UDim2.new(1, 0, 0, 84)
     HeroCard.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
     HeroCard.BackgroundTransparency = 0.35
     HeroCard.BorderSizePixel = 0
@@ -295,7 +295,7 @@ function Dashboard:Render(UI, order, passedIcons)
     -- // =====================================================================
     local BentoRow = Instance.new("Frame")
     BentoRow.Name = "BentoRow"
-    BentoRow.Size = UDim2.new(1, 0, 0, 240)
+    BentoRow.Size = UDim2.new(1, 0, 0, 215)
     BentoRow.BackgroundTransparency = 1
     BentoRow.LayoutOrder = 2
     BentoRow.Parent = Page
@@ -346,51 +346,11 @@ function Dashboard:Render(UI, order, passedIcons)
     QmHeaderTitle.Font = Enum.Font.GothamBold
     QmHeaderTitle.TextSize = 13
     QmHeaderTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
-    QmHeaderTitle.Size = UDim2.new(1, -90, 1, 0)
+    QmHeaderTitle.Size = UDim2.new(1, -30, 1, 0)
     QmHeaderTitle.Position = UDim2.new(0, 24, 0, 0)
     QmHeaderTitle.BackgroundTransparency = 1
     QmHeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
     QmHeaderTitle.Parent = QmHeader
-
-    local isGlassOn = true
-    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
-        isGlassOn = (UI.MenuConfig["LiquidGlass"] == true)
-    end
-
-    local QmBadge = Instance.new("TextButton")
-    QmBadge.Name = "LiquidGlassQuickBtn"
-    QmBadge.Text = isGlassOn and "🍏 iOS 27.2 GLASS: ON" or "⬛ GLASS: OFF"
-    QmBadge.Font = Enum.Font.GothamBold
-    QmBadge.TextSize = 9
-    QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(160, 165, 185)
-    QmBadge.Size = UDim2.new(0, 140, 0, 22)
-    QmBadge.Position = UDim2.new(1, 0, 0.5, 0)
-    QmBadge.AnchorPoint = Vector2.new(1, 0.5)
-    QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(20, 36, 28) or Color3.fromRGB(25, 27, 40)
-    QmBadge.AutoButtonColor = false
-    QmBadge.Parent = QmHeader
-    Instance.new("UICorner", QmBadge).CornerRadius = UDim.new(1, 0)
-    local QmbStroke = Instance.new("UIStroke", QmBadge)
-    QmbStroke.Color = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 55, 80)
-    QmbStroke.Thickness = 1
-
-    QmBadge.MouseButton1Click:Connect(function()
-        isGlassOn = not isGlassOn
-        QmBadge.Text = isGlassOn and "🍏 iOS 27.2 GLASS: ON" or "⬛ GLASS: OFF"
-        QmBadge.TextColor3 = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(160, 165, 185)
-        QmBadge.BackgroundColor3 = isGlassOn and Color3.fromRGB(20, 36, 28) or Color3.fromRGB(25, 27, 40)
-        QmbStroke.Color = isGlassOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 55, 80)
-
-        if UI and UI.SetLiquidGlass then
-            UI:SetLiquidGlass(isGlassOn)
-        end
-        if UI and UI.MenuConfig then
-            UI.MenuConfig["LiquidGlass"] = isGlassOn
-        end
-        if UI and UI.SaveMenuConfig then
-            pcall(function() UI.SaveMenuConfig("LiquidGlass", isGlassOn) end)
-        end
-    end)
 
     -- Siatka 6 szybkich przełączników
     local MatrixGrid = Instance.new("Frame")
@@ -820,7 +780,7 @@ function Dashboard:Render(UI, order, passedIcons)
     -- // =====================================================================
     local BottomRow = Instance.new("Frame")
     BottomRow.Name = "BottomRow"
-    BottomRow.Size = UDim2.new(1, 0, 0, 52)
+    BottomRow.Size = UDim2.new(1, 0, 0, 44)
     BottomRow.BackgroundTransparency = 1
     BottomRow.LayoutOrder = 3
     BottomRow.Parent = Page
@@ -845,8 +805,8 @@ function Dashboard:Render(UI, order, passedIcons)
         pStroke.Transparency = 0.55
 
         local pIcon = Instance.new("ImageLabel")
-        pIcon.Size = UDim2.new(0, 20, 0, 20)
-        pIcon.Position = UDim2.new(0, 14, 0.5, 0)
+        pIcon.Size = UDim2.new(0, 16, 0, 16)
+        pIcon.Position = UDim2.new(0, 12, 0.5, 0)
         pIcon.AnchorPoint = Vector2.new(0, 0.5)
         pIcon.BackgroundTransparency = 1
         pIcon.ImageColor3 = Color3.fromRGB(99, 102, 241)
@@ -856,10 +816,10 @@ function Dashboard:Render(UI, order, passedIcons)
         local pTitle = Instance.new("TextLabel")
         pTitle.Text = title
         pTitle.Font = Enum.Font.GothamBold
-        pTitle.TextSize = 12
+        pTitle.TextSize = 11
         pTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
-        pTitle.Size = UDim2.new(1, -44, 0, 16)
-        pTitle.Position = UDim2.new(0, 42, 0, 10)
+        pTitle.Size = UDim2.new(1, -44, 0, 14)
+        pTitle.Position = UDim2.new(0, 36, 0, 7)
         pTitle.BackgroundTransparency = 1
         pTitle.TextXAlignment = Enum.TextXAlignment.Left
         pTitle.Parent = Pill
@@ -867,10 +827,10 @@ function Dashboard:Render(UI, order, passedIcons)
         local pSub = Instance.new("TextLabel")
         pSub.Text = sub
         pSub.Font = Enum.Font.Gotham
-        pSub.TextSize = 10
+        pSub.TextSize = 9
         pSub.TextColor3 = Color3.fromRGB(148, 163, 184)
-        pSub.Size = UDim2.new(1, -44, 0, 14)
-        pSub.Position = UDim2.new(0, 42, 0, 26)
+        pSub.Size = UDim2.new(1, -44, 0, 12)
+        pSub.Position = UDim2.new(0, 36, 0, 23)
         pSub.BackgroundTransparency = 1
         pSub.TextXAlignment = Enum.TextXAlignment.Left
         pSub.Parent = Pill
