@@ -6,7 +6,8 @@
 -- // ==========================================================================
 
 -- 1. Załadowanie głównej biblioteki UI
-local MENU = loadstring(game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))))()
+local mainRaw = game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999)))
+local MENU = loadstring(mainRaw:gsub("^\239\187\191", ""))()
 
 -- 2. Stworzenie okna głównego
 local Window = MENU:CreateWindow({

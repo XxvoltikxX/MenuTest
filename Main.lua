@@ -78,6 +78,7 @@ local function safeLoadUrl(url, fallbackValue)
             ok, content = safeHttpGet(url)
         end
         if ok and content then
+            content = content:gsub("^\239\187\191", "")
             SessionCache[url] = content
         end
     end
@@ -452,6 +453,7 @@ function MenuLib:CreateWindow(options)
                     ok, content = safeHttpGet(url, 2, 0.2)
                 end
                 if ok and content then
+                    content = content:gsub("^\239\187\191", "")
                     SessionCache[url] = content
                 end
                 finishedCount = finishedCount + 1
