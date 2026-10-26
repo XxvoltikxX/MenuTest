@@ -8,6 +8,7 @@ local function getInputPos(input)
 end
 
 function Interactions:MakeDraggable(clickObj, moveObj, onTapCallback)
+    if not clickObj or not moveObj then return end
     local dragging = false
     local dragStart, startPos
     local dragInput = nil
@@ -53,6 +54,7 @@ function Interactions:MakeDraggable(clickObj, moveObj, onTapCallback)
 end
 
 function Interactions:MakeResizable(handle, mainFrame, minX, minY)
+    if not handle or not mainFrame then return end
     local resizing = false
     minX = minX or 350
     minY = minY or 230

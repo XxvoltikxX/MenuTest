@@ -873,9 +873,13 @@ function Window:Create(config)
 
     -- Minimalne wymiary okna (na telefonach można zmniejszyć do 340x230)
     local minW = isMobile and 340 or 440
-    local minH = isMobile and 230 or 270
-    Interactions:MakeDraggable(TopBar, MainFrame)
-    Interactions:MakeResizable(ResizeHandle, MainFrame, minW, minH)
+    local dragTarget = HeaderFrame or UI.TopBar
+    if dragTarget then
+        Interactions:MakeDraggable(dragTarget, MainFrame)
+    end
+    if ResizeHandle then
+        Interactions:MakeResizable(ResizeHandle, MainFrame, minW, minH)
+    end
 
     -- Automatyczne dopasowanie, jeśli gracz obróci ekran telefonu
     if camera then
