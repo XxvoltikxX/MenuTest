@@ -1202,4 +1202,244 @@ SpeedModule:AddSlider({
     end
 })
 
+-- // ==========================================================================
+-- // 7. SYSTEM ZDALNYCH MASZYN I INTERAKCJI (PET COLLECTION INDEX REMOTE)
+-- // ==========================================================================
+
+local function getPetCollectionMachine()
+    local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
+    if not map then return nil end
+    local interactive = map:FindFirstChild("Interactive")
+    if not interactive then return nil end
+    return interactive:FindFirstChild("Pet Collection Machine")
+end
+
+local function openPetCollectionIndex()
+    local opened = false
+    local machine = getPetCollectionMachine()
+    local char = LocalPlayer.Character
+    local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+
+    -- 1. firetouchinterest na Padzie maszyny Pet Collection
+    if machine and hrp and typeof(firetouchinterest) == "function" then
+        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+        if pad then
+            pcall(function()
+                firetouchinterest(hrp, pad, 0)
+                task.wait(0.08)
+                firetouchinterest(hrp, pad, 1)
+                opened = true
+            end)
+        end
+    end
+
+    -- 2. Framework GUI / Signal (natywne API gry Pet Simulator X)
+    if Framework then
+        pcall(function()
+            if Framework.Signal and Framework.Signal.Fire then
+                Framework.Signal.Fire("Open Collection")
+                Framework.Signal.Fire("Open Index")
+                Framework.Signal.Fire("Pet Collection")
+                Framework.Signal.Fire("Collection")
+                Framework.Signal.Fire("Index")
+            end
+        end)
+        pcall(function()
+            if Framework.GUI and Framework.GUI.Open then
+                Framework.GUI.Open("Collection")
+                Framework.GUI.Open("Index")
+                Framework.GUI.Open("Pet Collection")
+            end
+        end)
+    end
+
+    -- 3. PlayerGui fallback (odszukanie ramki Collection/Index i ustawienie Visible/Enabled)
+    local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        pcall(function()
+            local mainGui = pGui:FindFirstChild("Main") or pGui:FindFirstChild("GUI")
+            if mainGui then
+                local frames = mainGui:FindFirstChild("Frames") or mainGui
+                for _, child in ipairs(frames:GetChildren()) do
+                    local n = child.Name:lower()
+                    if n:find("collection") or n:find("index") then
+                        if child:IsA("GuiObject") then
+                            child.Visible = true
+                            opened = true
+                        end
+                    end
+                end
+            end
+
+            for _, g in ipairs(pGui:GetChildren()) do
+                if g:IsA("ScreenGui") then
+                    local gn = g.Name:lower()
+                    if gn:find("index") or gn:find("collection") then
+                        g.Enabled = true
+                        for _, d in ipairs(g:GetDescendants()) do
+                            if d:IsA("GuiObject") and (d.Name:lower():find("frame") or d.Name:lower():find("main") or d.Name:lower():find("collection")) then
+                                d.Visible = true
+                                opened = true
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    return opened
+end
+
+local function closePetCollectionIndex()
+    local machine = getPetCollectionMachine()
+    local char = LocalPlayer.Character
+    local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+
+    if machine and hrp and typeof(firetouchinterest) == "function" then
+        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+        if pad then
+            pcall(function()
+                firetouchinterest(hrp, pad, 1)
+            end)
+        end
+    end
+
+    if Framework and Framework.GUI and Framework.GUI.Close then
+        pcall(function()
+            Framework.GUI.Close("Collection")
+            Framework.GUI.Close("Index")
+            Framework.GUI.Close("Pet Collection")
+        end)
+    end
+
+    local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        pcall(function()
+            local mainGui = pGui:FindFirstChild("Main") or pGui:FindFirstChild("GUI")
+            if mainGui then
+                local frames = mainGui:FindFirstChild("Frames") or mainGui
+                for _, child in ipairs(frames:GetChildren()) do
+                    local n = child.Name:lower()
+                    if n:find("collection") or n:find("index") then
+                        if child:IsA("GuiObject") then
+                            child.Visible = false
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function teleportToPetCollectionMachine()
+    local machine = getPetCollectionMachine()
+    if not machine then return false end
+
+    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+    local targetCFrame = nil
+    if pad and pad:IsA("BasePart") then
+        targetCFrame = pad.CFrame * CFrame.new(0, 3, 0)
+    elseif machine:IsA("Model") then
+        targetCFrame = machine:GetPivot() * CFrame.new(0, 3, 0)
+    end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp and targetCFrame then
+        hrp.CFrame = targetCFrame
+        return true
+    end
+    return false
+end
+
+local function openInteractiveMachine(machineName)
+    local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
+    local interactive = map and map:FindFirstChild("Interactive")
+    if not interactive then return false end
+
+    local machine = interactive:FindFirstChild(machineName)
+    if not machine then return false end
+
+    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChildWhichIsA("BasePart")
+    local char = LocalPlayer.Character
+    local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+
+    if pad and hrp and typeof(firetouchinterest) == "function" then
+        pcall(function()
+            firetouchinterest(hrp, pad, 0)
+            task.wait(0.08)
+            firetouchinterest(hrp, pad, 1)
+        end)
+        return true
+    end
+    return false
+end
+
+-- // ==================== MODUŁ 4: PET COLLECTION INDEX (MASZYNA INDEXU) ====================
+local IndexModule = TabGeneral:CreateModule({
+    Name = "Pet Collection Index",
+    Description = "Zdalny dostęp do maszyny Pet Collection bez podchodzenia",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "B",
+    Flag = "General_PetCollectionIndex",
+    Callback = function(state)
+        if state then
+            openPetCollectionIndex()
+        else
+            closePetCollectionIndex()
+        end
+    end
+})
+
+IndexModule:AddButton({
+    Name = "Otwórz Menu Indexu",
+    Callback = function()
+        openPetCollectionIndex()
+    end
+})
+
+IndexModule:AddButton({
+    Name = "Zamknij Menu Indexu",
+    Callback = function()
+        closePetCollectionIndex()
+    end
+})
+
+IndexModule:AddButton({
+    Name = "Teleportuj do Maszyny Indexu",
+    Callback = function()
+        teleportToPetCollectionMachine()
+    end
+})
+
+-- Dodatkowe szybkie maszyny ze strefy Interactive
+IndexModule:AddDropdown({
+    Name = "Otwórz Inne Maszyny Zdalnie",
+    Options = {
+        "Wybierz maszynę...",
+        "Pet Collection Machine",
+        "Bank",
+        "Gold Machine",
+        "Rainbow Machine",
+        "Fuse Pets",
+        "Huge Machine",
+        "Upgrade Station"
+    },
+    CurrentOption = {"Wybierz maszynę..."},
+    Default = "Wybierz maszynę...",
+    Flag = "General_OtherMachinesSelect",
+    Callback = function(val)
+        local selected = (type(val) == "table" and val[1]) or val
+        if selected and selected ~= "Wybierz maszynę..." then
+            if selected == "Pet Collection Machine" then
+                openPetCollectionIndex()
+            else
+                openInteractiveMachine(selected)
+            end
+        end
+    end
+})
+
 print("[PetHub] Pomyślnie załadowano skrypt Pet Simulator X Event!")
