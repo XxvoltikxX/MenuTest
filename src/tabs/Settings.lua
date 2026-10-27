@@ -580,7 +580,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local LcgLayout = Instance.new("UIGridLayout", LogoChipsGrid)
     LcgLayout.CellPadding = UDim2.new(0, 6, 0, 6)
-    LcgLayout.CellSize = isMobile and UDim2.new(0.333, -4, 0, 28) or UDim2.new(0.166, -5, 0, 28)
+    LcgLayout.CellSize = isMobile and UDim2.new(0.5, -4, 0, 28) or UDim2.new(0.2, -5, 0, 28)
     LcgLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     local logoPresetsList = {
@@ -588,8 +588,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         { Key = "Crown",  Label = "👑 Crown" },
         { Key = "Star",   Label = "✨ Nova" },
         { Key = "Skull",  Label = "💀 Skull" },
-        { Key = "Shield", Label = "⚔️ Shield" },
-        { Key = "Custom", Label = "🛠️ Własne" }
+        { Key = "Shield", Label = "⚔️ Shield" }
     }
 
     local activeLogoPreset = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkPreset"]) or "Crest"
@@ -635,81 +634,13 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end)
     end
 
-    -- 2C. Wiersz Własnego Asset ID dla Logo
-    local CustomLogoRow = Instance.new("Frame")
-    CustomLogoRow.Name = "CustomLogoRow"
-    CustomLogoRow.Size = UDim2.new(1, 0, 0, 32)
-    CustomLogoRow.BackgroundTransparency = 1
-    CustomLogoRow.LayoutOrder = 2
-    CustomLogoRow.Parent = WatermarkControls
-
-    local ClInputBox = Instance.new("Frame")
-    ClInputBox.Size = UDim2.new(1, -115, 1, 0)
-    ClInputBox.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
-    ClInputBox.Parent = CustomLogoRow
-    Instance.new("UICorner", ClInputBox).CornerRadius = UDim.new(0, 8)
-    local ClStroke = Instance.new("UIStroke", ClInputBox)
-    ClStroke.Color = Color3.fromRGB(42, 48, 70)
-    ClStroke.Thickness = 1
-
-    local ClIcon = Instance.new("ImageLabel")
-    ClIcon.Size = UDim2.new(0, 14, 0, 14)
-    ClIcon.Position = UDim2.new(0, 8, 0.5, 0)
-    ClIcon.AnchorPoint = Vector2.new(0, 0.5)
-    ClIcon.BackgroundTransparency = 1
-    ClIcon.ImageColor3 = Color3.fromRGB(130, 140, 168)
-    ClIcon.Parent = ClInputBox
-    if Icons and Icons.Apply then Icons:Apply(ClIcon, "image") end
-
-    local CustomLogoInput = Instance.new("TextBox")
-    CustomLogoInput.Size = UDim2.new(1, -30, 1, 0)
-    CustomLogoInput.Position = UDim2.new(0, 26, 0, 0)
-    CustomLogoInput.BackgroundTransparency = 1
-    local savedLogoId = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkCustomId"]) or ""
-    CustomLogoInput.Text = savedLogoId
-    CustomLogoInput.PlaceholderText = "Wklej Roblox Asset ID własnego logo..."
-    CustomLogoInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
-    CustomLogoInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CustomLogoInput.Font = Enum.Font.GothamMedium
-    CustomLogoInput.TextSize = 11
-    CustomLogoInput.TextXAlignment = Enum.TextXAlignment.Left
-    CustomLogoInput.ClearTextOnFocus = false
-    CustomLogoInput.Parent = ClInputBox
-
-    local ApplyLogoBtn = Instance.new("TextButton")
-    ApplyLogoBtn.Size = UDim2.new(0, 105, 1, 0)
-    ApplyLogoBtn.Position = UDim2.new(1, 0, 0, 0)
-    ApplyLogoBtn.AnchorPoint = Vector2.new(1, 0)
-    ApplyLogoBtn.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
-    ApplyLogoBtn.Text = "Zastosuj Logo"
-    ApplyLogoBtn.Font = Enum.Font.GothamBold
-    ApplyLogoBtn.TextSize = 11
-    ApplyLogoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ApplyLogoBtn.AutoButtonColor = false
-    ApplyLogoBtn.Parent = CustomLogoRow
-    Instance.new("UICorner", ApplyLogoBtn).CornerRadius = UDim.new(0, 8)
-
-    ApplyLogoBtn.MouseButton1Click:Connect(function()
-        local raw = CustomLogoInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
-        if #raw > 0 then
-            selectLogoPreset("Custom")
-            if UI and UI.SetWatermark then
-                UI:SetWatermark(nil, "Custom", raw)
-            end
-            ApplyLogoBtn.Text = "Zastosowano!"
-            task.delay(1.2, function()
-                if ApplyLogoBtn and ApplyLogoBtn.Parent then ApplyLogoBtn.Text = "Zastosuj Logo" end
-            end)
-        end
-    end)
-
-    -- 2D. Suwaki przezroczystości oraz rozmiaru logo
+    -- 2C. Suwaki przezroczystości oraz rozmiaru logo
     local WmsSlidersGrid = Instance.new("Frame")
     WmsSlidersGrid.Name = "WmsSlidersGrid"
     WmsSlidersGrid.Size = UDim2.new(1, 0, 0, 0)
     WmsSlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
     WmsSlidersGrid.BackgroundTransparency = 1
-    WmsSlidersGrid.LayoutOrder = 3
+    WmsSlidersGrid.LayoutOrder = 2
     WmsSlidersGrid.Parent = WatermarkControls
 
     local WsgLayout = Instance.new("UIGridLayout", WmsSlidersGrid)
@@ -922,6 +853,11 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         TCard.MouseButton1Click:Connect(function()
             ThemeManager:Apply(tData.Colors)
             updateThemeSelection(tKey)
+            if UI and UI.SetStatusThemeName then
+                UI:SetStatusThemeName(tData.Name)
+            elseif UI and UI.DockLeft then
+                UI.DockLeft.Text = tData.Name
+            end
         end)
     end
 

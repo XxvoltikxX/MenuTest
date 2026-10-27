@@ -80,14 +80,17 @@ function Sidebar:Create(UI, theme, config, customWidth)
     OrbStroke.Transparency = 0.6
 
     local OrbIcon = Instance.new("ImageLabel")
-    OrbIcon.Size = UDim2.new(0, 12, 0, 12)
+    OrbIcon.Name = "OrbIcon"
+    OrbIcon.Size = UDim2.new(0, 14, 0, 14)
     OrbIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     OrbIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     OrbIcon.BackgroundTransparency = 1
-    OrbIcon.ImageColor3 = Color3.fromRGB(150, 165, 195)
+    OrbIcon.ImageColor3 = Color3.fromRGB(240, 245, 255)
     OrbIcon.ZIndex = 19
     OrbIcon.Parent = BrandOrb
     if Icons and Icons.Apply then Icons:Apply(OrbIcon, "layers") end
+    UI.BrandOrb = BrandOrb
+    UI.BrandIcon = OrbIcon
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Name = "TitleLabel"
@@ -105,7 +108,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
 
     local GlassBadge = Instance.new("TextLabel")
     GlassBadge.Name = "GlassBadge"
-    GlassBadge.Text = "27.2"
+    GlassBadge.Text = "PRO"
     GlassBadge.Font = Enum.Font.GothamBold
     GlassBadge.TextSize = 9
     GlassBadge.TextColor3 = Color3.fromRGB(140, 150, 175)

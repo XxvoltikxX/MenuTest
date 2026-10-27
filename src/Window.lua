@@ -692,22 +692,25 @@ function Window:Create(config)
     end
 
     local function applyWatermark()
+        local p = watermarkPresets[watermarkPreset] or watermarkPresets["Crest"]
+        local asset = p and p.AssetId or ""
+
         if not watermarkEnabled then
             LogoWatermark.Visible = false
-            return
-        end
-        LogoWatermark.Visible = true
-        LogoWatermark.ImageTransparency = watermarkTransparency
-        LogoWatermark.Size = UDim2.new(0, watermarkSize, 0, watermarkSize)
-
-        local asset = ""
-        if watermarkPreset == "Custom" and #watermarkCustomId > 0 then
-            asset = formatAssetId(watermarkCustomId)
         else
-            local p = watermarkPresets[watermarkPreset] or watermarkPresets["Crest"]
-            asset = p and p.AssetId or ""
+            LogoWatermark.Visible = true
+            LogoWatermark.ImageTransparency = watermarkTransparency
+            LogoWatermark.Size = UDim2.new(0, watermarkSize, 0, watermarkSize)
+            LogoWatermark.Image = asset
         end
-        LogoWatermark.Image = asset
+
+        -- Synchronizacja logo w lewym górnym rogu doku (BrandOrb w Sidebar)
+        if UI.BrandIcon and asset and #asset > 0 then
+            UI.BrandIcon.ImageRectSize = Vector2.new(0, 0)
+            UI.BrandIcon.ImageRectOffset = Vector2.new(0, 0)
+            UI.BrandIcon.Image = asset
+            UI.BrandIcon.ImageColor3 = Color3.fromRGB(240, 245, 255)
+        end
     end
 
     local function applyAnimPreset(mode)
@@ -823,6 +826,9 @@ function Window:Create(config)
     HeaderFrame.Parent = MainFrame
     UI.TopBar = HeaderFrame
     UI.TabList = TabList
+
+    -- Synchronizacja logo w lewym górnym rogu z aktualnie wybranym stylem
+    applyWatermark()
 
     -- Controls (Nowoczesne przyciski okna w prawym rogu HeaderFrame)
     local Controls = UI.Controls
@@ -957,9 +963,22 @@ function Window:Create(config)
     DockPadding.PaddingLeft = UDim.new(0, 16)
     DockPadding.PaddingRight = UDim.new(0, 16)
 
+    local themeNamesMap = {
+        ["dark"] = "Dark Obsidian",
+        ["midnight"] = "Midnight Blue",
+        ["amethyst"] = "Amethyst Purple",
+        ["cyberpunk"] = "Cyberpunk 2077",
+        ["emerald"] = "Emerald Matrix",
+        ["sunset"] = "Crimson Sunset",
+        ["tokyo"] = "Tokyo Night",
+        ["light"] = "Minimal Light"
+    }
+    local initialThemeKey = (config and config.MenuConfig and config.MenuConfig["SelectedTheme"]) or "dark"
+    local initialThemeName = themeNamesMap[initialThemeKey] or (config and config.Theme) or "Dark Obsidian"
+
     local DockLeft = Instance.new("TextLabel")
     DockLeft.Name = "DockLeft"
-    DockLeft.Text = isMobile and "Apple iOS 27.2 Glass" or "iPhone 18 Pro Max • iOS 27.2 Liquid Glass"
+    DockLeft.Text = initialThemeName
     DockLeft.Font = Enum.Font.GothamMedium
     DockLeft.TextSize = 10
     DockLeft.TextColor3 = Color3.fromRGB(130, 142, 168)
@@ -968,6 +987,13 @@ function Window:Create(config)
     DockLeft.Size = UDim2.new(0.33, 0, 1, 0)
     DockLeft.BackgroundTransparency = 1
     DockLeft.Parent = StatusDock
+    UI.DockLeft = DockLeft
+
+    function UI:SetStatusThemeName(name)
+        if DockLeft and DockLeft.Parent then
+            DockLeft.Text = tostring(name)
+        end
+    end
 
     -- Apple iPhone Home Bar Indicator (Pasek gestów iOS na dole okna)
     local HomeIndicator = Instance.new("Frame")
