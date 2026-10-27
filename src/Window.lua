@@ -498,7 +498,7 @@ function Window:Create(config)
     MainStroke.Transparency = 0.65
 
     -- // ============================================================
-    -- // ANIMATED BACKGROUND & LIVE THEME GIF ENGINE
+    -- // ANIMATED AMBIENT WAVE & CENTER LOGO WATERMARK ENGINE
     -- // ============================================================
     local BackgroundContainer = Instance.new("Frame")
     BackgroundContainer.Name = "AnimatedBackground"
@@ -530,25 +530,50 @@ function Window:Create(config)
     local WaveGradient = Instance.new("UIGradient", WaveLayer)
     WaveGradient.Rotation = 45
 
-    local GifImageLayer = Instance.new("ImageLabel")
-    GifImageLayer.Name = "GifImageLayer"
-    GifImageLayer.Size = UDim2.new(1, 0, 1, 0)
-    GifImageLayer.BackgroundTransparency = 1
-    GifImageLayer.ImageTransparency = 0.88
-    GifImageLayer.ScaleType = Enum.ScaleType.Crop
-    GifImageLayer.Visible = false
-    GifImageLayer.ZIndex = 1
-    GifImageLayer.Parent = BackgroundContainer
+    -- Center Logo Watermark Layer (Umieszczone w tle pod zawartością stron klienta)
+    local LogoWatermark = Instance.new("ImageLabel")
+    LogoWatermark.Name = "LogoWatermark"
+    LogoWatermark.AnchorPoint = Vector2.new(0.5, 0.5)
+    LogoWatermark.Position = UDim2.new(0.5, 0, 0.5, 0)
+    LogoWatermark.Size = UDim2.new(0, 220, 0, 220)
+    LogoWatermark.BackgroundTransparency = 1
+    LogoWatermark.ImageTransparency = 0.90
+    LogoWatermark.ScaleType = Enum.ScaleType.Fit
+    LogoWatermark.ZIndex = 1
+    LogoWatermark.Visible = true
+    LogoWatermark.Parent = BackgroundContainer
+    UI.LogoWatermark = LogoWatermark
 
-    local GifCorner = Instance.new("UICorner", GifImageLayer)
-    GifCorner.CornerRadius = UDim.new(0, 32)
+    local watermarkPresets = {
+        ["Crest"] = {
+            Name = "Cyber Crest",
+            AssetId = "rbxassetid://10723415903"
+        },
+        ["Crown"] = {
+            Name = "Imperial Crown",
+            AssetId = "rbxassetid://10709769841"
+        },
+        ["Star"] = {
+            Name = "Astral Nova",
+            AssetId = "rbxassetid://10709791437"
+        },
+        ["Skull"] = {
+            Name = "Apex Skull",
+            AssetId = "rbxassetid://10747373176"
+        },
+        ["Shield"] = {
+            Name = "Vanguard Shield",
+            AssetId = "rbxassetid://10734975692"
+        }
+    }
+    UI.WatermarkPresets = watermarkPresets
 
     local animPresets = {
         ["Aurora"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 210, 140)),
-                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 160, 220)),
-                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(100, 50, 200)),
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 220, 160)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 160, 240)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(120, 60, 230)),
                 ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 20, 45))
             }),
             DefaultTransparency = 0.94
@@ -557,202 +582,142 @@ function Window:Create(config)
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0.0, Color3.fromRGB(99, 102, 241)),
                 ColorSequenceKeypoint.new(0.4, Color3.fromRGB(14, 165, 233)),
-                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(79, 70, 229)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(168, 85, 247)),
                 ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 17, 26))
             }),
             DefaultTransparency = 0.94
         },
         ["Cosmic"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(150, 60, 255)),
-                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(70, 40, 180)),
-                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(20, 80, 200)),
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(168, 85, 247)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(79, 70, 229)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(30, 64, 175)),
                 ColorSequenceKeypoint.new(1.0, Color3.fromRGB(10, 12, 30))
             }),
-            DefaultTransparency = 0.90
+            DefaultTransparency = 0.92
+        },
+        ["Crimson"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(239, 68, 68)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(185, 28, 28)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(127, 29, 29)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(24, 10, 15))
+            }),
+            DefaultTransparency = 0.92
         },
         ["Sunset"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 80, 60)),
-                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(255, 160, 40)),
-                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(180, 40, 100)),
-                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(30, 15, 25))
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(251, 113, 133)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(249, 115, 22)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(217, 70, 239)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(30, 15, 30))
             }),
-            DefaultTransparency = 0.90
+            DefaultTransparency = 0.92
         },
         ["Emerald"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 255, 120)),
-                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 180, 80)),
-                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(10, 80, 50)),
-                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(5, 20, 12))
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(16, 185, 129)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(5, 150, 105)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(6, 95, 70)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(5, 20, 15))
             }),
-            DefaultTransparency = 0.90
+            DefaultTransparency = 0.92
+        },
+        ["Tokyo"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(244, 63, 94)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(192, 38, 211)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(6, 182, 212)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 18, 35))
+            }),
+            DefaultTransparency = 0.92
+        },
+        ["Titanium"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(226, 232, 240)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(148, 163, 184)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(71, 85, 105)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 23, 42))
+            }),
+            DefaultTransparency = 0.93
+        },
+        ["Rainbow"] = {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(239, 68, 68)),
+                ColorSequenceKeypoint.new(0.2, Color3.fromRGB(245, 158, 11)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(16, 185, 129)),
+                ColorSequenceKeypoint.new(0.6, Color3.fromRGB(6, 182, 212)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(99, 102, 241)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(217, 70, 239))
+            }),
+            DefaultTransparency = 0.94
         },
         ["None"] = {
             Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)),
             DefaultTransparency = 1.0
         }
     }
-
-    -- // ============================================================
-    -- // GIF PRESETS & FLIPBOOK ANIMATION ENGINE
-    -- // ============================================================
-    local ContentProvider = game:GetService("ContentProvider")
-
-    local gifPresets = {
-        ["Cyberpunk"] = {
-            Name = "Cyberpunk City",
-            AssetId = "rbxassetid://13285615740",
-            Cols = 5,
-            Rows = 5,
-            FrameW = 100,
-            FrameH = 100,
-            Fps = 14,
-            DefaultTransparency = 0.82
-        },
-        ["Synthwave"] = {
-            Name = "Synthwave Grid",
-            AssetId = "rbxassetid://107588515524752",
-            Cols = 4,
-            Rows = 4,
-            FrameW = 128,
-            FrameH = 128,
-            Fps = 12,
-            DefaultTransparency = 0.85
-        },
-        ["Matrix"] = {
-            Name = "Matrix Rain",
-            AssetId = "rbxassetid://107938916240738",
-            Cols = 4,
-            Rows = 4,
-            FrameW = 128,
-            FrameH = 128,
-            Fps = 16,
-            DefaultTransparency = 0.80
-        },
-        ["Cosmic"] = {
-            Name = "Cosmic Nebula",
-            AssetId = "rbxassetid://111026029750357",
-            Cols = 4,
-            Rows = 4,
-            FrameW = 128,
-            FrameH = 128,
-            Fps = 10,
-            DefaultTransparency = 0.84
-        },
-        ["Sakura"] = {
-            Name = "Anime Sakura",
-            AssetId = "rbxassetid://127493377027615",
-            Cols = 5,
-            Rows = 4,
-            FrameW = 120,
-            FrameH = 120,
-            Fps = 12,
-            DefaultTransparency = 0.85
-        }
-    }
-    UI.GifPresets = gifPresets
-
-    local backgroundMode = (config and config.MenuConfig and config.MenuConfig["BackgroundMode"])
-        or (config and config.BackgroundMode)
-        or (config and config.AnimatedTheme and "Wave")
-        or "Wave"
+    UI.AnimPresets = animPresets
 
     local currentAnimMode = (config and config.MenuConfig and config.MenuConfig["AnimatedTheme"])
         or (config and config.AnimatedTheme)
         or "Cyberpunk"
 
-    local animSpeed = 0.4
-    local animIntensity = 0.04
+    local currentAnimMotion = (config and config.MenuConfig and config.MenuConfig["AnimatedThemeMotion"])
+        or "Drift"
 
-    local currentGifPreset = (config and config.MenuConfig and config.MenuConfig["SelectedGif"])
-        or (config and config.SelectedGif)
-        or "Cyberpunk"
+    local animSpeed = (config and config.MenuConfig and config.MenuConfig["AnimatedThemeSpeed"])
+        or 0.5
 
-    local gifCustomAsset = (config and config.MenuConfig and config.MenuConfig["GifCustomId"]) or ""
-    local gifTransparency = (config and config.MenuConfig and config.MenuConfig["GifTransparency"]) or 0.85
-    local gifSpeed = (config and config.MenuConfig and config.MenuConfig["GifSpeed"]) or 1.0
+    local animIntensity = (config and config.MenuConfig and config.MenuConfig["AnimatedThemeIntensity"])
+        or 0.10
 
-    local currentGifConnection = nil
-    local gifAnimToken = 0
+    -- Inicjalizacja stanu Watermark Logo
+    local watermarkEnabled = true
+    if config and config.MenuConfig and config.MenuConfig["WatermarkEnabled"] ~= nil then
+        watermarkEnabled = config.MenuConfig["WatermarkEnabled"]
+    end
+    local watermarkPreset = (config and config.MenuConfig and config.MenuConfig["WatermarkPreset"]) or "Crest"
+    local watermarkCustomId = (config and config.MenuConfig and config.MenuConfig["WatermarkCustomId"]) or ""
+    local watermarkTransparency = (config and config.MenuConfig and config.MenuConfig["WatermarkTransparency"]) or 0.90
+    local watermarkSize = (config and config.MenuConfig and config.MenuConfig["WatermarkSize"]) or 220
 
-    local function stopGifAnimation()
-        gifAnimToken = gifAnimToken + 1
-        if currentGifConnection then
-            pcall(function() currentGifConnection:Disconnect() end)
-            currentGifConnection = nil
+    local function formatAssetId(raw)
+        if not raw or raw == "" then return "" end
+        if not raw:find("rbxassetid://") and not raw:find("http") and not raw:find("rbxasset://") then
+            local num = raw:match("%d+")
+            if num then return "rbxassetid://" .. num end
         end
-        GifImageLayer.Visible = false
+        return raw
     end
 
-    local function startGifAnimation(presetKey, customAsset, trans, speed)
-        stopGifAnimation()
-        trans = trans or gifTransparency
-        speed = speed or gifSpeed
-        gifTransparency = trans
-        gifSpeed = speed
-
-        local data = gifPresets[presetKey]
-        local asset = (customAsset and #customAsset > 0) and customAsset or (data and data.AssetId)
-        if not asset or asset == "" then return end
-
-        if not asset:find("rbxassetid://") and not asset:find("http") and not asset:find("rbxasset://") then
-            local num = asset:match("%d+")
-            if num then asset = "rbxassetid://" .. num end
+    local function applyWatermark()
+        if not watermarkEnabled then
+            LogoWatermark.Visible = false
+            return
         end
+        LogoWatermark.Visible = true
+        LogoWatermark.ImageTransparency = watermarkTransparency
+        LogoWatermark.Size = UDim2.new(0, watermarkSize, 0, watermarkSize)
 
-        GifImageLayer.Image = asset
-        GifImageLayer.ImageTransparency = trans
-        GifImageLayer.Visible = true
-
-        pcall(function() ContentProvider:PreloadAsync({ GifImageLayer }) end)
-
-        local myToken = gifAnimToken
-        if data and data.Cols and data.Rows and data.FrameW and data.FrameH then
-            local cols = data.Cols
-            local rows = data.Rows
-            local totalFrames = cols * rows
-            local frameW = data.FrameW
-            local frameH = data.FrameH
-            local fps = math.max(1, (data.Fps or 12) * speed)
-            local frameDelay = 1 / fps
-
-            GifImageLayer.ImageRectSize = Vector2.new(frameW, frameH)
-            GifImageLayer.ImageRectOffset = Vector2.new(0, 0)
-
-            local currentFrame = 0
-            local acc = 0
-            currentGifConnection = RunService.Heartbeat:Connect(function(dt)
-                if myToken ~= gifAnimToken or not GifImageLayer.Parent or not GifImageLayer.Visible then
-                    if currentGifConnection then currentGifConnection:Disconnect() end
-                    return
-                end
-                acc = acc + dt
-                if acc >= frameDelay then
-                    while acc >= frameDelay do
-                        acc = acc - frameDelay
-                        currentFrame = (currentFrame + 1) % totalFrames
-                    end
-                    local col = currentFrame % cols
-                    local row = math.floor(currentFrame / cols)
-                    GifImageLayer.ImageRectOffset = Vector2.new(col * frameW, row * frameH)
-                end
-            end)
+        local asset = ""
+        if watermarkPreset == "Custom" and #watermarkCustomId > 0 then
+            asset = formatAssetId(watermarkCustomId)
         else
-            GifImageLayer.ImageRectSize = Vector2.new(0, 0)
-            GifImageLayer.ImageRectOffset = Vector2.new(0, 0)
+            local p = watermarkPresets[watermarkPreset] or watermarkPresets["Crest"]
+            asset = p and p.AssetId or ""
         end
+        LogoWatermark.Image = asset
     end
 
     local function applyAnimPreset(mode)
         local p = animPresets[mode] or animPresets["Cyberpunk"]
         WaveGradient.Color = p.Color
-        if mode == "None" or backgroundMode ~= "Wave" then
+        if mode == "None" then
             WaveLayer.Visible = false
         else
             WaveLayer.Visible = true
-            WaveLayer.BackgroundTransparency = 1 - animIntensity
+            WaveLayer.BackgroundTransparency = math.clamp(1 - animIntensity, 0.65, 0.99)
         end
     end
 
@@ -762,89 +727,85 @@ function Window:Create(config)
             if animHeartbeat then animHeartbeat:Disconnect() end
             return
         end
-        if backgroundMode ~= "Wave" or currentAnimMode == "None" or not WaveLayer.Visible then return end
-        local t = tick() * animSpeed
-        WaveGradient.Offset = Vector2.new(math.sin(t * 0.4) * 0.22, math.cos(t * 0.3) * 0.22)
-        WaveGradient.Rotation = (45 + math.sin(t * 0.25) * 25) % 360
-    end)
 
-    function UI:SetBackgroundMode(mode)
-        backgroundMode = mode or "None"
-        if backgroundMode == "Wave" then
-            stopGifAnimation()
-            applyAnimPreset(currentAnimMode)
-        elseif backgroundMode == "Gif" then
-            WaveLayer.Visible = false
-            startGifAnimation(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
-        else
-            stopGifAnimation()
-            WaveLayer.Visible = false
+        local t = tick()
+
+        -- Animacja fal świetlnych
+        if currentAnimMode ~= "None" and WaveLayer.Visible then
+            local spd = t * animSpeed
+            if currentAnimMotion == "Drift" then
+                WaveGradient.Offset = Vector2.new(math.sin(spd * 0.45) * 0.25, math.cos(spd * 0.35) * 0.25)
+                WaveGradient.Rotation = (45 + math.sin(spd * 0.25) * 35) % 360
+            elseif currentAnimMotion == "Pulse" then
+                local pulseScale = 0.15 + math.sin(spd * 0.7) * 0.12
+                WaveGradient.Offset = Vector2.new(pulseScale, pulseScale)
+                WaveGradient.Rotation = 45
+            elseif currentAnimMotion == "Vortex" then
+                WaveGradient.Offset = Vector2.new(math.cos(spd * 0.6) * 0.18, math.sin(spd * 0.6) * 0.18)
+                WaveGradient.Rotation = (spd * 40) % 360
+            end
         end
 
+        -- Delikatne oddychanie logo watermark
+        if watermarkEnabled and LogoWatermark.Visible then
+            local breath = math.sin(t * 0.75) * 5
+            LogoWatermark.Size = UDim2.new(0, watermarkSize + breath, 0, watermarkSize + breath)
+        end
+    end)
+
+    function UI:SetWatermark(enabled, presetKey, customId, transparency, sizePx)
+        if enabled ~= nil then watermarkEnabled = enabled end
+        if presetKey ~= nil then watermarkPreset = presetKey end
+        if customId ~= nil then watermarkCustomId = customId end
+        if transparency ~= nil then watermarkTransparency = math.clamp(tonumber(transparency) or 0.90, 0.40, 0.98) end
+        if sizePx ~= nil then watermarkSize = math.clamp(tonumber(sizePx) or 220, 80, 420) end
+
+        applyWatermark()
+
         if UI.SaveMenuConfig then
-            pcall(function() UI.SaveMenuConfig("BackgroundMode", backgroundMode) end)
+            pcall(function()
+                UI.SaveMenuConfig("WatermarkEnabled", watermarkEnabled)
+                UI.SaveMenuConfig("WatermarkPreset", watermarkPreset)
+                UI.SaveMenuConfig("WatermarkCustomId", watermarkCustomId)
+                UI.SaveMenuConfig("WatermarkTransparency", watermarkTransparency)
+                UI.SaveMenuConfig("WatermarkSize", watermarkSize)
+            end)
         end
     end
 
-    function UI:SetAnimatedTheme(mode, intensity, speed)
+    function UI:SetAnimatedTheme(mode, intensity, speed, motionStyle)
         if mode and animPresets[mode] then
             currentAnimMode = mode
         end
         if intensity then
-            animIntensity = math.clamp(tonumber(intensity) or 0.12, 0.02, 0.35)
+            animIntensity = math.clamp(tonumber(intensity) or 0.10, 0.02, 0.35)
         end
         if speed then
             animSpeed = math.clamp(tonumber(speed) or 0.5, 0.1, 2.5)
         end
+        if motionStyle then
+            currentAnimMotion = motionStyle
+        end
 
-        backgroundMode = "Wave"
-        stopGifAnimation()
         applyAnimPreset(currentAnimMode)
 
         if UI.SaveMenuConfig then
             pcall(function()
-                UI.SaveMenuConfig("BackgroundMode", "Wave")
                 UI.SaveMenuConfig("AnimatedTheme", currentAnimMode)
                 UI.SaveMenuConfig("AnimatedThemeIntensity", animIntensity)
                 UI.SaveMenuConfig("AnimatedThemeSpeed", animSpeed)
+                UI.SaveMenuConfig("AnimatedThemeMotion", currentAnimMotion)
             end)
         end
     end
 
-    function UI:SetGifPreset(presetKey, customAsset, trans, speed)
-        currentGifPreset = presetKey or currentGifPreset
-        if customAsset ~= nil then gifCustomAsset = customAsset end
-        if trans ~= nil then gifTransparency = math.clamp(tonumber(trans) or 0.85, 0.40, 0.98) end
-        if speed ~= nil then gifSpeed = math.clamp(tonumber(speed) or 1.0, 0.2, 3.0) end
-
-        backgroundMode = "Gif"
-        WaveLayer.Visible = false
-        startGifAnimation(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
-
-        if UI.SaveMenuConfig then
-            pcall(function()
-                UI.SaveMenuConfig("BackgroundMode", "Gif")
-                UI.SaveMenuConfig("SelectedGif", currentGifPreset)
-                UI.SaveMenuConfig("GifCustomId", gifCustomAsset)
-                UI.SaveMenuConfig("GifTransparency", gifTransparency)
-                UI.SaveMenuConfig("GifSpeed", gifSpeed)
-            end)
-        end
+    function UI:SetAmbientMotion(motionStyle)
+        UI:SetAnimatedTheme(nil, nil, nil, motionStyle)
     end
 
-    function UI:SetGifBackground(assetId, transparency)
-        UI:SetGifPreset("Custom", assetId, transparency)
-    end
-
-    -- Inicjalizacja wybranego tła
-    if backgroundMode == "Gif" then
-        UI:SetGifPreset(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
-    elseif backgroundMode == "Wave" and currentAnimMode ~= "None" then
-        applyAnimPreset(currentAnimMode)
-    else
-        WaveLayer.Visible = false
-        stopGifAnimation()
-    end
+    -- Inicjalizacja tła oraz znaku wodnego
+    applyAnimPreset(currentAnimMode)
+    applyWatermark()
 
     -- =========================================================================
     -- MASTER TOP HEADER BAR (Zastępuje dawny lewy sidebar)

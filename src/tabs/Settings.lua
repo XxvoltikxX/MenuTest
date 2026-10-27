@@ -179,368 +179,67 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
 
     -- =========================================================================
-    -- BENTO 1: EFEKTY WIZUALNE I TŁO (ANIMOWANE GIFY ORAZ FALE ŚWIETLNE)
+    -- BENTO 1: EFEKTY WIZUALNE I LOGO CLIENTA (FALE ŚWIETLNE ORAZ ZNAK WODNY)
     -- =========================================================================
     local VisualCard, _ = createBentoCard("VisualCard", 1)
 
-    createCardHeader(VisualCard, "PERSONALIZACJA TŁA I MOTYWÓW WIZUALNYCH", "activity", "Wybierz animowany GIF lub falę świetlną w tle okna", 1)
+    createCardHeader(VisualCard, "EFEKTY WIZUALNE I LOGO CLIENTA", "sparkles", "Dopasuj animowane fale świetlne oraz znak wodny logo w tle menu", 1)
 
-    -- Segmented Mode Selector: [ Animowany GIF ] | [ Fale Świetlne ] | [ Czyste Szkło ]
-    local ModeSelectorRow = Instance.new("Frame")
-    ModeSelectorRow.Name = "ModeSelectorRow"
-    ModeSelectorRow.Size = UDim2.new(1, 0, 0, 32)
-    ModeSelectorRow.BackgroundTransparency = 1
-    ModeSelectorRow.LayoutOrder = 2
-    ModeSelectorRow.Parent = VisualCard
+    -- -------------------------------------------------------------------------
+    -- SEKCJA 1: FALE ŚWIETLNE (AMBIENT WAVE FX)
+    -- -------------------------------------------------------------------------
+    local WaveSection = Instance.new("Frame")
+    WaveSection.Name = "WaveSection"
+    WaveSection.Size = UDim2.new(1, 0, 0, 0)
+    WaveSection.AutomaticSize = Enum.AutomaticSize.Y
+    WaveSection.BackgroundTransparency = 1
+    WaveSection.LayoutOrder = 2
+    WaveSection.Parent = VisualCard
 
-    local MsLayout = Instance.new("UIListLayout", ModeSelectorRow)
-    MsLayout.FillDirection = Enum.FillDirection.Horizontal
-    MsLayout.Padding = UDim.new(0, 8)
+    local WsLayout = Instance.new("UIListLayout", WaveSection)
+    WsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    WsLayout.Padding = UDim.new(0, 10)
 
-    local currentBgMode = (UI and UI.MenuConfig and UI.MenuConfig["BackgroundMode"]) or "Wave"
-    local modeButtons = {}
+    -- 1A. Presety kolorystyczne fal świetlnych
+    local WavePresetsContainer = Instance.new("Frame")
+    WavePresetsContainer.Name = "WavePresetsContainer"
+    WavePresetsContainer.Size = UDim2.new(1, 0, 0, 0)
+    WavePresetsContainer.AutomaticSize = Enum.AutomaticSize.Y
+    WavePresetsContainer.BackgroundTransparency = 1
+    WavePresetsContainer.LayoutOrder = 1
+    WavePresetsContainer.Parent = WaveSection
 
-    -- Kontenery na kontrolki GIF oraz Wave
-    local GifControlsContainer = Instance.new("Frame")
-    GifControlsContainer.Name = "GifControlsContainer"
-    GifControlsContainer.Size = UDim2.new(1, 0, 0, 0)
-    GifControlsContainer.AutomaticSize = Enum.AutomaticSize.Y
-    GifControlsContainer.BackgroundTransparency = 1
-    GifControlsContainer.LayoutOrder = 3
-    GifControlsContainer.Visible = (currentBgMode == "Gif")
-    GifControlsContainer.Parent = VisualCard
+    local WpcLayout = Instance.new("UIListLayout", WavePresetsContainer)
+    WpcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    WpcLayout.Padding = UDim.new(0, 6)
 
-    local GcLayout = Instance.new("UIListLayout", GifControlsContainer)
-    GcLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    GcLayout.Padding = UDim.new(0, 10)
+    local WpcTitle = Instance.new("TextLabel")
+    WpcTitle.Text = "Preset kolorystyczny fali:"
+    WpcTitle.Font = Enum.Font.GothamBold
+    WpcTitle.TextSize = 11
+    WpcTitle.TextColor3 = Color3.fromRGB(180, 190, 215)
+    WpcTitle.TextXAlignment = Enum.TextXAlignment.Left
+    WpcTitle.Size = UDim2.new(1, 0, 0, 16)
+    WpcTitle.BackgroundTransparency = 1
+    WpcTitle.LayoutOrder = 1
+    WpcTitle.Parent = WavePresetsContainer
 
-    local WaveControlsContainer = Instance.new("Frame")
-    WaveControlsContainer.Name = "WaveControlsContainer"
-    WaveControlsContainer.Size = UDim2.new(1, 0, 0, 0)
-    WaveControlsContainer.AutomaticSize = Enum.AutomaticSize.Y
-    WaveControlsContainer.BackgroundTransparency = 1
-    WaveControlsContainer.LayoutOrder = 4
-    WaveControlsContainer.Visible = (currentBgMode == "Wave")
-    WaveControlsContainer.Parent = VisualCard
+    local WaveChipsGrid = Instance.new("Frame")
+    WaveChipsGrid.Name = "WaveChipsGrid"
+    WaveChipsGrid.Size = UDim2.new(1, 0, 0, 0)
+    WaveChipsGrid.AutomaticSize = Enum.AutomaticSize.Y
+    WaveChipsGrid.BackgroundTransparency = 1
+    WaveChipsGrid.LayoutOrder = 2
+    WaveChipsGrid.Parent = WavePresetsContainer
 
-    local WcLayout = Instance.new("UIListLayout", WaveControlsContainer)
-    WcLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    WcLayout.Padding = UDim.new(0, 10)
+    local WcgLayout = Instance.new("UIGridLayout", WaveChipsGrid)
+    WcgLayout.CellPadding = UDim2.new(0, 6, 0, 6)
+    WcgLayout.CellSize = isMobile and UDim2.new(0.333, -4, 0, 28) or UDim2.new(0.2, -5, 0, 28)
+    WcgLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    local function updateBgMode(newMode)
-        currentBgMode = newMode
-        if UI and UI.SetBackgroundMode then
-            UI:SetBackgroundMode(newMode)
-        end
-        for m, btn in pairs(modeButtons) do
-            local isSel = (m == newMode)
-            TweenService:Create(btn, TweenInfo.new(0.2), {
-                BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38),
-                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
-            }):Play()
-            local s = btn:FindFirstChildOfClass("UIStroke")
-            if s then
-                s.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70)
-            end
-        end
-
-        GifControlsContainer.Visible = (newMode == "Gif")
-        WaveControlsContainer.Visible = (newMode == "Wave")
-    end
-
-    local modes = {
-        { Key = "Gif", Label = "🎬 Animowany GIF" },
-        { Key = "Wave", Label = "🌊 Fala Świetlna" },
-        { Key = "None", Label = "💎 Czyste Szkło" }
+    local wavePresets = {
+        "Cyberpunk", "Aurora", "Cosmic", "Crimson", "Sunset", "Emerald", "Tokyo", "Titanium", "Rainbow", "None"
     }
-
-    for idx, mData in ipairs(modes) do
-        local mBtn = Instance.new("TextButton")
-        mBtn.Name = "Mode_" .. mData.Key
-        mBtn.Size = UDim2.new(0.333, -6, 1, 0)
-        mBtn.BackgroundColor3 = (mData.Key == currentBgMode) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
-        mBtn.Text = mData.Label
-        mBtn.Font = Enum.Font.GothamBold
-        mBtn.TextSize = 11
-        mBtn.TextColor3 = (mData.Key == currentBgMode) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
-        mBtn.AutoButtonColor = false
-        mBtn.LayoutOrder = idx
-        mBtn.Parent = ModeSelectorRow
-        Instance.new("UICorner", mBtn).CornerRadius = UDim.new(0, 8)
-        local ms = Instance.new("UIStroke", mBtn)
-        ms.Color = (mData.Key == currentBgMode) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70)
-        ms.Thickness = 1
-        modeButtons[mData.Key] = mBtn
-
-        mBtn.MouseButton1Click:Connect(function()
-            updateBgMode(mData.Key)
-        end)
-    end
-
-    -- =========================================================================
-    -- KONTROLKI DLA GIFÓW (GifControlsContainer)
-    -- =========================================================================
-    -- 1. Galeria presetów GIF (Cyberpunk, Synthwave, Matrix, Cosmic, Sakura)
-    local GifGalleryGrid = Instance.new("Frame")
-    GifGalleryGrid.Name = "GifGalleryGrid"
-    GifGalleryGrid.Size = UDim2.new(1, 0, 0, 0)
-    GifGalleryGrid.AutomaticSize = Enum.AutomaticSize.Y
-    GifGalleryGrid.BackgroundTransparency = 1
-    GifGalleryGrid.LayoutOrder = 1
-    GifGalleryGrid.Parent = GifControlsContainer
-
-    local GgLayout = Instance.new("UIGridLayout", GifGalleryGrid)
-    GgLayout.CellPadding = UDim2.new(0, 8, 0, 8)
-    GgLayout.CellSize = isMobile and UDim2.new(0.5, -4, 0, 48) or UDim2.new(0.2, -7, 0, 50)
-    GgLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local gifPresetsList = {
-        { Key = "Cyberpunk", Name = "Cyberpunk City", Sub = "Neonowy deszcz" },
-        { Key = "Synthwave", Name = "Synthwave Grid", Sub = "Retro siatka 80s" },
-        { Key = "Matrix",    Name = "Matrix Rain",    Sub = "Cyfrowy deszcz" },
-        { Key = "Cosmic",    Name = "Cosmic Nebula",  Sub = "Gwiezdny pył" },
-        { Key = "Sakura",    Name = "Anime Sakura",   Sub = "Kwitnąca wiśnia" }
-    }
-
-    local activeGifPreset = (UI and UI.MenuConfig and UI.MenuConfig["SelectedGif"]) or "Cyberpunk"
-    local gifCardBtns = {}
-
-    local function selectGif(key)
-        activeGifPreset = key
-        if UI and UI.SetGifPreset then
-            UI:SetGifPreset(key)
-        end
-        for k, btn in pairs(gifCardBtns) do
-            local isSel = (k == key)
-            TweenService:Create(btn, TweenInfo.new(0.18), {
-                BackgroundColor3 = isSel and Color3.fromRGB(32, 38, 58) or Color3.fromRGB(20, 24, 35)
-            }):Play()
-            local strk = btn:FindFirstChildOfClass("UIStroke")
-            if strk then
-                strk.Color = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62)
-                strk.Thickness = isSel and 1.5 or 1
-            end
-            local badge = btn:FindFirstChild("ActiveBadge")
-            if badge then badge.Visible = isSel end
-        end
-    end
-
-    for idx, pData in ipairs(gifPresetsList) do
-        local GCard = Instance.new("TextButton")
-        GCard.Name = "Gif_" .. pData.Key
-        GCard.BackgroundColor3 = (pData.Key == activeGifPreset) and Color3.fromRGB(32, 38, 58) or Color3.fromRGB(20, 24, 35)
-        GCard.Text = ""
-        GCard.AutoButtonColor = false
-        GCard.LayoutOrder = idx
-        GCard.Parent = GifGalleryGrid
-        Instance.new("UICorner", GCard).CornerRadius = UDim.new(0, 10)
-
-        local GcStroke = Instance.new("UIStroke", GCard)
-        GcStroke.Color = (pData.Key == activeGifPreset) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62)
-        GcStroke.Thickness = (pData.Key == activeGifPreset) and 1.5 or 1
-
-        local GcPad = Instance.new("UIPadding", GCard)
-        GcPad.PaddingLeft = UDim.new(0, 8)
-        GcPad.PaddingRight = UDim.new(0, 8)
-        GcPad.PaddingTop = UDim.new(0, 6)
-        GcPad.PaddingBottom = UDim.new(0, 6)
-
-        local GTitle = Instance.new("TextLabel")
-        GTitle.Text = pData.Name
-        GTitle.Font = Enum.Font.GothamBold
-        GTitle.TextSize = 11
-        GTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
-        GTitle.TextXAlignment = Enum.TextXAlignment.Left
-        GTitle.Size = UDim2.new(1, -12, 0, 16)
-        GTitle.BackgroundTransparency = 1
-        GTitle.TextTruncate = Enum.TextTruncate.AtEnd
-        GTitle.Parent = GCard
-
-        local GSub = Instance.new("TextLabel")
-        GSub.Text = pData.Sub
-        GSub.Font = Enum.Font.GothamMedium
-        GSub.TextSize = 9
-        GSub.TextColor3 = Color3.fromRGB(130, 140, 168)
-        GSub.TextXAlignment = Enum.TextXAlignment.Left
-        GSub.Position = UDim2.new(0, 0, 0, 18)
-        GSub.Size = UDim2.new(1, -12, 0, 14)
-        GSub.BackgroundTransparency = 1
-        GSub.TextTruncate = Enum.TextTruncate.AtEnd
-        GSub.Parent = GCard
-
-        local ActiveBadge = Instance.new("Frame")
-        ActiveBadge.Name = "ActiveBadge"
-        ActiveBadge.Size = UDim2.new(0, 6, 0, 6)
-        ActiveBadge.Position = UDim2.new(1, 0, 0, 4)
-        ActiveBadge.AnchorPoint = Vector2.new(1, 0)
-        ActiveBadge.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
-        ActiveBadge.BorderSizePixel = 0
-        ActiveBadge.Visible = (pData.Key == activeGifPreset)
-        ActiveBadge.Parent = GCard
-        Instance.new("UICorner", ActiveBadge).CornerRadius = UDim.new(1, 0)
-
-        gifCardBtns[pData.Key] = GCard
-
-        GCard.MouseButton1Click:Connect(function()
-            selectGif(pData.Key)
-        end)
-    end
-
-    -- 2. Wiersz Własnego Asset ID
-    local CustomGifRow = Instance.new("Frame")
-    CustomGifRow.Name = "CustomGifRow"
-    CustomGifRow.Size = UDim2.new(1, 0, 0, 32)
-    CustomGifRow.BackgroundTransparency = 1
-    CustomGifRow.LayoutOrder = 2
-    CustomGifRow.Parent = GifControlsContainer
-
-    local CgInputBox = Instance.new("Frame")
-    CgInputBox.Size = UDim2.new(1, -115, 1, 0)
-    CgInputBox.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
-    CgInputBox.Parent = CustomGifRow
-    Instance.new("UICorner", CgInputBox).CornerRadius = UDim.new(0, 8)
-    local CgStroke = Instance.new("UIStroke", CgInputBox)
-    CgStroke.Color = Color3.fromRGB(42, 48, 70)
-    CgStroke.Thickness = 1
-
-    local CgIcon = Instance.new("ImageLabel")
-    CgIcon.Size = UDim2.new(0, 14, 0, 14)
-    CgIcon.Position = UDim2.new(0, 8, 0.5, 0)
-    CgIcon.AnchorPoint = Vector2.new(0, 0.5)
-    CgIcon.BackgroundTransparency = 1
-    CgIcon.ImageColor3 = Color3.fromRGB(130, 140, 168)
-    CgIcon.Parent = CgInputBox
-    if Icons and Icons.Apply then Icons:Apply(CgIcon, "link") end
-
-    local CustomIdInput = Instance.new("TextBox")
-    CustomIdInput.Size = UDim2.new(1, -30, 1, 0)
-    CustomIdInput.Position = UDim2.new(0, 26, 0, 0)
-    CustomIdInput.BackgroundTransparency = 1
-    local savedCustomId = (UI and UI.MenuConfig and UI.MenuConfig["GifCustomId"]) or ""
-    CustomIdInput.Text = savedCustomId
-    CustomIdInput.PlaceholderText = "Wklej własny Roblox Asset ID..."
-    CustomIdInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
-    CustomIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CustomIdInput.Font = Enum.Font.GothamMedium
-    CustomIdInput.TextSize = 11
-    CustomIdInput.TextXAlignment = Enum.TextXAlignment.Left
-    CustomIdInput.ClearTextOnFocus = false
-    CustomIdInput.Parent = CgInputBox
-
-    local ApplyCustomBtn = Instance.new("TextButton")
-    ApplyCustomBtn.Size = UDim2.new(0, 105, 1, 0)
-    ApplyCustomBtn.Position = UDim2.new(1, 0, 0, 0)
-    ApplyCustomBtn.AnchorPoint = Vector2.new(1, 0)
-    ApplyCustomBtn.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
-    ApplyCustomBtn.Text = "Zastosuj GIF"
-    ApplyCustomBtn.Font = Enum.Font.GothamBold
-    ApplyCustomBtn.TextSize = 11
-    ApplyCustomBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ApplyCustomBtn.AutoButtonColor = false
-    ApplyCustomBtn.Parent = CustomGifRow
-    Instance.new("UICorner", ApplyCustomBtn).CornerRadius = UDim.new(0, 8)
-
-    ApplyCustomBtn.MouseButton1Click:Connect(function()
-        local raw = CustomIdInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
-        if #raw > 0 then
-            if UI and UI.SetGifPreset then
-                UI:SetGifPreset("Custom", raw)
-            end
-            ApplyCustomBtn.Text = "Zastosowano!"
-            task.delay(1.2, function()
-                if ApplyCustomBtn and ApplyCustomBtn.Parent then ApplyCustomBtn.Text = "Zastosuj GIF" end
-            end)
-        end
-    end)
-
-    -- 3. Suwaki przezroczystości oraz szybkości dla GIFa
-    local GifSlidersGrid = Instance.new("Frame")
-    GifSlidersGrid.Name = "GifSlidersGrid"
-    GifSlidersGrid.Size = UDim2.new(1, 0, 0, 0)
-    GifSlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
-    GifSlidersGrid.BackgroundTransparency = 1
-    GifSlidersGrid.LayoutOrder = 3
-    GifSlidersGrid.Parent = GifControlsContainer
-
-    local GsLayout = Instance.new("UIGridLayout", GifSlidersGrid)
-    GsLayout.CellPadding = UDim2.new(0, 10, 0, 10)
-    GsLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 56) or UDim2.new(0.5, -5, 0, 56)
-    GsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local GifSlCol1 = Instance.new("Frame", GifSlidersGrid)
-    GifSlCol1.Name = "Col1"
-    GifSlCol1.BackgroundTransparency = 1
-    GifSlCol1.Size = UDim2.new(1, 0, 1, 0)
-
-    local GifSlCol2 = Instance.new("Frame", GifSlidersGrid)
-    GifSlCol2.Name = "Col2"
-    GifSlCol2.BackgroundTransparency = 1
-    GifSlCol2.Size = UDim2.new(1, 0, 1, 0)
-
-    if SliderElement then
-        local savedTrans = (UI and UI.MenuConfig and UI.MenuConfig["GifTransparency"]) or 0.85
-        SliderElement({
-            Name = "Przezroczystość GIFa",
-            Min = 40,
-            Max = 95,
-            Default = math.floor(savedTrans <= 1 and (savedTrans * 100) or savedTrans),
-            Suffix = "%",
-            Flag = "GifTransparency",
-            Callback = function(val)
-                if UI and UI.SetGifPreset then
-                    UI:SetGifPreset(nil, nil, val / 100, nil)
-                end
-            end
-        }, ThemeManager, GifSlCol1, UI.MenuConfig, UI.SaveMenuConfig)
-
-        local savedGSpd = (UI and UI.MenuConfig and UI.MenuConfig["GifSpeed"]) or 1.0
-        SliderElement({
-            Name = "Szybkość Animacji GIFa",
-            Min = 2,
-            Max = 30,
-            Default = math.floor(savedGSpd * 10),
-            Suffix = "x",
-            Callback = function(val)
-                if UI and UI.SetGifPreset then
-                    UI:SetGifPreset(nil, nil, nil, val / 10)
-                end
-            end
-        }, ThemeManager, GifSlCol2, UI.MenuConfig, UI.SaveMenuConfig)
-    end
-
-    -- =========================================================================
-    -- KONTROLKI DLA FALI ŚWIETLNEJ (WaveControlsContainer)
-    -- =========================================================================
-    local PresetsContainer = Instance.new("Frame")
-    PresetsContainer.Name = "PresetsContainer"
-    PresetsContainer.Size = UDim2.new(1, 0, 0, 36)
-    PresetsContainer.BackgroundTransparency = 1
-    PresetsContainer.LayoutOrder = 1
-    PresetsContainer.Parent = WaveControlsContainer
-
-    local PcTitle = Instance.new("TextLabel")
-    PcTitle.Text = "Preset fali świetlnej:"
-    PcTitle.Font = Enum.Font.GothamBold
-    PcTitle.TextSize = 11
-    PcTitle.TextColor3 = Color3.fromRGB(180, 190, 215)
-    PcTitle.TextXAlignment = Enum.TextXAlignment.Left
-    PcTitle.Size = UDim2.new(0, 130, 1, 0)
-    PcTitle.BackgroundTransparency = 1
-    PcTitle.Parent = PresetsContainer
-
-    local ChipsRow = Instance.new("Frame")
-    ChipsRow.Name = "ChipsRow"
-    ChipsRow.Size = UDim2.new(1, -135, 1, 0)
-    ChipsRow.Position = UDim2.new(0, 135, 0, 0)
-    ChipsRow.BackgroundTransparency = 1
-    ChipsRow.Parent = PresetsContainer
-
-    local ChipsLayout = Instance.new("UIListLayout", ChipsRow)
-    ChipsLayout.FillDirection = Enum.FillDirection.Horizontal
-    ChipsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    ChipsLayout.Padding = UDim.new(0, 6)
-
-    local wavePresets = {"None", "Aurora", "Cosmic", "Cyberpunk", "Emerald", "Sunset"}
     local currentWave = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedTheme"]) or "Cyberpunk"
     local waveChips = {}
 
@@ -552,12 +251,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         for p, btn in pairs(waveChips) do
             local isSel = (p == preset)
             TweenService:Create(btn, TweenInfo.new(0.18), {
-                BackgroundColor3 = isSel and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(24, 28, 42),
+                BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38),
                 TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
             }):Play()
             local strk = btn:FindFirstChildOfClass("UIStroke")
             if strk then
-                strk.Color = isSel and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+                strk.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 68)
             end
         end
     end
@@ -565,20 +264,18 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     for idx, preset in ipairs(wavePresets) do
         local Chip = Instance.new("TextButton")
         Chip.Name = preset
-        Chip.Size = UDim2.new(0, 0, 0, 28)
-        Chip.AutomaticSize = Enum.AutomaticSize.X
-        Chip.BackgroundColor3 = (preset == currentWave) and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(24, 28, 42)
-        Chip.Text = "  " .. preset .. "  "
+        Chip.BackgroundColor3 = (preset == currentWave) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
+        Chip.Text = preset
         Chip.Font = Enum.Font.GothamBold
         Chip.TextSize = 10
         Chip.TextColor3 = (preset == currentWave) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
         Chip.AutoButtonColor = false
         Chip.LayoutOrder = idx
-        Chip.Parent = ChipsRow
+        Chip.Parent = WaveChipsGrid
         Instance.new("UICorner", Chip).CornerRadius = UDim.new(0, 8)
 
         local CStroke = Instance.new("UIStroke", Chip)
-        CStroke.Color = (preset == currentWave) and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+        CStroke.Color = (preset == currentWave) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 68)
         CStroke.Thickness = 1
 
         waveChips[preset] = Chip
@@ -588,14 +285,98 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end)
     end
 
-    -- Suwaki fali świetlnej
+    -- 1B. Styl ruchu fali (Motion Styles: Drift, Pulse, Vortex)
+    local MotionRow = Instance.new("Frame")
+    MotionRow.Name = "MotionRow"
+    MotionRow.Size = UDim2.new(1, 0, 0, 0)
+    MotionRow.AutomaticSize = Enum.AutomaticSize.Y
+    MotionRow.BackgroundTransparency = 1
+    MotionRow.LayoutOrder = 2
+    MotionRow.Parent = WaveSection
+
+    local MrLayout = Instance.new("UIListLayout", MotionRow)
+    MrLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    MrLayout.Padding = UDim.new(0, 6)
+
+    local MrTitle = Instance.new("TextLabel")
+    MrTitle.Text = "Styl ruchu fali świetlnej:"
+    MrTitle.Font = Enum.Font.GothamBold
+    MrTitle.TextSize = 11
+    MrTitle.TextColor3 = Color3.fromRGB(180, 190, 215)
+    MrTitle.TextXAlignment = Enum.TextXAlignment.Left
+    MrTitle.Size = UDim2.new(1, 0, 0, 16)
+    MrTitle.BackgroundTransparency = 1
+    MrTitle.LayoutOrder = 1
+    MrTitle.Parent = MotionRow
+
+    local MotionChipsRow = Instance.new("Frame")
+    MotionChipsRow.Name = "MotionChipsRow"
+    MotionChipsRow.Size = UDim2.new(1, 0, 0, 30)
+    MotionChipsRow.BackgroundTransparency = 1
+    MotionChipsRow.LayoutOrder = 2
+    MotionChipsRow.Parent = MotionRow
+
+    local McrLayout = Instance.new("UIListLayout", MotionChipsRow)
+    McrLayout.FillDirection = Enum.FillDirection.Horizontal
+    McrLayout.Padding = UDim.new(0, 8)
+
+    local motionPresets = {
+        { Key = "Drift",  Label = "🌊 Dryf (Drift)" },
+        { Key = "Pulse",  Label = "💓 Puls (Pulse)" },
+        { Key = "Vortex", Label = "🌀 Wir (Vortex)" }
+    }
+    local currentMotion = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeMotion"]) or "Drift"
+    local motionBtns = {}
+
+    local function selectMotion(key)
+        currentMotion = key
+        if UI and UI.SetAmbientMotion then
+            UI:SetAmbientMotion(key)
+        end
+        for k, btn in pairs(motionBtns) do
+            local isSel = (k == key)
+            TweenService:Create(btn, TweenInfo.new(0.18), {
+                BackgroundColor3 = isSel and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(22, 26, 38),
+                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+            }):Play()
+            local strk = btn:FindFirstChildOfClass("UIStroke")
+            if strk then
+                strk.Color = isSel and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+            end
+        end
+    end
+
+    for idx, mData in ipairs(motionPresets) do
+        local mBtn = Instance.new("TextButton")
+        mBtn.Name = "Motion_" .. mData.Key
+        mBtn.Size = UDim2.new(0.333, -6, 1, 0)
+        mBtn.BackgroundColor3 = (mData.Key == currentMotion) and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(22, 26, 38)
+        mBtn.Text = mData.Label
+        mBtn.Font = Enum.Font.GothamBold
+        mBtn.TextSize = 11
+        mBtn.TextColor3 = (mData.Key == currentMotion) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+        mBtn.AutoButtonColor = false
+        mBtn.LayoutOrder = idx
+        mBtn.Parent = MotionChipsRow
+        Instance.new("UICorner", mBtn).CornerRadius = UDim.new(0, 8)
+        local ms = Instance.new("UIStroke", mBtn)
+        ms.Color = (mData.Key == currentMotion) and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+        ms.Thickness = 1
+        motionBtns[mData.Key] = mBtn
+
+        mBtn.MouseButton1Click:Connect(function()
+            selectMotion(mData.Key)
+        end)
+    end
+
+    -- 1C. Suwaki fali świetlnej
     local SlidersGrid = Instance.new("Frame")
     SlidersGrid.Name = "SlidersGrid"
     SlidersGrid.Size = UDim2.new(1, 0, 0, 0)
     SlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
     SlidersGrid.BackgroundTransparency = 1
-    SlidersGrid.LayoutOrder = 2
-    SlidersGrid.Parent = WaveControlsContainer
+    SlidersGrid.LayoutOrder = 3
+    SlidersGrid.Parent = WaveSection
 
     local SgLayout = Instance.new("UIGridLayout", SlidersGrid)
     SgLayout.CellPadding = UDim2.new(0, 10, 0, 10)
@@ -615,7 +396,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     Slider2Col.LayoutOrder = 2
 
     if SliderElement then
-        local savedInt = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeIntensity"]) or 12
+        local savedInt = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeIntensity"]) or 10
         SliderElement({
             Name = "Intensywność Fali",
             Min = 2,
@@ -643,6 +424,339 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                 end
             end
         }, ThemeManager, Slider2Col, UI.MenuConfig, UI.SaveMenuConfig)
+    end
+
+    -- -------------------------------------------------------------------------
+    -- SEPARATOR MIĘDZY FALAMI A LOGO
+    -- -------------------------------------------------------------------------
+    local SectionDivider = Instance.new("Frame")
+    SectionDivider.Name = "SectionDivider"
+    SectionDivider.Size = UDim2.new(1, 0, 0, 1)
+    SectionDivider.BackgroundColor3 = Color3.fromRGB(38, 44, 62)
+    SectionDivider.BorderSizePixel = 0
+    SectionDivider.LayoutOrder = 3
+    SectionDivider.Parent = VisualCard
+
+    -- -------------------------------------------------------------------------
+    -- SEKCJA 2: LOGO NA ŚRODKU CLIENTA (CENTER LOGO WATERMARK)
+    -- -------------------------------------------------------------------------
+    local WatermarkSection = Instance.new("Frame")
+    WatermarkSection.Name = "WatermarkSection"
+    WatermarkSection.Size = UDim2.new(1, 0, 0, 0)
+    WatermarkSection.AutomaticSize = Enum.AutomaticSize.Y
+    WatermarkSection.BackgroundTransparency = 1
+    WatermarkSection.LayoutOrder = 4
+    WatermarkSection.Parent = VisualCard
+
+    local WmsLayout = Instance.new("UIListLayout", WatermarkSection)
+    WmsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    WmsLayout.Padding = UDim.new(0, 10)
+
+    -- 2A. Wiersz przełącznika Toggle iOS dla Logo
+    local WmsHeaderRow = Instance.new("Frame")
+    WmsHeaderRow.Name = "WmsHeaderRow"
+    WmsHeaderRow.Size = UDim2.new(1, 0, 0, 36)
+    WmsHeaderRow.BackgroundTransparency = 1
+    WmsHeaderRow.LayoutOrder = 1
+    WmsHeaderRow.Parent = WatermarkSection
+
+    local WmsInfoCol = Instance.new("Frame")
+    WmsInfoCol.Name = "WmsInfoCol"
+    WmsInfoCol.Size = UDim2.new(1, -60, 1, 0)
+    WmsInfoCol.BackgroundTransparency = 1
+    WmsInfoCol.Parent = WmsHeaderRow
+
+    local WmsTitle = Instance.new("TextLabel")
+    WmsTitle.Text = "Logo na środku clienta (Znak wodny w tle)"
+    WmsTitle.Font = Enum.Font.GothamBold
+    WmsTitle.TextSize = 12
+    WmsTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
+    WmsTitle.TextXAlignment = Enum.TextXAlignment.Left
+    WmsTitle.Size = UDim2.new(1, 0, 0, 18)
+    WmsTitle.BackgroundTransparency = 1
+    WmsTitle.Parent = WmsInfoCol
+
+    local WmsSubtitle = Instance.new("TextLabel")
+    WmsSubtitle.Text = "Stylowy emblemat/herb wyświetlany pod spodem menu"
+    WmsSubtitle.Font = Enum.Font.GothamMedium
+    WmsSubtitle.TextSize = 10
+    WmsSubtitle.TextColor3 = Color3.fromRGB(130, 140, 168)
+    WmsSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+    WmsSubtitle.Position = UDim2.new(0, 0, 0, 18)
+    WmsSubtitle.Size = UDim2.new(1, 0, 0, 16)
+    WmsSubtitle.BackgroundTransparency = 1
+    WmsSubtitle.Parent = WmsInfoCol
+
+    -- Przełącznik iOS Toggle Switch
+    local isWatermarkOn = true
+    if UI and UI.MenuConfig and UI.MenuConfig["WatermarkEnabled"] ~= nil then
+        isWatermarkOn = UI.MenuConfig["WatermarkEnabled"]
+    end
+
+    local ToggleTrack = Instance.new("TextButton")
+    ToggleTrack.Name = "ToggleTrack"
+    ToggleTrack.Size = UDim2.new(0, 44, 0, 24)
+    ToggleTrack.Position = UDim2.new(1, 0, 0.5, 0)
+    ToggleTrack.AnchorPoint = Vector2.new(1, 0.5)
+    ToggleTrack.BackgroundColor3 = isWatermarkOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 60)
+    ToggleTrack.Text = ""
+    ToggleTrack.AutoButtonColor = false
+    ToggleTrack.Parent = WmsHeaderRow
+    Instance.new("UICorner", ToggleTrack).CornerRadius = UDim.new(1, 0)
+
+    local ToggleThumb = Instance.new("Frame")
+    ToggleThumb.Name = "Thumb"
+    ToggleThumb.Size = UDim2.new(0, 18, 0, 18)
+    ToggleThumb.Position = isWatermarkOn and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+    ToggleThumb.AnchorPoint = Vector2.new(0, 0.5)
+    ToggleThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleThumb.BorderSizePixel = 0
+    ToggleThumb.Parent = ToggleTrack
+    Instance.new("UICorner", ToggleThumb).CornerRadius = UDim.new(1, 0)
+
+    -- Kontener na kontrolki logo (widoczny tylko gdy logo jest włączone)
+    local WatermarkControls = Instance.new("Frame")
+    WatermarkControls.Name = "WatermarkControls"
+    WatermarkControls.Size = UDim2.new(1, 0, 0, 0)
+    WatermarkControls.AutomaticSize = Enum.AutomaticSize.Y
+    WatermarkControls.BackgroundTransparency = 1
+    WatermarkControls.LayoutOrder = 2
+    WatermarkControls.Visible = isWatermarkOn
+    WatermarkControls.Parent = WatermarkSection
+
+    local WmcLayout = Instance.new("UIListLayout", WatermarkControls)
+    WmcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    WmcLayout.Padding = UDim.new(0, 10)
+
+    local function setWatermarkEnabledState(state)
+        isWatermarkOn = state
+        TweenService:Create(ToggleTrack, TweenInfo.new(0.2), {
+            BackgroundColor3 = isWatermarkOn and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 60)
+        }):Play()
+        TweenService:Create(ToggleThumb, TweenInfo.new(0.2), {
+            Position = isWatermarkOn and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        }):Play()
+        WatermarkControls.Visible = isWatermarkOn
+        if UI and UI.SetWatermark then
+            UI:SetWatermark(isWatermarkOn)
+        end
+    end
+
+    ToggleTrack.MouseButton1Click:Connect(function()
+        setWatermarkEnabledState(not isWatermarkOn)
+    end)
+
+    -- 2B. Presety logo w tle (Cyber Crest, Imperial Crown, Astral Nova, Apex Skull, Vanguard Shield, Custom)
+    local LogoPresetsContainer = Instance.new("Frame")
+    LogoPresetsContainer.Name = "LogoPresetsContainer"
+    LogoPresetsContainer.Size = UDim2.new(1, 0, 0, 0)
+    LogoPresetsContainer.AutomaticSize = Enum.AutomaticSize.Y
+    LogoPresetsContainer.BackgroundTransparency = 1
+    LogoPresetsContainer.LayoutOrder = 1
+    LogoPresetsContainer.Parent = WatermarkControls
+
+    local LpcLayout = Instance.new("UIListLayout", LogoPresetsContainer)
+    LpcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    LpcLayout.Padding = UDim.new(0, 6)
+
+    local LpcTitle = Instance.new("TextLabel")
+    LpcTitle.Text = "Wybierz styl logo w tle:"
+    LpcTitle.Font = Enum.Font.GothamBold
+    LpcTitle.TextSize = 11
+    LpcTitle.TextColor3 = Color3.fromRGB(180, 190, 215)
+    LpcTitle.TextXAlignment = Enum.TextXAlignment.Left
+    LpcTitle.Size = UDim2.new(1, 0, 0, 16)
+    LpcTitle.BackgroundTransparency = 1
+    LpcTitle.LayoutOrder = 1
+    LpcTitle.Parent = LogoPresetsContainer
+
+    local LogoChipsGrid = Instance.new("Frame")
+    LogoChipsGrid.Name = "LogoChipsGrid"
+    LogoChipsGrid.Size = UDim2.new(1, 0, 0, 0)
+    LogoChipsGrid.AutomaticSize = Enum.AutomaticSize.Y
+    LogoChipsGrid.BackgroundTransparency = 1
+    LogoChipsGrid.LayoutOrder = 2
+    LogoChipsGrid.Parent = LogoPresetsContainer
+
+    local LcgLayout = Instance.new("UIGridLayout", LogoChipsGrid)
+    LcgLayout.CellPadding = UDim2.new(0, 6, 0, 6)
+    LcgLayout.CellSize = isMobile and UDim2.new(0.333, -4, 0, 28) or UDim2.new(0.166, -5, 0, 28)
+    LcgLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local logoPresetsList = {
+        { Key = "Crest",  Label = "🛡️ Crest" },
+        { Key = "Crown",  Label = "👑 Crown" },
+        { Key = "Star",   Label = "✨ Nova" },
+        { Key = "Skull",  Label = "💀 Skull" },
+        { Key = "Shield", Label = "⚔️ Shield" },
+        { Key = "Custom", Label = "🛠️ Własne" }
+    }
+
+    local activeLogoPreset = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkPreset"]) or "Crest"
+    local logoChips = {}
+
+    local function selectLogoPreset(key)
+        activeLogoPreset = key
+        if UI and UI.SetWatermark then
+            UI:SetWatermark(nil, key)
+        end
+        for k, btn in pairs(logoChips) do
+            local isSel = (k == key)
+            TweenService:Create(btn, TweenInfo.new(0.18), {
+                BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38),
+                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+            }):Play()
+            local strk = btn:FindFirstChildOfClass("UIStroke")
+            if strk then
+                strk.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 68)
+            end
+        end
+    end
+
+    for idx, lData in ipairs(logoPresetsList) do
+        local lBtn = Instance.new("TextButton")
+        lBtn.Name = "Logo_" .. lData.Key
+        lBtn.BackgroundColor3 = (lData.Key == activeLogoPreset) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
+        lBtn.Text = lData.Label
+        lBtn.Font = Enum.Font.GothamBold
+        lBtn.TextSize = 10
+        lBtn.TextColor3 = (lData.Key == activeLogoPreset) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+        lBtn.AutoButtonColor = false
+        lBtn.LayoutOrder = idx
+        lBtn.Parent = LogoChipsGrid
+        Instance.new("UICorner", lBtn).CornerRadius = UDim.new(0, 8)
+        local ls = Instance.new("UIStroke", lBtn)
+        ls.Color = (lData.Key == activeLogoPreset) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 68)
+        ls.Thickness = 1
+        logoChips[lData.Key] = lBtn
+
+        lBtn.MouseButton1Click:Connect(function()
+            selectLogoPreset(lData.Key)
+        end)
+    end
+
+    -- 2C. Wiersz Własnego Asset ID dla Logo
+    local CustomLogoRow = Instance.new("Frame")
+    CustomLogoRow.Name = "CustomLogoRow"
+    CustomLogoRow.Size = UDim2.new(1, 0, 0, 32)
+    CustomLogoRow.BackgroundTransparency = 1
+    CustomLogoRow.LayoutOrder = 2
+    CustomLogoRow.Parent = WatermarkControls
+
+    local ClInputBox = Instance.new("Frame")
+    ClInputBox.Size = UDim2.new(1, -115, 1, 0)
+    ClInputBox.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+    ClInputBox.Parent = CustomLogoRow
+    Instance.new("UICorner", ClInputBox).CornerRadius = UDim.new(0, 8)
+    local ClStroke = Instance.new("UIStroke", ClInputBox)
+    ClStroke.Color = Color3.fromRGB(42, 48, 70)
+    ClStroke.Thickness = 1
+
+    local ClIcon = Instance.new("ImageLabel")
+    ClIcon.Size = UDim2.new(0, 14, 0, 14)
+    ClIcon.Position = UDim2.new(0, 8, 0.5, 0)
+    ClIcon.AnchorPoint = Vector2.new(0, 0.5)
+    ClIcon.BackgroundTransparency = 1
+    ClIcon.ImageColor3 = Color3.fromRGB(130, 140, 168)
+    ClIcon.Parent = ClInputBox
+    if Icons and Icons.Apply then Icons:Apply(ClIcon, "image") end
+
+    local CustomLogoInput = Instance.new("TextBox")
+    CustomLogoInput.Size = UDim2.new(1, -30, 1, 0)
+    CustomLogoInput.Position = UDim2.new(0, 26, 0, 0)
+    CustomLogoInput.BackgroundTransparency = 1
+    local savedLogoId = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkCustomId"]) or ""
+    CustomLogoInput.Text = savedLogoId
+    CustomLogoInput.PlaceholderText = "Wklej Roblox Asset ID własnego logo..."
+    CustomLogoInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
+    CustomLogoInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CustomLogoInput.Font = Enum.Font.GothamMedium
+    CustomLogoInput.TextSize = 11
+    CustomLogoInput.TextXAlignment = Enum.TextXAlignment.Left
+    CustomLogoInput.ClearTextOnFocus = false
+    CustomLogoInput.Parent = ClInputBox
+
+    local ApplyLogoBtn = Instance.new("TextButton")
+    ApplyLogoBtn.Size = UDim2.new(0, 105, 1, 0)
+    ApplyLogoBtn.Position = UDim2.new(1, 0, 0, 0)
+    ApplyLogoBtn.AnchorPoint = Vector2.new(1, 0)
+    ApplyLogoBtn.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    ApplyLogoBtn.Text = "Zastosuj Logo"
+    ApplyLogoBtn.Font = Enum.Font.GothamBold
+    ApplyLogoBtn.TextSize = 11
+    ApplyLogoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ApplyLogoBtn.AutoButtonColor = false
+    ApplyLogoBtn.Parent = CustomLogoRow
+    Instance.new("UICorner", ApplyLogoBtn).CornerRadius = UDim.new(0, 8)
+
+    ApplyLogoBtn.MouseButton1Click:Connect(function()
+        local raw = CustomLogoInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if #raw > 0 then
+            selectLogoPreset("Custom")
+            if UI and UI.SetWatermark then
+                UI:SetWatermark(nil, "Custom", raw)
+            end
+            ApplyLogoBtn.Text = "Zastosowano!"
+            task.delay(1.2, function()
+                if ApplyLogoBtn and ApplyLogoBtn.Parent then ApplyLogoBtn.Text = "Zastosuj Logo" end
+            end)
+        end
+    end)
+
+    -- 2D. Suwaki przezroczystości oraz rozmiaru logo
+    local WmsSlidersGrid = Instance.new("Frame")
+    WmsSlidersGrid.Name = "WmsSlidersGrid"
+    WmsSlidersGrid.Size = UDim2.new(1, 0, 0, 0)
+    WmsSlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
+    WmsSlidersGrid.BackgroundTransparency = 1
+    WmsSlidersGrid.LayoutOrder = 3
+    WmsSlidersGrid.Parent = WatermarkControls
+
+    local WsgLayout = Instance.new("UIGridLayout", WmsSlidersGrid)
+    WsgLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+    WsgLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 56) or UDim2.new(0.5, -5, 0, 56)
+    WsgLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local WmsSlCol1 = Instance.new("Frame", WmsSlidersGrid)
+    WmsSlCol1.Name = "Col1"
+    WmsSlCol1.BackgroundTransparency = 1
+    WmsSlCol1.Size = UDim2.new(1, 0, 1, 0)
+
+    local WmsSlCol2 = Instance.new("Frame", WmsSlidersGrid)
+    WmsSlCol2.Name = "Col2"
+    WmsSlCol2.BackgroundTransparency = 1
+    WmsSlCol2.Size = UDim2.new(1, 0, 1, 0)
+
+    if SliderElement then
+        local savedTrans = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkTransparency"]) or 0.90
+        SliderElement({
+            Name = "Przezroczystość Logo",
+            Min = 50,
+            Max = 98,
+            Default = math.floor(savedTrans <= 1 and (savedTrans * 100) or savedTrans),
+            Suffix = "%",
+            Flag = "WatermarkTransparency",
+            Callback = function(val)
+                if UI and UI.SetWatermark then
+                    UI:SetWatermark(nil, nil, nil, val / 100, nil)
+                end
+            end
+        }, ThemeManager, WmsSlCol1, UI.MenuConfig, UI.SaveMenuConfig)
+
+        local savedSize = (UI and UI.MenuConfig and UI.MenuConfig["WatermarkSize"]) or 220
+        SliderElement({
+            Name = "Rozmiar Logo (px)",
+            Min = 100,
+            Max = 380,
+            Default = math.floor(savedSize),
+            Suffix = "px",
+            Flag = "WatermarkSize",
+            Callback = function(val)
+                if UI and UI.SetWatermark then
+                    UI:SetWatermark(nil, nil, nil, nil, val)
+                end
+            end
+        }, ThemeManager, WmsSlCol2, UI.MenuConfig, UI.SaveMenuConfig)
     end
 
     -- =========================================================================
