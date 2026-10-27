@@ -1462,18 +1462,34 @@ function Window:Create(config)
     end
 
     -- // ============================================================
-    -- // UI:OpenSettings – otwiera stronę Ustawień
+    -- // UI:OpenSettings – otwiera lub zamyka stronę Ustawień
     -- // ============================================================
     function UI:OpenSettings()
-        if UI.SettingsPage then
-            for _, tabObj in ipairs(UI.TabObjects) do
-                if (tabObj.Page == UI.SettingsPage or tabObj.Button.Name == "Settings") and tabObj.Button then
-                    UI:SelectTab(tabObj.Button)
-                    return
-                end
-            end
-        end
         if not UI.SettingsPage then return end
+
+        if UI.IsSettingsOpen then
+            UI.IsSettingsOpen = false
+            if UI.SettingsBtn then
+                TweenService:Create(UI.SettingsBtn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromRGB(24, 28, 42),
+                    BackgroundTransparency = 0.35
+                }):Play()
+            end
+            if UI.SettingsIcon then
+                local dimTxt = ThemeManager:GetColor("Text_Secondary") or Color3.fromRGB(150, 160, 190)
+                TweenService:Create(UI.SettingsIcon, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    ImageColor3 = dimTxt,
+                    Rotation = 0
+                }):Play()
+            end
+            if UI.PreviousTab then
+                UI:SelectTab(UI.PreviousTab)
+            elseif #UI.Tabs > 0 then
+                UI:SelectTab(UI.Tabs[1])
+            end
+            return
+        end
+
         UI.IsSettingsOpen = true
 
         -- Zdezaktywuj poprzednio wybraną zakładkę w sidebarze
@@ -1481,10 +1497,17 @@ function Window:Create(config)
             UI.PreviousTab = UI.SelectedTab
             local prevIcon  = UI.SelectedTab:FindFirstChild("Icon")
             local prevLabel = UI.SelectedTab:FindFirstChild("Label")
+            local prevStroke= UI.SelectedTab:FindFirstChildOfClass("UIStroke")
             if prevIcon  then TweenService:Create(prevIcon,  TweenInfo.new(0.2),
                 {ImageColor3 = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
             if prevLabel then TweenService:Create(prevLabel, TweenInfo.new(0.2),
                 {TextColor3  = getColor(ThemeManager.CurrentTheme.Text_Secondary)}):Play() end
+            if prevStroke then TweenService:Create(prevStroke, TweenInfo.new(0.2),
+                {Color = Color3.fromRGB(50, 58, 85), Transparency = 0.7}):Play() end
+            TweenService:Create(UI.SelectedTab, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(24, 28, 42),
+                BackgroundTransparency = 0.65
+            }):Play()
             UI.SelectedTab = nil
         end
 

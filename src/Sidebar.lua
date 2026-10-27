@@ -330,11 +330,13 @@ function Sidebar:Create(UI, theme, config, customWidth)
     end)
 
     -- Profil gracza + Przycisk Settings (Liquid Glass Avatar Button)
-    local ProfilePill = Instance.new("Frame")
+    local ProfilePill = Instance.new("TextButton")
     ProfilePill.Name = "ProfilePill"
-    ProfilePill.Size = UDim2.new(0, 36, 0, 26)
+    ProfilePill.Size = UDim2.new(0, 38, 0, 26)
     ProfilePill.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
     ProfilePill.BackgroundTransparency = 0.35
+    ProfilePill.Text = ""
+    ProfilePill.AutoButtonColor = false
     ProfilePill.BorderSizePixel = 0
     ProfilePill.LayoutOrder = 3
     ProfilePill.ZIndex = 18
@@ -374,18 +376,24 @@ function Sidebar:Create(UI, theme, config, customWidth)
     if Icons and Icons.Apply then Icons:Apply(SettingsBtn, "settings") end
     UI.SettingsBtn = SettingsBtn
     UI.SettingsIcon = SettingsBtn
+    UI.ProfilePill = ProfilePill
 
-    SettingsBtn.MouseEnter:Connect(function()
+    ProfilePill.MouseEnter:Connect(function()
+        TweenService:Create(PpStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(99, 102, 241), Transparency = 0.3 }):Play()
         TweenService:Create(SettingsBtn, TweenInfo.new(0.25), { ImageColor3 = Color3.fromRGB(255, 255, 255), Rotation = 45 }):Play()
     end)
-    SettingsBtn.MouseLeave:Connect(function()
+    ProfilePill.MouseLeave:Connect(function()
         if not UI.IsSettingsOpen then
+            TweenService:Create(PpStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(55, 62, 90), Transparency = 0.6 }):Play()
             TweenService:Create(SettingsBtn, TweenInfo.new(0.25), { ImageColor3 = Color3.fromRGB(150, 160, 190), Rotation = 0 }):Play()
         end
     end)
-    SettingsBtn.MouseButton1Click:Connect(function()
+
+    local function toggleSettingsAction()
         if UI.OpenSettings then UI:OpenSettings() end
-    end)
+    end
+    ProfilePill.MouseButton1Click:Connect(toggleSettingsAction)
+    SettingsBtn.MouseButton1Click:Connect(toggleSettingsAction)
 
     -- Kontener przycisków okna (Apple Window Controls na samym prawym brzegu)
     local Controls = Instance.new("Frame")

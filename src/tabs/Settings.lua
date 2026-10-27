@@ -54,10 +54,24 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local SliderElement = safeLoadSub("elements/Slider.lua", baseUrl .. "elements/Slider.lua")
 
-    -- Rejestrujemy zakładkę Settings w głównym pasku zakładek (Dock)
-    local TabElements = UI:CreateTab("Settings", "settings", order or 999)
-    local Page = TabElements.Page
+    -- Rejestrujemy stronę SettingsPage bezpośrednio w kontenerze stron (otwierana przez awatar/zębatkę w docku)
+    local Page = Instance.new("ScrollingFrame")
     Page.Name = "SettingsPage"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.Visible = false
+    Page.Active = true
+    Page.Selectable = false
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Page.ScrollingDirection = Enum.ScrollingDirection.Y
+    Page.ScrollBarThickness = isMobile and 3 or 5
+    Page.ScrollBarImageTransparency = 0
+    Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
+    pcall(function() Page.ElasticBehavior = Enum.ElasticBehavior.Always end)
+    Page.Parent = UI.PagesContainer
+    table.insert(UI.Pages, Page)
     UI.SettingsPage = Page
 
     local ThemeManager = UI.ThemeManager
@@ -165,150 +179,19 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
 
     -- =========================================================================
-    -- BENTO 1: WYGLĄD I EFEKTY WIZUALNE (APPLE LIQUID GLASS & AMBIENT WAVE FX)
+    -- BENTO 1: EFEKTY WIZUALNE I TŁO (LIVE AMBIENT WAVE FX)
     -- =========================================================================
     local VisualCard, _ = createBentoCard("VisualCard", 1)
 
     -- Nagłówek sekcji wizualnej
-    createCardHeader(VisualCard, "PERSONALIZACJA I EFEKTY WIZUALNE", "layers", "Apple iPhone Liquid Glass oraz dynamiczne fale świetlne", 1)
+    createCardHeader(VisualCard, "PERSONALIZACJA I EFEKTY WIZUALNE", "activity", "Dynamiczne fale świetlne oraz personalizacja tła", 1)
 
-    -- Wiersz 1: Apple iPhone Liquid Glass Hero Toggle
-    local GlassRow = Instance.new("Frame")
-    GlassRow.Name = "GlassRow"
-    GlassRow.Size = UDim2.new(1, 0, 0, 56)
-    GlassRow.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
-    GlassRow.BackgroundTransparency = 0.4
-    GlassRow.LayoutOrder = 2
-    GlassRow.Parent = VisualCard
-    Instance.new("UICorner", GlassRow).CornerRadius = UDim.new(0, 12)
-
-    local GrStroke = Instance.new("UIStroke", GlassRow)
-    GrStroke.Color = Color3.fromRGB(48, 56, 80)
-    GrStroke.Thickness = 1
-    GrStroke.Transparency = 0.65
-
-    local GrPad = Instance.new("UIPadding", GlassRow)
-    GrPad.PaddingLeft = UDim.new(0, 12)
-    GrPad.PaddingRight = UDim.new(0, 12)
-
-    local GrIconBox = Instance.new("Frame")
-    GrIconBox.Size = UDim2.new(0, 36, 0, 36)
-    GrIconBox.Position = UDim2.new(0, 0, 0.5, 0)
-    GrIconBox.AnchorPoint = Vector2.new(0, 0.5)
-    GrIconBox.BackgroundColor3 = Color3.fromRGB(30, 36, 54)
-    GrIconBox.BackgroundTransparency = 0.3
-    GrIconBox.BorderSizePixel = 0
-    GrIconBox.Parent = GlassRow
-    Instance.new("UICorner", GrIconBox).CornerRadius = UDim.new(0, 8)
-
-    local GrIcon = Instance.new("ImageLabel")
-    GrIcon.Size = UDim2.new(0, 18, 0, 18)
-    GrIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    GrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    GrIcon.BackgroundTransparency = 1
-    GrIcon.ImageColor3 = Color3.fromRGB(150, 165, 210)
-    GrIcon.Parent = GrIconBox
-    if Icons and Icons.Apply then Icons:Apply(GrIcon, "layers") end
-
-    local GrTextFrame = Instance.new("Frame")
-    GrTextFrame.Size = UDim2.new(1, -120, 1, 0)
-    GrTextFrame.Position = UDim2.new(0, 46, 0, 0)
-    GrTextFrame.BackgroundTransparency = 1
-    GrTextFrame.Parent = GlassRow
-
-    local GrTitle = Instance.new("TextLabel")
-    GrTitle.Text = "Apple iPhone Liquid Glass (iOS 27.2)"
-    GrTitle.Font = Enum.Font.GothamBold
-    GrTitle.TextSize = 12
-    GrTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    GrTitle.TextXAlignment = Enum.TextXAlignment.Left
-    GrTitle.Position = UDim2.new(0, 0, 0, 10)
-    GrTitle.Size = UDim2.new(1, 0, 0, 16)
-    GrTitle.BackgroundTransparency = 1
-    GrTitle.Parent = GrTextFrame
-
-    local GrSub = Instance.new("TextLabel")
-    GrSub.Text = "Dynamic Island 2.0, matowe szkło Control Center i przełącznik Apple Green #34C759"
-    GrSub.Font = Enum.Font.GothamMedium
-    GrSub.TextSize = 10
-    GrSub.TextColor3 = Color3.fromRGB(140, 150, 180)
-    GrSub.TextXAlignment = Enum.TextXAlignment.Left
-    GrSub.TextTruncate = Enum.TextTruncate.AtEnd
-    GrSub.Position = UDim2.new(0, 0, 0, 28)
-    GrSub.Size = UDim2.new(1, 0, 0, 14)
-    GrSub.BackgroundTransparency = 1
-    GrSub.Parent = GrTextFrame
-
-    -- Główny przełącznik Liquid Glass (Apple iOS Switch)
-    local isLgOn = true
-    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
-        isLgOn = (UI.MenuConfig["LiquidGlass"] == true)
-    end
-
-    local LgSwitch = Instance.new("TextButton")
-    LgSwitch.Size = UDim2.new(0, 48, 0, 26)
-    LgSwitch.Position = UDim2.new(1, 0, 0.5, 0)
-    LgSwitch.AnchorPoint = Vector2.new(1, 0.5)
-    LgSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(45, 50, 65)
-    LgSwitch.BackgroundTransparency = 0.15
-    LgSwitch.Text = ""
-    LgSwitch.AutoButtonColor = false
-    LgSwitch.Parent = GlassRow
-    Instance.new("UICorner", LgSwitch).CornerRadius = UDim.new(1, 0)
-
-    local LgsStroke = Instance.new("UIStroke", LgSwitch)
-    LgsStroke.Color = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(65, 72, 90)
-    LgsStroke.Thickness = 1
-    LgsStroke.Transparency = 0.4
-
-    local LgDot = Instance.new("Frame")
-    LgDot.Size = UDim2.new(0, 20, 0, 20)
-    LgDot.Position = isLgOn and UDim2.new(1, -23, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-    LgDot.AnchorPoint = Vector2.new(0, 0.5)
-    LgDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    LgDot.BorderSizePixel = 0
-    LgDot.Parent = LgSwitch
-    Instance.new("UICorner", LgDot).CornerRadius = UDim.new(1, 0)
-
-    LgSwitch.MouseButton1Click:Connect(function()
-        isLgOn = not isLgOn
-        local destPos = isLgOn and UDim2.new(1, -23, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local destBg = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(45, 50, 65)
-        local destStrk = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(65, 72, 90)
-
-        TweenService:Create(LgDot, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = destPos
-        }):Play()
-        TweenService:Create(LgSwitch, TweenInfo.new(0.22), { BackgroundColor3 = destBg }):Play()
-        TweenService:Create(LgsStroke, TweenInfo.new(0.22), { Color = destStrk }):Play()
-
-        if UI and UI.SetLiquidGlass then
-            UI:SetLiquidGlass(isLgOn)
-        end
-        if UI and UI.MenuConfig then
-            UI.MenuConfig["LiquidGlass"] = isLgOn
-        end
-        if UI and UI.SaveMenuConfig then
-            pcall(function() UI.SaveMenuConfig("LiquidGlass", isLgOn) end)
-        end
-    end)
-
-    -- Subtelna linia podziału
-    local Divider1 = Instance.new("Frame")
-    Divider1.Name = "Divider"
-    Divider1.Size = UDim2.new(1, 0, 0, 1)
-    Divider1.BackgroundColor3 = Color3.fromRGB(45, 52, 75)
-    Divider1.BackgroundTransparency = 0.65
-    Divider1.BorderSizePixel = 0
-    Divider1.LayoutOrder = 3
-    Divider1.Parent = VisualCard
-
-    -- Wiersz 2: Presety Ambient Wave FX (Chips Row)
+    -- Wiersz 1: Presety Ambient Wave FX (Chips Row)
     local PresetsContainer = Instance.new("Frame")
     PresetsContainer.Name = "PresetsContainer"
     PresetsContainer.Size = UDim2.new(1, 0, 0, 36)
     PresetsContainer.BackgroundTransparency = 1
-    PresetsContainer.LayoutOrder = 4
+    PresetsContainer.LayoutOrder = 2
     PresetsContainer.Parent = VisualCard
 
     local PcTitle = Instance.new("TextLabel")
@@ -387,7 +270,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SlidersGrid.Size = UDim2.new(1, 0, 0, 0)
     SlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
     SlidersGrid.BackgroundTransparency = 1
-    SlidersGrid.LayoutOrder = 5
+    SlidersGrid.LayoutOrder = 3
     SlidersGrid.Parent = VisualCard
 
     local SgLayout = Instance.new("UIGridLayout", SlidersGrid)
