@@ -6,23 +6,23 @@
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"
 
--- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych
+-- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych (podpisane pod Voltik)
 if typeof(getgenv) == "function" then
-    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup) end
-    if getgenv()._TycoonScriptCleanup then pcall(getgenv()._TycoonScriptCleanup) end
-    getgenv()._MenuTestModuleCache = nil
-    getgenv()._MenuTestCache = nil
-    getgenv()._MenuTestToggleElement = nil
-    getgenv()._MenuTestIconsModule = nil
-    getgenv()._MenuTestIconsData = nil
-    getgenv()._MenuTestLibrary = nil
+    if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
+    if getgenv()._VoltikTycoonScriptCleanup then pcall(getgenv()._VoltikTycoonScriptCleanup); getgenv()._VoltikTycoonScriptCleanup = nil end
+    getgenv()._VoltikMenuModuleCache = nil
+    getgenv()._VoltikMenuCache = nil
+    getgenv()._VoltikToggleElement = nil
+    getgenv()._VoltikIconsModule = nil
+    getgenv()._VoltikIconsData = nil
+    getgenv()._VoltikLibrary = nil
 end
-_G._MenuTestModuleCache = nil
-_G._MenuTestCache = nil
-_G._MenuTestToggleElement = nil
-_G._MenuTestIconsModule = nil
-_G._MenuTestIconsData = nil
-_G._MenuTestLibrary = nil
+_G._VoltikMenuModuleCache = nil
+_G._VoltikMenuCache = nil
+_G._VoltikToggleElement = nil
+_G._VoltikIconsModule = nil
+_G._VoltikIconsData = nil
+_G._VoltikLibrary = nil
 
 -- Funkcja bezpiecznego pobierania/ładowania kodu
 local function safeExecute(relativePath, remoteUrl)

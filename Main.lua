@@ -14,12 +14,12 @@ if not ProtectedLocation then
     ProtectedLocation = PlayerGui
 end
 
--- Automatyczne czyszczenie poprzedniej sesji menu i skryptów
+-- Automatyczne czyszczenie poprzedniej sesji menu i skryptów (podpisane pod Voltik)
 if typeof(getgenv) == "function" then
-    if getgenv()._MenuTestCleanup then pcall(getgenv()._MenuTestCleanup); getgenv()._MenuTestCleanup = nil end
-    if getgenv()._MenuTestGui then pcall(function() getgenv()._MenuTestGui:Destroy() end); getgenv()._MenuTestGui = nil end
+    if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
+    if getgenv()._VoltikMenuTestGui then pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end); getgenv()._VoltikMenuTestGui = nil end
 end
-if _G._MenuTestCleanup then pcall(_G._MenuTestCleanup); _G._MenuTestCleanup = nil end
+if _G._VoltikMenuCleanup then pcall(_G._VoltikMenuCleanup); _G._VoltikMenuCleanup = nil end
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
 
@@ -398,9 +398,9 @@ function MenuLib:CreateWindow(options)
     end
 
     if typeof(getgenv) == "function" then
-        getgenv()._MenuTestCleanup = Cleanup
+        getgenv()._VoltikMenuCleanup = Cleanup
     end
-    _G._MenuTestCleanup = Cleanup
+    _G._VoltikMenuCleanup = Cleanup
 
     -- Szybkie współbieżne pobieranie brakujących plików w pamięci
     local preloadList = {
@@ -467,13 +467,16 @@ function MenuLib:CreateWindow(options)
     end
     loader:Update(0.9, "Inicjalizacja UI...")
 
-    -- USUWANIE STAREGO MENU I ODŁĄCZANIE POPRZEDNICH ZDARZEŃ
-    local menuId = "MenuInstance"
-    if typeof(getgenv) == "function" and getgenv()._MenuTestCleanup then
-        pcall(getgenv()._MenuTestCleanup)
+    -- USUWANIE STAREGO MENU I ODŁĄCZANIE POPRZEDNICH ZDARZEŃ (TYLKO DLA MENU VOLTIK)
+    local myOwnerTag = "XxvoltikxX"
+    local menuId = (Config and Config.MenuId) or "Voltik_MenuTest"
+    if typeof(getgenv) == "function" and getgenv()._VoltikMenuCleanup then
+        pcall(getgenv()._VoltikMenuCleanup)
+        getgenv()._VoltikMenuCleanup = nil
     end
-    if _G._MenuTestCleanup then
-        pcall(_G._MenuTestCleanup)
+    if _G._VoltikMenuCleanup then
+        pcall(_G._VoltikMenuCleanup)
+        _G._VoltikMenuCleanup = nil
     end
 
     local searchContainers = {}
@@ -485,12 +488,13 @@ function MenuLib:CreateWindow(options)
         if container then
             for _, child in ipairs(container:GetChildren()) do
                 if child:IsA("ScreenGui") and child ~= loaderGui and not child:GetAttribute("MenuLoaderIndicator") then
-                    if child:GetAttribute(menuId)
-                        or child:GetAttribute("MenuInstance")
-                        or child:GetAttribute("MenuId")
-                        or child.Name == "MenuScreen"
-                        or child:FindFirstChild("MainFrame")
-                        or child:FindFirstChild("Shadow") then
+                    local isVoltikDuplicate = (child:GetAttribute("MenuOwner") == myOwnerTag)
+                        or (child:GetAttribute("VoltikMenuInstance") == true)
+                        or (child:GetAttribute("MenuTest_Voltik") == true)
+                        or (menuId and menuId ~= "MenuInstance" and child:GetAttribute(menuId) == true)
+                        or (typeof(getgenv) == "function" and child == getgenv()._VoltikMenuTestGui)
+
+                    if isVoltikDuplicate then
                         pcall(function() child:Destroy() end)
                     end
                 end
