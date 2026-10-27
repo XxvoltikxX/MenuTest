@@ -1239,66 +1239,117 @@ local closeRemoteMachine = nil
 local function findInteractiveMachine(name)
     local targetName = tostring(name or "")
     if #targetName == 0 then return nil end
+    local targetLower = targetName:lower()
 
-    local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
-    if not map then return nil end
+    -- 1. Szukanie w folderze mapy (__MAP / Map)
+    local map = Workspace:FindFirstChild("__MAP") or Workspace:FindFirstChild("Map")
+    if map then
+        local interactive = map:FindFirstChild("Interactive")
+        if interactive then
+            local direct = interactive:FindFirstChild(targetName)
+            if direct then return direct end
+            for _, child in ipairs(interactive:GetChildren()) do
+                local cLow = child.Name:lower()
+                if cLow == targetLower or cLow:find(targetLower, 1, true) then
+                    return child
+                end
+            end
+        end
+        -- Wewnątrz stref
+        local areas = map:FindFirstChild("Areas")
+        if areas then
+            for _, area in ipairs(areas:GetChildren()) do
+                local aInt = area:FindFirstChild("Interactive") or area
+                local direct = aInt:FindFirstChild(targetName)
+                if direct then return direct end
+                for _, child in ipairs(aInt:GetChildren()) do
+                    local cLow = child.Name:lower()
+                    if cLow == targetLower or cLow:find(targetLower, 1, true) then
+                        return child
+                    end
+                end
+            end
+        end
+    end
 
-    -- 1. Bezpośrednio w __MAP.Interactive
-    local interactive = map:FindFirstChild("Interactive")
-    if interactive then
-        local m = interactive:FindFirstChild(targetName)
-        if m then return m end
-        for _, child in ipairs(interactive:GetChildren()) do
-            if child.Name:lower() == targetName:lower() or child.Name:lower():find(targetName:lower(), 1, true) then
+    -- 2. Szukanie w nadrzędnym folderze Interactive w Workspace
+    local directInteractive = Workspace:FindFirstChild("Interactive", true)
+    if directInteractive then
+        local direct = directInteractive:FindFirstChild(targetName)
+        if direct then return direct end
+        for _, child in ipairs(directInteractive:GetChildren()) do
+            local cLow = child.Name:lower()
+            if cLow == targetLower or cLow:find(targetLower, 1, true) then
                 return child
             end
         end
     end
 
-    -- 2. Wewnątrz poszczególnych stref (__MAP.Areas)
-    local areas = map:FindFirstChild("Areas")
-    if areas then
-        for _, area in ipairs(areas:GetChildren()) do
-            local aInteractive = area:FindFirstChild("Interactive") or area
-            local m = aInteractive:FindFirstChild(targetName)
-            if m then return m end
-            for _, child in ipairs(aInteractive:GetChildren()) do
-                if child.Name:lower() == targetName:lower() or child.Name:lower():find(targetName:lower(), 1, true) then
+    -- 3. Bezpośrednie rekurencyjne wyszukiwanie w Workspace
+    local directMatch = Workspace:FindFirstChild(targetName, true)
+    if directMatch then return directMatch end
+
+    -- 4. Wyszukiwanie po dopasowaniu nazwy w całym Workspace
+    for _, child in ipairs(Workspace:GetChildren()) do
+        local cLow = child.Name:lower()
+        if cLow == targetLower or cLow:find(targetLower, 1, true) then
+            return child
+        end
+    end
+
+    for _, desc in ipairs(Workspace:GetDescendants()) do
+        if desc.Name:lower() == targetLower then
+            return desc
+        end
+    end
+
+    return nil
+end
+
+local function getMachinePad(machine)
+    if not machine then return nil end
+
+    -- 1. Bezpośrednie nazwy podestu
+    local padNames = {"pad", "center", "base", "indexpart", "platform", "zone", "hitbox"}
+    for _, pName in ipairs(padNames) do
+        local p = machine:FindFirstChild(pName) or machine:FindFirstChild(pName:sub(1,1):upper() .. pName:sub(2))
+        if p and p:IsA("BasePart") then
+            return p
+        end
+    end
+
+    -- 2. Wśród potomków (Descendants) z dopasowaniem
+    for _, child in ipairs(machine:GetDescendants()) do
+        if child:IsA("BasePart") then
+            local cLow = child.Name:lower()
+            for _, pName in ipairs(padNames) do
+                if cLow == pName or cLow:find(pName, 1, true) then
                     return child
                 end
             end
         end
     end
 
-    -- 3. Wyszukiwanie w całym Workspace
-    return Workspace:FindFirstChild(targetName, true)
-end
+    -- 3. Jeśli sama maszyna jest BasePart
+    if machine:IsA("BasePart") then
+        return machine
+    end
 
-local function getMachinePad(machine)
-    if not machine then return nil end
-    local direct = {
-        machine:FindFirstChild("Pad"),
-        machine:FindFirstChild("Center"),
-        machine:FindFirstChild("Base"),
-        machine:FindFirstChild("IndexPart"),
-        machine:FindFirstChild("Platform")
-    }
-    for _, part in ipairs(direct) do
-        if part and part:IsA("BasePart") then return part end
+    -- 4. PrimaryPart modelu
+    if machine:IsA("Model") and machine.PrimaryPart then
+        return machine.PrimaryPart
     end
-    for _, child in ipairs(machine:GetDescendants()) do
-        if child:IsA("BasePart") and (child.Name:lower() == "pad" or child.Name:lower():find("pad") or child.Name:lower() == "center") then
-            return child
-        end
+
+    -- 5. Jakikolwiek BasePart wewnątrz maszyny (fallback)
+    local anyPart = machine:FindFirstChildWhichIsA("BasePart", true)
+    if anyPart then
+        return anyPart
     end
-    if machine:IsA("BasePart") then return machine end
-    if machine:IsA("Model") then
-        return machine.PrimaryPart or machine:FindFirstChildWhichIsA("BasePart")
-    end
+
     return nil
 end
 
--- Śledzenie zamknięcia interfejsu (np. gdy gracz kliknie [X] w natywnym oknie gry)
+-- Śledzenie zamknięcia interfejsu (np. gdy gracz kliknie [X] w oknie gry)
 local WatchedGuis = {}
 local function watchGuiClose(guiObj, machineName, extraKeywords)
     if not guiObj or WatchedGuis[guiObj] then return end
@@ -1328,45 +1379,43 @@ local function openRemoteMachine(machineName, extraKeywords)
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
     local pad = getMachinePad(machine)
 
-    if not machine or not hrp or not pad then
-        warn("[PetHub] Nie znaleziono maszyny: " .. tostring(machineName))
-        return false
-    end
-
-    local dist = (hrp.Position - pad.Position).Magnitude
-    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
-
-    -- GHOST SESSION: Jeśli gracz jest dalej niż 15 studs od maszyny
+    -- GHOST SESSION: Jeśli pad został znaleziony i gracz stoi dalej niż 15 studs od maszyny:
     -- Zamrażamy widok kamery tam, gdzie gracz stoi, a postać przenosimy na podest maszyny
-    if dist > 15 and GhostBypassEnabled then
-        if not ActiveGhostSession then
-            ActiveGhostSession = {
-                machineName = machineName,
-                originalHrpCF = hrp.CFrame,
-                originalCamCF = camera and camera.CFrame,
-                originalCamType = camera and camera.CameraType,
-                pad = pad,
-            }
-            if camera and ActiveGhostSession.originalCamCF then
-                camera.CameraType = Enum.CameraType.Scriptable
-                camera.CFrame = ActiveGhostSession.originalCamCF
+    if pad and hrp and GhostBypassEnabled then
+        local dist = (hrp.Position - pad.Position).Magnitude
+        if dist > 15 then
+            local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+            if not ActiveGhostSession then
+                ActiveGhostSession = {
+                    machineName = machineName,
+                    originalHrpCF = hrp.CFrame,
+                    originalCamCF = camera and camera.CFrame,
+                    originalCamType = camera and camera.CameraType,
+                    pad = pad,
+                }
+                if camera and ActiveGhostSession.originalCamCF then
+                    camera.CameraType = Enum.CameraType.Scriptable
+                    camera.CFrame = ActiveGhostSession.originalCamCF
+                end
             end
-        end
 
-        hrp.CFrame = pad.CFrame * CFrame.new(0, 2.5, 0)
-        pcall(function()
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.AssemblyAngularVelocity = Vector3.zero
-        end)
+            hrp.CFrame = pad.CFrame * CFrame.new(0, 2.5, 0)
+            pcall(function()
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end)
+        end
     end
 
-    -- 1. firetouchinterest na Padzie maszyny
-    pcall(function()
-        firetouchinterest(hrp, pad, 0)
-        task.delay(0.2, function()
-            pcall(function() firetouchinterest(hrp, pad, 1) end)
+    -- 1. firetouchinterest na Padzie maszyny (jeśli istnieje)
+    if pad and hrp and typeof(firetouchinterest) == "function" then
+        pcall(function()
+            firetouchinterest(hrp, pad, 0)
+            task.delay(0.2, function()
+                pcall(function() firetouchinterest(hrp, pad, 1) end)
+            end)
         end)
-    end)
+    end
 
     -- 2. Wywołanie Framework Signal & GUI (BIG Games native framework)
     local keywords = extraKeywords or { machineName }
@@ -1492,17 +1541,15 @@ end
 
 local function teleportToMachine(machineName)
     local machine = findInteractiveMachine(machineName)
-    if not machine then
-        warn("[PetHub] Nie znaleziono maszyny: " .. tostring(machineName))
-        return false
-    end
-
     local pad = getMachinePad(machine)
     local targetCFrame = nil
+
     if pad and pad:IsA("BasePart") then
         targetCFrame = pad.CFrame * CFrame.new(0, 3, 0)
-    elseif machine:IsA("Model") then
+    elseif machine and machine:IsA("Model") then
         targetCFrame = machine:GetPivot() * CFrame.new(0, 3, 0)
+    elseif machine and machine:IsA("BasePart") then
+        targetCFrame = machine.CFrame * CFrame.new(0, 3, 0)
     end
 
     local char = LocalPlayer.Character
@@ -1510,6 +1557,8 @@ local function teleportToMachine(machineName)
     if hrp and targetCFrame then
         hrp.CFrame = targetCFrame
         return true
+    else
+        warn("[PetHub] Nie znaleziono podestu maszyny: " .. tostring(machineName))
     end
     return false
 end
