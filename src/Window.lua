@@ -595,14 +595,160 @@ function Window:Create(config)
         }
     }
 
-    local currentAnimMode = (config and config.AnimatedTheme) or "None"
+    -- // ============================================================
+    -- // GIF PRESETS & FLIPBOOK ANIMATION ENGINE
+    -- // ============================================================
+    local ContentProvider = game:GetService("ContentProvider")
+
+    local gifPresets = {
+        ["Cyberpunk"] = {
+            Name = "Cyberpunk City",
+            AssetId = "rbxassetid://13285615740",
+            Cols = 5,
+            Rows = 5,
+            FrameW = 100,
+            FrameH = 100,
+            Fps = 14,
+            DefaultTransparency = 0.82
+        },
+        ["Synthwave"] = {
+            Name = "Synthwave Grid",
+            AssetId = "rbxassetid://107588515524752",
+            Cols = 4,
+            Rows = 4,
+            FrameW = 128,
+            FrameH = 128,
+            Fps = 12,
+            DefaultTransparency = 0.85
+        },
+        ["Matrix"] = {
+            Name = "Matrix Rain",
+            AssetId = "rbxassetid://107938916240738",
+            Cols = 4,
+            Rows = 4,
+            FrameW = 128,
+            FrameH = 128,
+            Fps = 16,
+            DefaultTransparency = 0.80
+        },
+        ["Cosmic"] = {
+            Name = "Cosmic Nebula",
+            AssetId = "rbxassetid://111026029750357",
+            Cols = 4,
+            Rows = 4,
+            FrameW = 128,
+            FrameH = 128,
+            Fps = 10,
+            DefaultTransparency = 0.84
+        },
+        ["Sakura"] = {
+            Name = "Anime Sakura",
+            AssetId = "rbxassetid://127493377027615",
+            Cols = 5,
+            Rows = 4,
+            FrameW = 120,
+            FrameH = 120,
+            Fps = 12,
+            DefaultTransparency = 0.85
+        }
+    }
+    UI.GifPresets = gifPresets
+
+    local backgroundMode = (config and config.MenuConfig and config.MenuConfig["BackgroundMode"])
+        or (config and config.BackgroundMode)
+        or (config and config.AnimatedTheme and "Wave")
+        or "Wave"
+
+    local currentAnimMode = (config and config.MenuConfig and config.MenuConfig["AnimatedTheme"])
+        or (config and config.AnimatedTheme)
+        or "Cyberpunk"
+
     local animSpeed = 0.4
     local animIntensity = 0.04
 
+    local currentGifPreset = (config and config.MenuConfig and config.MenuConfig["SelectedGif"])
+        or (config and config.SelectedGif)
+        or "Cyberpunk"
+
+    local gifCustomAsset = (config and config.MenuConfig and config.MenuConfig["GifCustomId"]) or ""
+    local gifTransparency = (config and config.MenuConfig and config.MenuConfig["GifTransparency"]) or 0.85
+    local gifSpeed = (config and config.MenuConfig and config.MenuConfig["GifSpeed"]) or 1.0
+
+    local currentGifConnection = nil
+    local gifAnimToken = 0
+
+    local function stopGifAnimation()
+        gifAnimToken = gifAnimToken + 1
+        if currentGifConnection then
+            pcall(function() currentGifConnection:Disconnect() end)
+            currentGifConnection = nil
+        end
+        GifImageLayer.Visible = false
+    end
+
+    local function startGifAnimation(presetKey, customAsset, trans, speed)
+        stopGifAnimation()
+        trans = trans or gifTransparency
+        speed = speed or gifSpeed
+        gifTransparency = trans
+        gifSpeed = speed
+
+        local data = gifPresets[presetKey]
+        local asset = (customAsset and #customAsset > 0) and customAsset or (data and data.AssetId)
+        if not asset or asset == "" then return end
+
+        if not asset:find("rbxassetid://") and not asset:find("http") and not asset:find("rbxasset://") then
+            local num = asset:match("%d+")
+            if num then asset = "rbxassetid://" .. num end
+        end
+
+        GifImageLayer.Image = asset
+        GifImageLayer.ImageTransparency = trans
+        GifImageLayer.Visible = true
+
+        pcall(function() ContentProvider:PreloadAsync({ GifImageLayer }) end)
+
+        local myToken = gifAnimToken
+        if data and data.Cols and data.Rows and data.FrameW and data.FrameH then
+            local cols = data.Cols
+            local rows = data.Rows
+            local totalFrames = cols * rows
+            local frameW = data.FrameW
+            local frameH = data.FrameH
+            local fps = math.max(1, (data.Fps or 12) * speed)
+            local frameDelay = 1 / fps
+
+            GifImageLayer.ImageRectSize = Vector2.new(frameW, frameH)
+            GifImageLayer.ImageRectOffset = Vector2.new(0, 0)
+
+            local currentFrame = 0
+            local acc = 0
+            currentGifConnection = RunService.Heartbeat:Connect(function(dt)
+                if myToken ~= gifAnimToken or not GifImageLayer.Parent or not GifImageLayer.Visible then
+                    if currentGifConnection then currentGifConnection:Disconnect() end
+                    return
+                end
+                acc = acc + dt
+                if acc >= frameDelay then
+                    while acc >= frameDelay do
+                        acc = acc - frameDelay
+                        currentFrame = (currentFrame + 1) % totalFrames
+                    end
+                    local col = currentFrame % cols
+                    local row = math.floor(currentFrame / cols)
+                    GifImageLayer.ImageRectOffset = Vector2.new(col * frameW, row * frameH)
+                end
+            end)
+        else
+            GifImageLayer.ImageRectSize = Vector2.new(0, 0)
+            GifImageLayer.ImageRectOffset = Vector2.new(0, 0)
+        end
+    end
+
     local function applyAnimPreset(mode)
-        local p = animPresets[mode] or animPresets["Aurora"]
+        local p = animPresets[mode] or animPresets["Cyberpunk"]
         WaveGradient.Color = p.Color
-        if mode == "None" then
+        if mode == "None" or backgroundMode ~= "Wave" then
             WaveLayer.Visible = false
         else
             WaveLayer.Visible = true
@@ -610,19 +756,35 @@ function Window:Create(config)
         end
     end
 
-    applyAnimPreset(currentAnimMode)
-
     local animHeartbeat
     animHeartbeat = RunService.Heartbeat:Connect(function()
         if not MainFrame or not MainFrame.Parent then
             if animHeartbeat then animHeartbeat:Disconnect() end
             return
         end
-        if currentAnimMode == "None" or not WaveLayer.Visible then return end
+        if backgroundMode ~= "Wave" or currentAnimMode == "None" or not WaveLayer.Visible then return end
         local t = tick() * animSpeed
         WaveGradient.Offset = Vector2.new(math.sin(t * 0.4) * 0.22, math.cos(t * 0.3) * 0.22)
         WaveGradient.Rotation = (45 + math.sin(t * 0.25) * 25) % 360
     end)
+
+    function UI:SetBackgroundMode(mode)
+        backgroundMode = mode or "None"
+        if backgroundMode == "Wave" then
+            stopGifAnimation()
+            applyAnimPreset(currentAnimMode)
+        elseif backgroundMode == "Gif" then
+            WaveLayer.Visible = false
+            startGifAnimation(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
+        else
+            stopGifAnimation()
+            WaveLayer.Visible = false
+        end
+
+        if UI.SaveMenuConfig then
+            pcall(function() UI.SaveMenuConfig("BackgroundMode", backgroundMode) end)
+        end
+    end
 
     function UI:SetAnimatedTheme(mode, intensity, speed)
         if mode and animPresets[mode] then
@@ -634,9 +796,14 @@ function Window:Create(config)
         if speed then
             animSpeed = math.clamp(tonumber(speed) or 0.5, 0.1, 2.5)
         end
+
+        backgroundMode = "Wave"
+        stopGifAnimation()
         applyAnimPreset(currentAnimMode)
+
         if UI.SaveMenuConfig then
             pcall(function()
+                UI.SaveMenuConfig("BackgroundMode", "Wave")
                 UI.SaveMenuConfig("AnimatedTheme", currentAnimMode)
                 UI.SaveMenuConfig("AnimatedThemeIntensity", animIntensity)
                 UI.SaveMenuConfig("AnimatedThemeSpeed", animSpeed)
@@ -644,14 +811,39 @@ function Window:Create(config)
         end
     end
 
-    function UI:SetGifBackground(assetId, transparency)
-        if assetId and assetId ~= "" then
-            GifImageLayer.Image = assetId
-            GifImageLayer.ImageTransparency = transparency or 0.88
-            GifImageLayer.Visible = true
-        else
-            GifImageLayer.Visible = false
+    function UI:SetGifPreset(presetKey, customAsset, trans, speed)
+        currentGifPreset = presetKey or currentGifPreset
+        if customAsset ~= nil then gifCustomAsset = customAsset end
+        if trans ~= nil then gifTransparency = math.clamp(tonumber(trans) or 0.85, 0.40, 0.98) end
+        if speed ~= nil then gifSpeed = math.clamp(tonumber(speed) or 1.0, 0.2, 3.0) end
+
+        backgroundMode = "Gif"
+        WaveLayer.Visible = false
+        startGifAnimation(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
+
+        if UI.SaveMenuConfig then
+            pcall(function()
+                UI.SaveMenuConfig("BackgroundMode", "Gif")
+                UI.SaveMenuConfig("SelectedGif", currentGifPreset)
+                UI.SaveMenuConfig("GifCustomId", gifCustomAsset)
+                UI.SaveMenuConfig("GifTransparency", gifTransparency)
+                UI.SaveMenuConfig("GifSpeed", gifSpeed)
+            end)
         end
+    end
+
+    function UI:SetGifBackground(assetId, transparency)
+        UI:SetGifPreset("Custom", assetId, transparency)
+    end
+
+    -- Inicjalizacja wybranego tła
+    if backgroundMode == "Gif" then
+        UI:SetGifPreset(currentGifPreset, gifCustomAsset, gifTransparency, gifSpeed)
+    elseif backgroundMode == "Wave" and currentAnimMode ~= "None" then
+        applyAnimPreset(currentAnimMode)
+    else
+        WaveLayer.Visible = false
+        stopGifAnimation()
     end
 
     -- =========================================================================

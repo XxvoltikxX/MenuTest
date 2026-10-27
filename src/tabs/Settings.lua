@@ -179,20 +179,344 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
 
     -- =========================================================================
-    -- BENTO 1: EFEKTY WIZUALNE I TŁO (LIVE AMBIENT WAVE FX)
+    -- BENTO 1: EFEKTY WIZUALNE I TŁO (ANIMOWANE GIFY ORAZ FALE ŚWIETLNE)
     -- =========================================================================
     local VisualCard, _ = createBentoCard("VisualCard", 1)
 
-    -- Nagłówek sekcji wizualnej
-    createCardHeader(VisualCard, "PERSONALIZACJA I EFEKTY WIZUALNE", "activity", "Dynamiczne fale świetlne oraz personalizacja tła", 1)
+    createCardHeader(VisualCard, "PERSONALIZACJA TŁA I MOTYWÓW WIZUALNYCH", "activity", "Wybierz animowany GIF lub falę świetlną w tle okna", 1)
 
-    -- Wiersz 1: Presety Ambient Wave FX (Chips Row)
+    -- Segmented Mode Selector: [ Animowany GIF ] | [ Fale Świetlne ] | [ Czyste Szkło ]
+    local ModeSelectorRow = Instance.new("Frame")
+    ModeSelectorRow.Name = "ModeSelectorRow"
+    ModeSelectorRow.Size = UDim2.new(1, 0, 0, 32)
+    ModeSelectorRow.BackgroundTransparency = 1
+    ModeSelectorRow.LayoutOrder = 2
+    ModeSelectorRow.Parent = VisualCard
+
+    local MsLayout = Instance.new("UIListLayout", ModeSelectorRow)
+    MsLayout.FillDirection = Enum.FillDirection.Horizontal
+    MsLayout.Padding = UDim.new(0, 8)
+
+    local currentBgMode = (UI and UI.MenuConfig and UI.MenuConfig["BackgroundMode"]) or "Wave"
+    local modeButtons = {}
+
+    -- Kontenery na kontrolki GIF oraz Wave
+    local GifControlsContainer = Instance.new("Frame")
+    GifControlsContainer.Name = "GifControlsContainer"
+    GifControlsContainer.Size = UDim2.new(1, 0, 0, 0)
+    GifControlsContainer.AutomaticSize = Enum.AutomaticSize.Y
+    GifControlsContainer.BackgroundTransparency = 1
+    GifControlsContainer.LayoutOrder = 3
+    GifControlsContainer.Visible = (currentBgMode == "Gif")
+    GifControlsContainer.Parent = VisualCard
+
+    local GcLayout = Instance.new("UIListLayout", GifControlsContainer)
+    GcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    GcLayout.Padding = UDim.new(0, 10)
+
+    local WaveControlsContainer = Instance.new("Frame")
+    WaveControlsContainer.Name = "WaveControlsContainer"
+    WaveControlsContainer.Size = UDim2.new(1, 0, 0, 0)
+    WaveControlsContainer.AutomaticSize = Enum.AutomaticSize.Y
+    WaveControlsContainer.BackgroundTransparency = 1
+    WaveControlsContainer.LayoutOrder = 4
+    WaveControlsContainer.Visible = (currentBgMode == "Wave")
+    WaveControlsContainer.Parent = VisualCard
+
+    local WcLayout = Instance.new("UIListLayout", WaveControlsContainer)
+    WcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    WcLayout.Padding = UDim.new(0, 10)
+
+    local function updateBgMode(newMode)
+        currentBgMode = newMode
+        if UI and UI.SetBackgroundMode then
+            UI:SetBackgroundMode(newMode)
+        end
+        for m, btn in pairs(modeButtons) do
+            local isSel = (m == newMode)
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38),
+                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+            }):Play()
+            local s = btn:FindFirstChildOfClass("UIStroke")
+            if s then
+                s.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70)
+            end
+        end
+
+        GifControlsContainer.Visible = (newMode == "Gif")
+        WaveControlsContainer.Visible = (newMode == "Wave")
+    end
+
+    local modes = {
+        { Key = "Gif", Label = "🎬 Animowany GIF" },
+        { Key = "Wave", Label = "🌊 Fala Świetlna" },
+        { Key = "None", Label = "💎 Czyste Szkło" }
+    }
+
+    for idx, mData in ipairs(modes) do
+        local mBtn = Instance.new("TextButton")
+        mBtn.Name = "Mode_" .. mData.Key
+        mBtn.Size = UDim2.new(0.333, -6, 1, 0)
+        mBtn.BackgroundColor3 = (mData.Key == currentBgMode) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
+        mBtn.Text = mData.Label
+        mBtn.Font = Enum.Font.GothamBold
+        mBtn.TextSize = 11
+        mBtn.TextColor3 = (mData.Key == currentBgMode) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+        mBtn.AutoButtonColor = false
+        mBtn.LayoutOrder = idx
+        mBtn.Parent = ModeSelectorRow
+        Instance.new("UICorner", mBtn).CornerRadius = UDim.new(0, 8)
+        local ms = Instance.new("UIStroke", mBtn)
+        ms.Color = (mData.Key == currentBgMode) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70)
+        ms.Thickness = 1
+        modeButtons[mData.Key] = mBtn
+
+        mBtn.MouseButton1Click:Connect(function()
+            updateBgMode(mData.Key)
+        end)
+    end
+
+    -- =========================================================================
+    -- KONTROLKI DLA GIFÓW (GifControlsContainer)
+    -- =========================================================================
+    -- 1. Galeria presetów GIF (Cyberpunk, Synthwave, Matrix, Cosmic, Sakura)
+    local GifGalleryGrid = Instance.new("Frame")
+    GifGalleryGrid.Name = "GifGalleryGrid"
+    GifGalleryGrid.Size = UDim2.new(1, 0, 0, 0)
+    GifGalleryGrid.AutomaticSize = Enum.AutomaticSize.Y
+    GifGalleryGrid.BackgroundTransparency = 1
+    GifGalleryGrid.LayoutOrder = 1
+    GifGalleryGrid.Parent = GifControlsContainer
+
+    local GgLayout = Instance.new("UIGridLayout", GifGalleryGrid)
+    GgLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+    GgLayout.CellSize = isMobile and UDim2.new(0.5, -4, 0, 48) or UDim2.new(0.2, -7, 0, 50)
+    GgLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local gifPresetsList = {
+        { Key = "Cyberpunk", Name = "Cyberpunk City", Sub = "Neonowy deszcz" },
+        { Key = "Synthwave", Name = "Synthwave Grid", Sub = "Retro siatka 80s" },
+        { Key = "Matrix",    Name = "Matrix Rain",    Sub = "Cyfrowy deszcz" },
+        { Key = "Cosmic",    Name = "Cosmic Nebula",  Sub = "Gwiezdny pył" },
+        { Key = "Sakura",    Name = "Anime Sakura",   Sub = "Kwitnąca wiśnia" }
+    }
+
+    local activeGifPreset = (UI and UI.MenuConfig and UI.MenuConfig["SelectedGif"]) or "Cyberpunk"
+    local gifCardBtns = {}
+
+    local function selectGif(key)
+        activeGifPreset = key
+        if UI and UI.SetGifPreset then
+            UI:SetGifPreset(key)
+        end
+        for k, btn in pairs(gifCardBtns) do
+            local isSel = (k == key)
+            TweenService:Create(btn, TweenInfo.new(0.18), {
+                BackgroundColor3 = isSel and Color3.fromRGB(32, 38, 58) or Color3.fromRGB(20, 24, 35)
+            }):Play()
+            local strk = btn:FindFirstChildOfClass("UIStroke")
+            if strk then
+                strk.Color = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62)
+                strk.Thickness = isSel and 1.5 or 1
+            end
+            local badge = btn:FindFirstChild("ActiveBadge")
+            if badge then badge.Visible = isSel end
+        end
+    end
+
+    for idx, pData in ipairs(gifPresetsList) do
+        local GCard = Instance.new("TextButton")
+        GCard.Name = "Gif_" .. pData.Key
+        GCard.BackgroundColor3 = (pData.Key == activeGifPreset) and Color3.fromRGB(32, 38, 58) or Color3.fromRGB(20, 24, 35)
+        GCard.Text = ""
+        GCard.AutoButtonColor = false
+        GCard.LayoutOrder = idx
+        GCard.Parent = GifGalleryGrid
+        Instance.new("UICorner", GCard).CornerRadius = UDim.new(0, 10)
+
+        local GcStroke = Instance.new("UIStroke", GCard)
+        GcStroke.Color = (pData.Key == activeGifPreset) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62)
+        GcStroke.Thickness = (pData.Key == activeGifPreset) and 1.5 or 1
+
+        local GcPad = Instance.new("UIPadding", GCard)
+        GcPad.PaddingLeft = UDim.new(0, 8)
+        GcPad.PaddingRight = UDim.new(0, 8)
+        GcPad.PaddingTop = UDim.new(0, 6)
+        GcPad.PaddingBottom = UDim.new(0, 6)
+
+        local GTitle = Instance.new("TextLabel")
+        GTitle.Text = pData.Name
+        GTitle.Font = Enum.Font.GothamBold
+        GTitle.TextSize = 11
+        GTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
+        GTitle.TextXAlignment = Enum.TextXAlignment.Left
+        GTitle.Size = UDim2.new(1, -12, 0, 16)
+        GTitle.BackgroundTransparency = 1
+        GTitle.TextTruncate = Enum.TextTruncate.AtEnd
+        GTitle.Parent = GCard
+
+        local GSub = Instance.new("TextLabel")
+        GSub.Text = pData.Sub
+        GSub.Font = Enum.Font.GothamMedium
+        GSub.TextSize = 9
+        GSub.TextColor3 = Color3.fromRGB(130, 140, 168)
+        GSub.TextXAlignment = Enum.TextXAlignment.Left
+        GSub.Position = UDim2.new(0, 0, 0, 18)
+        GSub.Size = UDim2.new(1, -12, 0, 14)
+        GSub.BackgroundTransparency = 1
+        GSub.TextTruncate = Enum.TextTruncate.AtEnd
+        GSub.Parent = GCard
+
+        local ActiveBadge = Instance.new("Frame")
+        ActiveBadge.Name = "ActiveBadge"
+        ActiveBadge.Size = UDim2.new(0, 6, 0, 6)
+        ActiveBadge.Position = UDim2.new(1, 0, 0, 4)
+        ActiveBadge.AnchorPoint = Vector2.new(1, 0)
+        ActiveBadge.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+        ActiveBadge.BorderSizePixel = 0
+        ActiveBadge.Visible = (pData.Key == activeGifPreset)
+        ActiveBadge.Parent = GCard
+        Instance.new("UICorner", ActiveBadge).CornerRadius = UDim.new(1, 0)
+
+        gifCardBtns[pData.Key] = GCard
+
+        GCard.MouseButton1Click:Connect(function()
+            selectGif(pData.Key)
+        end)
+    end
+
+    -- 2. Wiersz Własnego Asset ID
+    local CustomGifRow = Instance.new("Frame")
+    CustomGifRow.Name = "CustomGifRow"
+    CustomGifRow.Size = UDim2.new(1, 0, 0, 32)
+    CustomGifRow.BackgroundTransparency = 1
+    CustomGifRow.LayoutOrder = 2
+    CustomGifRow.Parent = GifControlsContainer
+
+    local CgInputBox = Instance.new("Frame")
+    CgInputBox.Size = UDim2.new(1, -115, 1, 0)
+    CgInputBox.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+    CgInputBox.Parent = CustomGifRow
+    Instance.new("UICorner", CgInputBox).CornerRadius = UDim.new(0, 8)
+    local CgStroke = Instance.new("UIStroke", CgInputBox)
+    CgStroke.Color = Color3.fromRGB(42, 48, 70)
+    CgStroke.Thickness = 1
+
+    local CgIcon = Instance.new("ImageLabel")
+    CgIcon.Size = UDim2.new(0, 14, 0, 14)
+    CgIcon.Position = UDim2.new(0, 8, 0.5, 0)
+    CgIcon.AnchorPoint = Vector2.new(0, 0.5)
+    CgIcon.BackgroundTransparency = 1
+    CgIcon.ImageColor3 = Color3.fromRGB(130, 140, 168)
+    CgIcon.Parent = CgInputBox
+    if Icons and Icons.Apply then Icons:Apply(CgIcon, "link") end
+
+    local CustomIdInput = Instance.new("TextBox")
+    CustomIdInput.Size = UDim2.new(1, -30, 1, 0)
+    CustomIdInput.Position = UDim2.new(0, 26, 0, 0)
+    CustomIdInput.BackgroundTransparency = 1
+    local savedCustomId = (UI and UI.MenuConfig and UI.MenuConfig["GifCustomId"]) or ""
+    CustomIdInput.Text = savedCustomId
+    CustomIdInput.PlaceholderText = "Wklej własny Roblox Asset ID..."
+    CustomIdInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
+    CustomIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CustomIdInput.Font = Enum.Font.GothamMedium
+    CustomIdInput.TextSize = 11
+    CustomIdInput.TextXAlignment = Enum.TextXAlignment.Left
+    CustomIdInput.ClearTextOnFocus = false
+    CustomIdInput.Parent = CgInputBox
+
+    local ApplyCustomBtn = Instance.new("TextButton")
+    ApplyCustomBtn.Size = UDim2.new(0, 105, 1, 0)
+    ApplyCustomBtn.Position = UDim2.new(1, 0, 0, 0)
+    ApplyCustomBtn.AnchorPoint = Vector2.new(1, 0)
+    ApplyCustomBtn.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    ApplyCustomBtn.Text = "Zastosuj GIF"
+    ApplyCustomBtn.Font = Enum.Font.GothamBold
+    ApplyCustomBtn.TextSize = 11
+    ApplyCustomBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ApplyCustomBtn.AutoButtonColor = false
+    ApplyCustomBtn.Parent = CustomGifRow
+    Instance.new("UICorner", ApplyCustomBtn).CornerRadius = UDim.new(0, 8)
+
+    ApplyCustomBtn.MouseButton1Click:Connect(function()
+        local raw = CustomIdInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if #raw > 0 then
+            if UI and UI.SetGifPreset then
+                UI:SetGifPreset("Custom", raw)
+            end
+            ApplyCustomBtn.Text = "Zastosowano!"
+            task.delay(1.2, function()
+                if ApplyCustomBtn and ApplyCustomBtn.Parent then ApplyCustomBtn.Text = "Zastosuj GIF" end
+            end)
+        end
+    end)
+
+    -- 3. Suwaki przezroczystości oraz szybkości dla GIFa
+    local GifSlidersGrid = Instance.new("Frame")
+    GifSlidersGrid.Name = "GifSlidersGrid"
+    GifSlidersGrid.Size = UDim2.new(1, 0, 0, 0)
+    GifSlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
+    GifSlidersGrid.BackgroundTransparency = 1
+    GifSlidersGrid.LayoutOrder = 3
+    GifSlidersGrid.Parent = GifControlsContainer
+
+    local GsLayout = Instance.new("UIGridLayout", GifSlidersGrid)
+    GsLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+    GsLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 56) or UDim2.new(0.5, -5, 0, 56)
+    GsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local GifSlCol1 = Instance.new("Frame", GifSlidersGrid)
+    GifSlCol1.Name = "Col1"
+    GifSlCol1.BackgroundTransparency = 1
+    GifSlCol1.Size = UDim2.new(1, 0, 1, 0)
+
+    local GifSlCol2 = Instance.new("Frame", GifSlidersGrid)
+    GifSlCol2.Name = "Col2"
+    GifSlCol2.BackgroundTransparency = 1
+    GifSlCol2.Size = UDim2.new(1, 0, 1, 0)
+
+    if SliderElement then
+        local savedTrans = (UI and UI.MenuConfig and UI.MenuConfig["GifTransparency"]) or 0.85
+        SliderElement({
+            Name = "Przezroczystość GIFa",
+            Min = 40,
+            Max = 95,
+            Default = math.floor(savedTrans <= 1 and (savedTrans * 100) or savedTrans),
+            Suffix = "%",
+            Flag = "GifTransparency",
+            Callback = function(val)
+                if UI and UI.SetGifPreset then
+                    UI:SetGifPreset(nil, nil, val / 100, nil)
+                end
+            end
+        }, ThemeManager, GifSlCol1, UI.MenuConfig, UI.SaveMenuConfig)
+
+        local savedGSpd = (UI and UI.MenuConfig and UI.MenuConfig["GifSpeed"]) or 1.0
+        SliderElement({
+            Name = "Szybkość Animacji GIFa",
+            Min = 2,
+            Max = 30,
+            Default = math.floor(savedGSpd * 10),
+            Suffix = "x",
+            Callback = function(val)
+                if UI and UI.SetGifPreset then
+                    UI:SetGifPreset(nil, nil, nil, val / 10)
+                end
+            end
+        }, ThemeManager, GifSlCol2, UI.MenuConfig, UI.SaveMenuConfig)
+    end
+
+    -- =========================================================================
+    -- KONTROLKI DLA FALI ŚWIETLNEJ (WaveControlsContainer)
+    -- =========================================================================
     local PresetsContainer = Instance.new("Frame")
     PresetsContainer.Name = "PresetsContainer"
     PresetsContainer.Size = UDim2.new(1, 0, 0, 36)
     PresetsContainer.BackgroundTransparency = 1
-    PresetsContainer.LayoutOrder = 2
-    PresetsContainer.Parent = VisualCard
+    PresetsContainer.LayoutOrder = 1
+    PresetsContainer.Parent = WaveControlsContainer
 
     local PcTitle = Instance.new("TextLabel")
     PcTitle.Text = "Preset fali świetlnej:"
@@ -264,14 +588,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end)
     end
 
-    -- Wiersz 3: Precyzyjne suwaki intensywności oraz szybkości (zwarte, 2 kolumny na PC)
+    -- Suwaki fali świetlnej
     local SlidersGrid = Instance.new("Frame")
     SlidersGrid.Name = "SlidersGrid"
     SlidersGrid.Size = UDim2.new(1, 0, 0, 0)
     SlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
     SlidersGrid.BackgroundTransparency = 1
-    SlidersGrid.LayoutOrder = 3
-    SlidersGrid.Parent = VisualCard
+    SlidersGrid.LayoutOrder = 2
+    SlidersGrid.Parent = WaveControlsContainer
 
     local SgLayout = Instance.new("UIGridLayout", SlidersGrid)
     SgLayout.CellPadding = UDim2.new(0, 10, 0, 10)
