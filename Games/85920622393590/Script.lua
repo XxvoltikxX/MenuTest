@@ -1,3 +1,10 @@
+-- Upewnienie się, że kamera gracza jest w trybie swobodnym Custom
+pcall(function()
+    local cam = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+    if cam and cam.CameraType == Enum.CameraType.Scriptable then
+        cam.CameraType = Enum.CameraType.Custom
+    end
+end)
 -- // ==========================================================================
 -- // PET SIMULATOR X / 99 EVENT - AUTOMATION SUITE
 -- // Dedicated script for MenuTest UI Library (https://github.com/XxvoltikxX/MenuTest)
@@ -144,7 +151,7 @@ local State = {
     -- 3. Player Speed (SpeedScript gracza)
     PlayerSpeedEnabled = false,
     PlayerSpeedMode = "Legit",
-    PlayerSpeedValue = 16,
+    PlayerSpeedValue = 60,
 
     -- Cache aktualnej mapy dla AutoFarmu
     DetectedMap = "Spawn",
@@ -699,27 +706,28 @@ end
 -- // ==========================================================================
 local function isPlayerMoving()
     local char = LocalPlayer.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.MoveDirection.Magnitude > 0.05 then
+        return true, humanoid.MoveDirection.Unit
+    end
+
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local camera = Workspace.CurrentCamera
-    if not char or not char:FindFirstChild("HumanoidRootPart") or not camera then
-        return false, Vector3.new()
+    if hrp and camera then
+        local look = camera.CFrame.LookVector
+        local forward = Vector3.new(look.X, 0, look.Z)
+        if forward.Magnitude > 0 then forward = forward.Unit end
+        local right = Vector3.new(-forward.Z, 0, forward.X)
+        local move = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then move = move + forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then move = move - forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.Right) then move = move + right end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.Left) then move = move - right end
+        if move.Magnitude > 0.05 then
+            return true, move.Unit
+        end
     end
-
-    local look = camera.CFrame.LookVector
-    local moveDir = Vector3.new(look.X, 0, look.Z)
-    if moveDir.Magnitude > 0 then
-        moveDir = moveDir.Unit
-    end
-
-    local movement = Vector3.new()
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then movement = movement + moveDir end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then movement = movement - moveDir end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then movement = movement + Vector3.new(-moveDir.Z, 0, moveDir.X) end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then movement = movement + Vector3.new(moveDir.Z, 0, -moveDir.X) end
-
-    if movement.Magnitude > 0 then
-        return true, movement.Unit
-    end
-    return false, Vector3.new()
+    return false, Vector3.zero
 end
 
 -- // ==========================================================================
@@ -867,7 +875,7 @@ end)
 
 -- Pętla fizyki gracza (RenderStepped)
 local speedConn
-speedConn = RunService.RenderStepped:Connect(function()
+speedConn = RunService.RenderStepped:Connect(function(dt)
     if not ScriptRunning then
         if speedConn then speedConn:Disconnect() end
         return
@@ -886,28 +894,34 @@ speedConn = RunService.RenderStepped:Connect(function()
         humanoid.PlatformStand = false
 
         local moving, direction = isPlayerMoving()
-        local targetSpeed = State.PlayerSpeedValue or _G.SpeedValue or 16
+        local targetSpeed = tonumber(State.PlayerSpeedValue or _G.SpeedValue) or 60
 
         if moving then
-            if State.PlayerSpeedMode == "Normal" then
+            local mode = State.PlayerSpeedMode or _G.SpeedMode or "Legit"
+            if mode == "Normal" then
                 humanoid.WalkSpeed = targetSpeed
-            elseif State.PlayerSpeedMode == "CFrame" then
-                hrp.CFrame = hrp.CFrame + (direction * (targetSpeed / 50))
-            elseif State.PlayerSpeedMode == "Legit" or State.PlayerSpeedMode == "HVH" then
-                if State.PlayerSpeedMode == "HVH" and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    humanoid.Jump = true
+            elseif mode == "CFrame" then
+                local delta = dt or 0.016
+                hrp.CFrame = hrp.CFrame + (direction * (targetSpeed * delta))
+            elseif mode == "Legit" or mode == "HVH" then
+                if mode == "HVH" and UserInputService:IsKeyDown(Enum.KeyCode.Space) and humanoid.FloorMaterial ~= Enum.Material.Air then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                 end
-                hrp.Velocity = Vector3.new(direction.X * targetSpeed, hrp.Velocity.Y, direction.Z * targetSpeed)
+                local curY = hrp.AssemblyLinearVelocity.Y
+                hrp.AssemblyLinearVelocity = Vector3.new(direction.X * targetSpeed, curY, direction.Z * targetSpeed)
             end
         else
-            if State.PlayerSpeedMode == "Legit" or State.PlayerSpeedMode == "HVH" then
-                hrp.Velocity = Vector3.new(0, hrp.Velocity.Y, 0)
+            if State.PlayerSpeedMode == "Normal" and humanoid.WalkSpeed ~= 16 then
+                humanoid.WalkSpeed = 16
             end
         end
     else
         if humanoid.PlatformStand then
             humanoid.PlatformStand = false
             humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
+        if humanoid.WalkSpeed ~= 16 and (State.PlayerSpeedMode == "Normal") then
+            humanoid.WalkSpeed = 16
         end
     end
 end)
@@ -1214,11 +1228,11 @@ SpeedModule:AddDropdown({
 
 SpeedModule:AddSlider({
     Name = "Custom Speed",
-    Range = { 0, 300 },
-    CurrentValue = 16,
-    Min = 0,
+    Range = { 16, 300 },
+    CurrentValue = 60,
+    Min = 16,
     Max = 300,
-    Default = 16,
+    Default = 60,
     Suffix = " Studs",
     Flag = "General_SpeedVal",
     Callback = function(val)
