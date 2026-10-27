@@ -128,7 +128,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "VisionTabBar"
-    TabList.Size = UDim2.new(1, -388, 0, 32)
+    TabList.Size = UDim2.new(1, -454, 0, 32)
     TabList.Position = UDim2.new(0, 134, 0.5, 0)
     TabList.AnchorPoint = Vector2.new(0, 0.5)
     TabList.BackgroundColor3 = Color3.fromRGB(12, 14, 22)
@@ -168,7 +168,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local RightSide = Instance.new("Frame")
     RightSide.Name = "RightSide"
-    RightSide.Size = UDim2.new(0, 245, 1, 0)
+    RightSide.Size = UDim2.new(0, 312, 1, 0)
     RightSide.Position = UDim2.new(1, 0, 0.5, 0)
     RightSide.AnchorPoint = Vector2.new(1, 0.5)
     RightSide.BackgroundTransparency = 1
@@ -182,13 +182,14 @@ function Sidebar:Create(UI, theme, config, customWidth)
     RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
     RightLayout.Padding = UDim.new(0, 5)
 
-    -- Szukajka Glass Capsule
+    -- Szukajka Glass Capsule (Stabilna kapsuła Apple Dark Glass, brak nachodzenia na opcje)
     local SearchBoxContainer = Instance.new("Frame")
     SearchBoxContainer.Name = "SearchBoxContainer"
-    SearchBoxContainer.Size = UDim2.new(0, 56, 0, 26)
+    SearchBoxContainer.Size = UDim2.new(0, 88, 0, 26)
     SearchBoxContainer.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
     SearchBoxContainer.BackgroundTransparency = 0.35
     SearchBoxContainer.BorderSizePixel = 0
+    SearchBoxContainer.ClipsDescendants = true
     SearchBoxContainer.LayoutOrder = 1
     SearchBoxContainer.ZIndex = 18
     SearchBoxContainer.Parent = RightSide
@@ -200,7 +201,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
 
     local SearchIcon = Instance.new("ImageLabel")
     SearchIcon.Size = UDim2.new(0, 11, 0, 11)
-    SearchIcon.Position = UDim2.new(0, 7, 0.5, 0)
+    SearchIcon.Position = UDim2.new(0, 8, 0.5, 0)
     SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
     SearchIcon.BackgroundTransparency = 1
     SearchIcon.ImageColor3 = Color3.fromRGB(140, 150, 180)
@@ -208,28 +209,70 @@ function Sidebar:Create(UI, theme, config, customWidth)
     SearchIcon.Parent = SearchBoxContainer
     if Icons and Icons.Apply then Icons:Apply(SearchIcon, "search") end
 
+    local ClearSearchBtn = Instance.new("ImageButton")
+    ClearSearchBtn.Name = "ClearSearchBtn"
+    ClearSearchBtn.Size = UDim2.new(0, 10, 0, 10)
+    ClearSearchBtn.Position = UDim2.new(1, -7, 0.5, 0)
+    ClearSearchBtn.AnchorPoint = Vector2.new(1, 0.5)
+    ClearSearchBtn.BackgroundTransparency = 1
+    ClearSearchBtn.ImageColor3 = Color3.fromRGB(160, 170, 200)
+    ClearSearchBtn.Visible = false
+    ClearSearchBtn.ZIndex = 20
+    ClearSearchBtn.Parent = SearchBoxContainer
+    if Icons and Icons.Apply then Icons:Apply(ClearSearchBtn, "x") end
+
     local SearchInput = Instance.new("TextBox")
     SearchInput.Name = "SearchInput"
-    SearchInput.Size = UDim2.new(1, -22, 1, 0)
-    SearchInput.Position = UDim2.new(0, 20, 0, 0)
+    SearchInput.Size = UDim2.new(1, -38, 1, 0)
+    SearchInput.Position = UDim2.new(0, 23, 0, 0)
     SearchInput.BackgroundTransparency = 1
     SearchInput.Font = Enum.Font.GothamMedium
     SearchInput.Text = ""
     SearchInput.PlaceholderText = "Szukaj"
-    SearchInput.PlaceholderColor3 = Color3.fromRGB(100, 110, 135)
-    SearchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SearchInput.PlaceholderColor3 = Color3.fromRGB(105, 115, 140)
+    SearchInput.TextColor3 = Color3.fromRGB(245, 250, 255)
     SearchInput.TextSize = 10
     SearchInput.TextXAlignment = Enum.TextXAlignment.Left
     SearchInput.ClearTextOnFocus = false
+    SearchInput.ClipsDescendants = true
     SearchInput.ZIndex = 19
     SearchInput.Parent = SearchBoxContainer
     UI.SearchInput = SearchInput
 
+    ClearSearchBtn.MouseButton1Click:Connect(function()
+        SearchInput.Text = ""
+        ClearSearchBtn.Visible = false
+    end)
+
+    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+        ClearSearchBtn.Visible = (SearchInput.Text ~= "")
+    end)
+
+    local isSearchFocused = false
+    SearchBoxContainer.MouseEnter:Connect(function()
+        if not isSearchFocused then
+            TweenService:Create(SbStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(80, 95, 140), Transparency = 0.45 }):Play()
+            TweenService:Create(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(180, 190, 220) }):Play()
+        end
+    end)
+    SearchBoxContainer.MouseLeave:Connect(function()
+        if not isSearchFocused then
+            TweenService:Create(SbStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(55, 62, 90), Transparency = 0.6 }):Play()
+            TweenService:Create(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(140, 150, 180) }):Play()
+        end
+    end)
+
     SearchInput.Focused:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 92, 0, 26), BackgroundTransparency = 0.1 }):Play()
+        isSearchFocused = true
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(28, 33, 50), BackgroundTransparency = 0.15 }):Play()
+        TweenService:Create(SbStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(110, 130, 245), Transparency = 0.25 }):Play()
+        TweenService:Create(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
     end)
     SearchInput.FocusLost:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 56, 0, 26), BackgroundTransparency = 0.35 }):Play()
+        isSearchFocused = false
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(24, 28, 42), BackgroundTransparency = 0.35 }):Play()
+        TweenService:Create(SbStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(55, 62, 90), Transparency = 0.6 }):Play()
+        TweenService:Create(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(140, 150, 180) }):Play()
     end)
 
     -- // =====================================================================
@@ -422,7 +465,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
         end
 
         local leftW = 126
-        local rightW = 245
+        local rightW = 312
 
         if dockW < 560 then
             DynamicIsland.Visible = false
@@ -432,7 +475,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
             leftW = 28
             BrandSide.Size = UDim2.new(0, leftW, 1, 0)
             ProfilePill.Visible = (dockW >= 420)
-            rightW = (dockW >= 420) and 112 or 74
+            rightW = (dockW >= 420) and 118 or 74
             RightSide.Size = UDim2.new(0, rightW, 1, 0)
         elseif dockW < 680 then
             DynamicIsland.Visible = false
@@ -442,7 +485,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
             leftW = 96
             BrandSide.Size = UDim2.new(0, leftW, 1, 0)
             ProfilePill.Visible = true
-            rightW = 114
+            rightW = 118
             RightSide.Size = UDim2.new(0, rightW, 1, 0)
         elseif dockW < 790 then
             DynamicIsland.Visible = false
@@ -452,7 +495,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
             leftW = 126
             BrandSide.Size = UDim2.new(0, leftW, 1, 0)
             ProfilePill.Visible = true
-            rightW = 172
+            rightW = 212
             RightSide.Size = UDim2.new(0, rightW, 1, 0)
         else
             DynamicIsland.Visible = true
@@ -462,7 +505,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
             leftW = 126
             BrandSide.Size = UDim2.new(0, leftW, 1, 0)
             ProfilePill.Visible = true
-            rightW = 245
+            rightW = 312
             RightSide.Size = UDim2.new(0, rightW, 1, 0)
         end
 
