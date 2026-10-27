@@ -1203,26 +1203,54 @@ SpeedModule:AddSlider({
 })
 
 -- // ==========================================================================
--- // 7. SYSTEM ZDALNYCH MASZYN I INTERAKCJI (PET COLLECTION INDEX REMOTE)
+-- // 7. SYSTEM ZDALNYCH MASZYN I ULEPSZEŃ (REMOTE MACHINES & UPGRADES ENGINE)
+-- // Pełna obsługa: Gold Machine, Rainbow Machine, Fuse, Dark Matter, Index, Huge, Upgrades, Bank
 -- // ==========================================================================
 
-local function getPetCollectionMachine()
+local function findInteractiveMachine(name)
     local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
     if not map then return nil end
+
+    -- 1. Bezpośrednio w __MAP.Interactive
     local interactive = map:FindFirstChild("Interactive")
-    if not interactive then return nil end
-    return interactive:FindFirstChild("Pet Collection Machine")
+    if interactive then
+        local m = interactive:FindFirstChild(name)
+        if m then return m end
+        for _, child in ipairs(interactive:GetChildren()) do
+            if child.Name:lower() == name:lower() or child.Name:lower():find(name:lower(), 1, true) then
+                return child
+            end
+        end
+    end
+
+    -- 2. Wewnątrz poszczególnych stref (__MAP.Areas)
+    local areas = map:FindFirstChild("Areas")
+    if areas then
+        for _, area in ipairs(areas:GetChildren()) do
+            local aInteractive = area:FindFirstChild("Interactive") or area
+            local m = aInteractive:FindFirstChild(name)
+            if m then return m end
+            for _, child in ipairs(aInteractive:GetChildren()) do
+                if child.Name:lower() == name:lower() or child.Name:lower():find(name:lower(), 1, true) then
+                    return child
+                end
+            end
+        end
+    end
+
+    -- 3. Wyszukiwanie w całym Workspace
+    return Workspace:FindFirstChild(name, true)
 end
 
-local function openPetCollectionIndex()
-    local opened = false
-    local machine = getPetCollectionMachine()
+local function openRemoteMachine(machineName, extraKeywords)
+    local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+    local opened = false
 
-    -- 1. firetouchinterest na Padzie maszyny Pet Collection
+    -- 1. firetouchinterest na Padzie maszyny
     if machine and hrp and typeof(firetouchinterest) == "function" then
-        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
         if pad then
             pcall(function()
                 firetouchinterest(hrp, pad, 0)
@@ -1233,53 +1261,43 @@ local function openPetCollectionIndex()
         end
     end
 
-    -- 2. Framework GUI / Signal (natywne API gry Pet Simulator X)
+    -- 2. Wywołanie Framework Signal & GUI (BIG Games native framework)
+    local keywords = extraKeywords or { machineName }
     if Framework then
-        pcall(function()
-            if Framework.Signal and Framework.Signal.Fire then
-                Framework.Signal.Fire("Open Collection")
-                Framework.Signal.Fire("Open Index")
-                Framework.Signal.Fire("Pet Collection")
-                Framework.Signal.Fire("Collection")
-                Framework.Signal.Fire("Index")
-            end
-        end)
-        pcall(function()
-            if Framework.GUI and Framework.GUI.Open then
-                Framework.GUI.Open("Collection")
-                Framework.GUI.Open("Index")
-                Framework.GUI.Open("Pet Collection")
-            end
-        end)
+        for _, kw in ipairs(keywords) do
+            pcall(function()
+                if Framework.Signal and Framework.Signal.Fire then
+                    Framework.Signal.Fire("Open " .. kw)
+                    Framework.Signal.Fire(kw)
+                end
+            end)
+            pcall(function()
+                if Framework.GUI and Framework.GUI.Open then
+                    Framework.GUI.Open(kw)
+                end
+            end)
+        end
     end
 
-    -- 3. PlayerGui fallback (odszukanie ramki Collection/Index i ustawienie Visible/Enabled)
+    -- 3. Wymuszenie widoczności Frame w PlayerGui
     local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
         pcall(function()
             local mainGui = pGui:FindFirstChild("Main") or pGui:FindFirstChild("GUI")
-            if mainGui then
-                local frames = mainGui:FindFirstChild("Frames") or mainGui
-                for _, child in ipairs(frames:GetChildren()) do
-                    local n = child.Name:lower()
-                    if n:find("collection") or n:find("index") then
-                        if child:IsA("GuiObject") then
-                            child.Visible = true
-                            opened = true
-                        end
-                    end
-                end
-            end
-
-            for _, g in ipairs(pGui:GetChildren()) do
-                if g:IsA("ScreenGui") then
-                    local gn = g.Name:lower()
-                    if gn:find("index") or gn:find("collection") then
-                        g.Enabled = true
-                        for _, d in ipairs(g:GetDescendants()) do
-                            if d:IsA("GuiObject") and (d.Name:lower():find("frame") or d.Name:lower():find("main") or d.Name:lower():find("collection")) then
-                                d.Visible = true
-                                opened = true
+            local searchRoots = { mainGui and (mainGui:FindFirstChild("Frames") or mainGui), pGui }
+            for _, root in ipairs(searchRoots) do
+                if root then
+                    for _, child in ipairs(root:GetChildren()) do
+                        local cName = child.Name:lower()
+                        for _, kw in ipairs(keywords) do
+                            if cName:find(kw:lower(), 1, true) then
+                                if child:IsA("GuiObject") then
+                                    child.Visible = true
+                                    opened = true
+                                elseif child:IsA("ScreenGui") then
+                                    child.Enabled = true
+                                    opened = true
+                                end
                             end
                         end
                     end
@@ -1291,13 +1309,13 @@ local function openPetCollectionIndex()
     return opened
 end
 
-local function closePetCollectionIndex()
-    local machine = getPetCollectionMachine()
+local function closeRemoteMachine(machineName, extraKeywords)
+    local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
 
     if machine and hrp and typeof(firetouchinterest) == "function" then
-        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
         if pad then
             pcall(function()
                 firetouchinterest(hrp, pad, 1)
@@ -1305,25 +1323,30 @@ local function closePetCollectionIndex()
         end
     end
 
+    local keywords = extraKeywords or { machineName }
     if Framework and Framework.GUI and Framework.GUI.Close then
-        pcall(function()
-            Framework.GUI.Close("Collection")
-            Framework.GUI.Close("Index")
-            Framework.GUI.Close("Pet Collection")
-        end)
+        for _, kw in ipairs(keywords) do
+            pcall(function()
+                Framework.GUI.Close(kw)
+            end)
+        end
     end
 
     local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
         pcall(function()
             local mainGui = pGui:FindFirstChild("Main") or pGui:FindFirstChild("GUI")
-            if mainGui then
-                local frames = mainGui:FindFirstChild("Frames") or mainGui
-                for _, child in ipairs(frames:GetChildren()) do
-                    local n = child.Name:lower()
-                    if n:find("collection") or n:find("index") then
-                        if child:IsA("GuiObject") then
-                            child.Visible = false
+            local searchRoots = { mainGui and (mainGui:FindFirstChild("Frames") or mainGui), pGui }
+            for _, root in ipairs(searchRoots) do
+                if root then
+                    for _, child in ipairs(root:GetChildren()) do
+                        local cName = child.Name:lower()
+                        for _, kw in ipairs(keywords) do
+                            if cName:find(kw:lower(), 1, true) then
+                                if child:IsA("GuiObject") then
+                                    child.Visible = false
+                                end
+                            end
                         end
                     end
                 end
@@ -1332,11 +1355,14 @@ local function closePetCollectionIndex()
     end
 end
 
-local function teleportToPetCollectionMachine()
-    local machine = getPetCollectionMachine()
-    if not machine then return false end
+local function teleportToMachine(machineName)
+    local machine = findInteractiveMachine(machineName)
+    if not machine then
+        warn("[PetHub] Nie znaleziono maszyny: " .. tostring(machineName))
+        return false
+    end
 
-    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart")
+    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
     local targetCFrame = nil
     if pad and pad:IsA("BasePart") then
         targetCFrame = pad.CFrame * CFrame.new(0, 3, 0)
@@ -1353,42 +1379,145 @@ local function teleportToPetCollectionMachine()
     return false
 end
 
-local function openInteractiveMachine(machineName)
-    local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
-    local interactive = map and map:FindFirstChild("Interactive")
-    if not interactive then return false end
-
-    local machine = interactive:FindFirstChild(machineName)
-    if not machine then return false end
-
-    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChildWhichIsA("BasePart")
-    local char = LocalPlayer.Character
-    local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
-
-    if pad and hrp and typeof(firetouchinterest) == "function" then
-        pcall(function()
-            firetouchinterest(hrp, pad, 0)
-            task.wait(0.08)
-            firetouchinterest(hrp, pad, 1)
-        end)
-        return true
-    end
-    return false
-end
-
--- // ==================== MODUŁ 4: PET COLLECTION INDEX (MASZYNA INDEXU) ====================
-local IndexModule = TabGeneral:CreateModule({
-    Name = "Pet Collection Index",
-    Description = "Zdalny dostęp do maszyny Pet Collection bez podchodzenia",
+-- // ==================== MODUŁ W ZAKŁADCE GENERAL: SZYBKI DOSTĘP ====================
+local QuickMachinesModule = TabGeneral:CreateModule({
+    Name = "Maszyny & Ulepszenia (Szybki Dostęp)",
+    Description = "Błyskawiczne otwieranie maszyn bezpośrednio z zakładki General",
     Default = false,
     CurrentValue = false,
     DefaultKeybind = "B",
-    Flag = "General_PetCollectionIndex",
+    Flag = "General_QuickMachines",
     Callback = function(state)
         if state then
-            openPetCollectionIndex()
+            openRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
         else
-            closePetCollectionIndex()
+            closeRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
+        end
+    end
+})
+
+QuickMachinesModule:AddButton({
+    Name = "Otwórz Pet Collection (Index)",
+    Callback = function()
+        openRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
+    end
+})
+
+QuickMachinesModule:AddButton({
+    Name = "Otwórz Gold Machine (Złote Pety)",
+    Callback = function()
+        openRemoteMachine("Gold Machine", {"Golden", "Gold", "Gold Machine"})
+    end
+})
+
+QuickMachinesModule:AddButton({
+    Name = "Otwórz Rainbow Machine (Tęcza)",
+    Callback = function()
+        openRemoteMachine("Rainbow Machine", {"Rainbow", "Rainbow Machine"})
+    end
+})
+
+QuickMachinesModule:AddButton({
+    Name = "Otwórz Fuse Pets (Łączenie)",
+    Callback = function()
+        openRemoteMachine("Fuse Pets", {"Fuse", "Fuse Pets"})
+    end
+})
+
+-- // ==========================================================================
+-- // 8. DEDYKOWANA ZAKŁADKA "MACHINES" (WSZYSTKIE MASZYNY I ULEPSZENIA W GRZE)
+-- // ==========================================================================
+local TabMachines = Window:CreateTab("Machines", "wrench")
+
+-- 1. GOLD MACHINE
+local GoldModule = TabMachines:CreateModule({
+    Name = "Gold Machine",
+    Description = "Zdalne tworzenie złotych petów (6x Zwykły -> 1x Gold)",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "G",
+    Flag = "Machines_GoldMachine",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Gold Machine", {"Golden", "Gold", "Gold Machine"})
+        else
+            closeRemoteMachine("Gold Machine", {"Golden", "Gold", "Gold Machine"})
+        end
+    end
+})
+
+GoldModule:AddButton({
+    Name = "Otwórz Gold Machine",
+    Callback = function()
+        openRemoteMachine("Gold Machine", {"Golden", "Gold", "Gold Machine"})
+    end
+})
+
+GoldModule:AddButton({
+    Name = "Zamknij Gold Machine",
+    Callback = function()
+        closeRemoteMachine("Gold Machine", {"Golden", "Gold", "Gold Machine"})
+    end
+})
+
+GoldModule:AddButton({
+    Name = "Teleportuj do Gold Machine",
+    Callback = function()
+        teleportToMachine("Gold Machine")
+    end
+})
+
+-- 2. RAINBOW MACHINE
+local RainbowModule = TabMachines:CreateModule({
+    Name = "Rainbow Machine",
+    Description = "Zdalne tworzenie tęczowych petów (6x Gold -> 1x Rainbow)",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "R",
+    Flag = "Machines_RainbowMachine",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Rainbow Machine", {"Rainbow", "Rainbow Machine"})
+        else
+            closeRemoteMachine("Rainbow Machine", {"Rainbow", "Rainbow Machine"})
+        end
+    end
+})
+
+RainbowModule:AddButton({
+    Name = "Otwórz Rainbow Machine",
+    Callback = function()
+        openRemoteMachine("Rainbow Machine", {"Rainbow", "Rainbow Machine"})
+    end
+})
+
+RainbowModule:AddButton({
+    Name = "Zamknij Rainbow Machine",
+    Callback = function()
+        closeRemoteMachine("Rainbow Machine", {"Rainbow", "Rainbow Machine"})
+    end
+})
+
+RainbowModule:AddButton({
+    Name = "Teleportuj do Rainbow Machine",
+    Callback = function()
+        teleportToMachine("Rainbow Machine")
+    end
+})
+
+-- 3. PET COLLECTION MACHINE (INDEX)
+local IndexModule = TabMachines:CreateModule({
+    Name = "Pet Collection (Index)",
+    Description = "Katalog wszystkich petów w grze (Index) bez podchodzenia",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "B",
+    Flag = "Machines_PetCollectionIndex",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
+        else
+            closeRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
         end
     end
 })
@@ -1396,49 +1525,156 @@ local IndexModule = TabGeneral:CreateModule({
 IndexModule:AddButton({
     Name = "Otwórz Menu Indexu",
     Callback = function()
-        openPetCollectionIndex()
+        openRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
     end
 })
 
 IndexModule:AddButton({
     Name = "Zamknij Menu Indexu",
     Callback = function()
-        closePetCollectionIndex()
+        closeRemoteMachine("Pet Collection Machine", {"Collection", "Index", "Pet Collection"})
     end
 })
 
 IndexModule:AddButton({
     Name = "Teleportuj do Maszyny Indexu",
     Callback = function()
-        teleportToPetCollectionMachine()
+        teleportToMachine("Pet Collection Machine")
     end
 })
 
--- Dodatkowe szybkie maszyny ze strefy Interactive
-IndexModule:AddDropdown({
-    Name = "Otwórz Inne Maszyny Zdalnie",
-    Options = {
-        "Wybierz maszynę...",
-        "Pet Collection Machine",
-        "Bank",
-        "Gold Machine",
-        "Rainbow Machine",
-        "Fuse Pets",
-        "Huge Machine",
-        "Upgrade Station"
-    },
-    CurrentOption = {"Wybierz maszynę..."},
-    Default = "Wybierz maszynę...",
-    Flag = "General_OtherMachinesSelect",
-    Callback = function(val)
-        local selected = (type(val) == "table" and val[1]) or val
-        if selected and selected ~= "Wybierz maszynę..." then
-            if selected == "Pet Collection Machine" then
-                openPetCollectionIndex()
-            else
-                openInteractiveMachine(selected)
-            end
+-- 4. FUSE PETS
+local FuseModule = TabMachines:CreateModule({
+    Name = "Fuse Pets",
+    Description = "Zdalne łączenie od 3 do 12 petów w nową, rzadszą postać",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "F",
+    Flag = "Machines_FusePets",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Fuse Pets", {"Fuse", "Fuse Pets"})
+        else
+            closeRemoteMachine("Fuse Pets", {"Fuse", "Fuse Pets"})
         end
+    end
+})
+
+FuseModule:AddButton({
+    Name = "Otwórz Fuse Pets",
+    Callback = function()
+        openRemoteMachine("Fuse Pets", {"Fuse", "Fuse Pets"})
+    end
+})
+
+FuseModule:AddButton({
+    Name = "Zamknij Fuse Pets",
+    Callback = function()
+        closeRemoteMachine("Fuse Pets", {"Fuse", "Fuse Pets"})
+    end
+})
+
+FuseModule:AddButton({
+    Name = "Teleportuj do Fuse Pets",
+    Callback = function()
+        teleportToMachine("Fuse Pets")
+    end
+})
+
+-- 5. DARK MATTER & UPGRADE STATION
+local UpgradeModule = TabMachines:CreateModule({
+    Name = "Dark Matter & Upgrade Station",
+    Description = "Maszyna Dark Matter oraz ulepszenia statystyk gracza (Player Upgrades)",
+    Default = false,
+    CurrentValue = false,
+    Flag = "Machines_DarkMatterUpgrades",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Upgrade Station", {"Upgrade Station", "Upgrades", "Player Upgrades"})
+        else
+            closeRemoteMachine("Upgrade Station", {"Upgrade Station", "Upgrades", "Player Upgrades"})
+        end
+    end
+})
+
+UpgradeModule:AddButton({
+    Name = "Otwórz Dark Matter Machine",
+    Callback = function()
+        openRemoteMachine("Dark Matter", {"Dark Matter", "DarkMatter", "Dark Matter Machine"})
+    end
+})
+
+UpgradeModule:AddButton({
+    Name = "Otwórz Upgrade Station",
+    Callback = function()
+        openRemoteMachine("Upgrade Station", {"Upgrade Station", "Upgrades", "Player Upgrades"})
+    end
+})
+
+UpgradeModule:AddButton({
+    Name = "Teleportuj do Upgrade Station",
+    Callback = function()
+        teleportToMachine("Upgrade Station")
+    end
+})
+
+UpgradeModule:AddButton({
+    Name = "Teleportuj do Dark Matter",
+    Callback = function()
+        teleportToMachine("Dark Matter")
+    end
+})
+
+-- 6. HUGE MACHINE & BANK
+local HugeBankModule = TabMachines:CreateModule({
+    Name = "Huge Machine, Bank & Nagrody",
+    Description = "Zdalny dostęp do Huge Machine, banku oraz darmowych nagród VIP/Rank",
+    Default = false,
+    CurrentValue = false,
+    Flag = "Machines_HugeBankModule",
+    Callback = function(state)
+        if state then
+            openRemoteMachine("Huge Machine", {"Huge Machine", "Huge", "Huge Convert"})
+        else
+            closeRemoteMachine("Huge Machine", {"Huge Machine", "Huge", "Huge Convert"})
+        end
+    end
+})
+
+HugeBankModule:AddButton({
+    Name = "Otwórz Huge Machine",
+    Callback = function()
+        openRemoteMachine("Huge Machine", {"Huge Machine", "Huge", "Huge Convert"})
+    end
+})
+
+HugeBankModule:AddButton({
+    Name = "Otwórz Bank",
+    Callback = function()
+        openRemoteMachine("Bank", {"Bank", "My Bank"})
+    end
+})
+
+HugeBankModule:AddButton({
+    Name = "Odbierz Rank & VIP Rewards",
+    Callback = function()
+        openRemoteMachine("Rank Rewards", {"Rank Rewards", "Rewards", "Rank"})
+        task.wait(0.2)
+        openRemoteMachine("VIP Rewards", {"VIP Rewards", "VIP"})
+    end
+})
+
+HugeBankModule:AddButton({
+    Name = "Teleportuj do Huge Machine",
+    Callback = function()
+        teleportToMachine("Huge Machine")
+    end
+})
+
+HugeBankModule:AddButton({
+    Name = "Teleportuj do Banku",
+    Callback = function()
+        teleportToMachine("Bank")
     end
 })
 
