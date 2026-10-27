@@ -1216,10 +1216,19 @@ function Window:Create(config)
         MainFrame.Visible = true
         if Shadow then Shadow.Visible = true end
         local destPos = (lastNormalPos and lastNormalPos.X.Offset > -100) and lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
-        MainFrame.Position = UDim2.new(destPos.X.Scale, destPos.X.Offset, destPos.Y.Scale, destPos.Y.Offset + 18)
+        MainFrame.Position = UDim2.new(destPos.X.Scale, destPos.X.Offset, destPos.Y.Scale, destPos.Y.Offset + 32)
         MainFrame.BackgroundTransparency = 1
 
-        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        local frameStroke = MainFrame:FindFirstChildOfClass("UIStroke")
+        if frameStroke then
+            frameStroke.Transparency = 1
+            TweenService:Create(frameStroke, TweenInfo.new(0.85, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Transparency = 0.65
+            }):Play()
+        end
+
+        -- Płynne, kinowe wejście w zwolnionym tempie (Slow-Motion Float-In)
+        TweenService:Create(MainFrame, TweenInfo.new(0.85, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Position = destPos,
             BackgroundTransparency = 0.20
         }):Play()

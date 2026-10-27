@@ -182,7 +182,7 @@ end
 -- // ============================================================
 -- // EKRAN INICJALIZACJI: PŁYNNA ANIMACJA LIXHUB (VISIONOS GLASS EMBLEM)
 -- // ============================================================
-local function createLoadingIndicator(title, isMobile)
+local function createLoadingIndicator(title, isMobile, config)
     local screenParent
     pcall(function() screenParent = CoreGui end)
     if not screenParent then screenParent = PlayerGui end
@@ -206,10 +206,10 @@ local function createLoadingIndicator(title, isMobile)
     Backdrop.ZIndex = 1
     Backdrop.Parent = loaderGui
 
-    -- Główna karta Splash LixHub
+    -- Główna karta Splash LixHub (Nowoczesne szkło VisionOS)
     local Splash = Instance.new("Frame")
     Splash.Name = "LixHub_Splash"
-    Splash.Size = UDim2.new(0, 310, 0, 195)
+    Splash.Size = UDim2.new(0, 360, 0, 215)
     Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
     Splash.AnchorPoint = Vector2.new(0.5, 0.5)
     Splash.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
@@ -228,7 +228,7 @@ local function createLoadingIndicator(title, isMobile)
 
     -- Rozświetlenie poświaty tła w karcie (Ambient Glow Gradient)
     local GlowRadial = Instance.new("Frame")
-    GlowRadial.Size = UDim2.new(0, 160, 0, 160)
+    GlowRadial.Size = UDim2.new(0, 180, 0, 180)
     GlowRadial.Position = UDim2.new(0.5, 0, 0.28, 0)
     GlowRadial.AnchorPoint = Vector2.new(0.5, 0.5)
     GlowRadial.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
@@ -244,7 +244,7 @@ local function createLoadingIndicator(title, isMobile)
     local LogoContainer = Instance.new("Frame")
     LogoContainer.Name = "LogoContainer"
     LogoContainer.Size = UDim2.new(0, 64, 0, 64)
-    LogoContainer.Position = UDim2.new(0.5, 0, 0, 44)
+    LogoContainer.Position = UDim2.new(0.5, 0, 0, 46)
     LogoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
     LogoContainer.BackgroundTransparency = 1
     LogoContainer.ZIndex = 4
@@ -325,7 +325,7 @@ local function createLoadingIndicator(title, isMobile)
     CoreIcon.Parent = CoreOrb
 
     -- // ========================================================
-    -- // TYPOGRAFIA MARKI "LixHub"
+    -- // TYPOGRAFIA ETAPU ŁADOWANIA "LIX HUB"
     -- // ========================================================
     local TitleRow = Instance.new("Frame")
     TitleRow.Name = "TitleRow"
@@ -383,12 +383,12 @@ local function createLoadingIndicator(title, isMobile)
 
     -- // ========================================================
     -- // PŁYNNA ANIMACJA WSKAŹNIKA (LASER WAVE + FLUID PULSE DOTS)
-    -- // Zamiast brzydkiego paska postępu i surowego napisu
+    -- // Spokojna, powolna, luksusowa animacja
     -- // ========================================================
     local AnimContainer = Instance.new("Frame")
     AnimContainer.Name = "AnimContainer"
     AnimContainer.Size = UDim2.new(1, 0, 0, 40)
-    AnimContainer.Position = UDim2.new(0.5, 0, 0, 132)
+    AnimContainer.Position = UDim2.new(0.5, 0, 0, 134)
     AnimContainer.AnchorPoint = Vector2.new(0.5, 0)
     AnimContainer.BackgroundTransparency = 1
     AnimContainer.ZIndex = 5
@@ -457,23 +457,143 @@ local function createLoadingIndicator(title, isMobile)
         table.insert(dots, dot)
     end
 
-    -- Dynamiczna etykieta statusu gotowości (Ready Status) po ukończeniu
-    local ReadyLabel = Instance.new("TextLabel")
-    ReadyLabel.Name = "ReadyLabel"
-    ReadyLabel.Text = ""
-    ReadyLabel.Font = Enum.Font.GothamBold
-    ReadyLabel.TextSize = 11
-    ReadyLabel.TextColor3 = Color3.fromRGB(74, 222, 128)
-    ReadyLabel.TextTransparency = 1
-    ReadyLabel.Size = UDim2.new(1, 0, 0, 20)
-    ReadyLabel.Position = UDim2.new(0.5, 0, 0, 16)
-    ReadyLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    ReadyLabel.BackgroundTransparency = 1
-    ReadyLabel.ZIndex = 8
-    ReadyLabel.Parent = AnimContainer
+    -- // ========================================================
+    -- // EKRAN POWITALNY: "Welcome to LixHub" ORAZ DETEKCJA GRY
+    -- // ========================================================
+    local WelcomeLabel = Instance.new("TextLabel")
+    WelcomeLabel.Name = "WelcomeLabel"
+    WelcomeLabel.Text = "Welcome to LixHub"
+    WelcomeLabel.Font = Enum.Font.GothamBold
+    WelcomeLabel.TextSize = 18
+    WelcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    WelcomeLabel.Size = UDim2.new(1, 0, 0, 24)
+    WelcomeLabel.Position = UDim2.new(0.5, 0, 0, 96)
+    WelcomeLabel.AnchorPoint = Vector2.new(0.5, 0)
+    WelcomeLabel.BackgroundTransparency = 1
+    WelcomeLabel.TextTransparency = 1
+    WelcomeLabel.ZIndex = 8
+    WelcomeLabel.Parent = Splash
+
+    -- Kapsuła detekcji gry (Game Detection Status Badge)
+    local DetectBadge = Instance.new("Frame")
+    DetectBadge.Name = "DetectBadge"
+    DetectBadge.Size = UDim2.new(0, 0, 0, 26)
+    DetectBadge.AutomaticSize = Enum.AutomaticSize.X
+    DetectBadge.Position = UDim2.new(0.5, 0, 0, 132)
+    DetectBadge.AnchorPoint = Vector2.new(0.5, 0)
+    DetectBadge.BackgroundColor3 = Color3.fromRGB(15, 30, 22)
+    DetectBadge.BackgroundTransparency = 1
+    DetectBadge.BorderSizePixel = 0
+    DetectBadge.ZIndex = 8
+    DetectBadge.Parent = Splash
+
+    Instance.new("UICorner", DetectBadge).CornerRadius = UDim.new(0, 13)
+
+    local DetectPad = Instance.new("UIPadding", DetectBadge)
+    DetectPad.PaddingLeft = UDim.new(0, 12)
+    DetectPad.PaddingRight = UDim.new(0, 12)
+    DetectPad.PaddingTop = UDim.new(0, 4)
+    DetectPad.PaddingBottom = UDim.new(0, 4)
+
+    local DetectLayout = Instance.new("UIListLayout", DetectBadge)
+    DetectLayout.FillDirection = Enum.FillDirection.Horizontal
+    DetectLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    DetectLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    DetectLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    DetectLayout.Padding = UDim.new(0, 7)
+
+    local DetectDot = Instance.new("Frame")
+    DetectDot.Name = "DetectDot"
+    DetectDot.Size = UDim2.new(0, 6, 0, 6)
+    DetectDot.BackgroundColor3 = Color3.fromRGB(74, 222, 128)
+    DetectDot.BackgroundTransparency = 1
+    DetectDot.BorderSizePixel = 0
+    DetectDot.LayoutOrder = 1
+    DetectDot.ZIndex = 9
+    DetectDot.Parent = DetectBadge
+    Instance.new("UICorner", DetectDot).CornerRadius = UDim.new(1, 0)
+
+    local DetectText = Instance.new("TextLabel")
+    DetectText.Name = "DetectText"
+    DetectText.Text = ""
+    DetectText.Font = Enum.Font.GothamMedium
+    DetectText.TextSize = 11
+    DetectText.TextColor3 = Color3.fromRGB(134, 239, 172)
+    DetectText.Size = UDim2.new(0, 0, 1, 0)
+    DetectText.AutomaticSize = Enum.AutomaticSize.X
+    DetectText.BackgroundTransparency = 1
+    DetectText.TextTransparency = 1
+    DetectText.LayoutOrder = 2
+    DetectText.ZIndex = 9
+    DetectText.Parent = DetectBadge
+
+    local DetectStroke = Instance.new("UIStroke", DetectBadge)
+    DetectStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    DetectStroke.Color = Color3.fromRGB(74, 222, 128)
+    DetectStroke.Thickness = 1
+    DetectStroke.Transparency = 1
+
+    -- Podpowiedź klawisza / sterowania (Subtext Keybind Hint)
+    local HintLabel = Instance.new("TextLabel")
+    HintLabel.Name = "HintLabel"
+    HintLabel.Text = ""
+    HintLabel.Font = Enum.Font.GothamMedium
+    HintLabel.TextSize = 10
+    HintLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+    HintLabel.Size = UDim2.new(1, 0, 0, 18)
+    HintLabel.Position = UDim2.new(0.5, 0, 0, 170)
+    HintLabel.AnchorPoint = Vector2.new(0.5, 0)
+    HintLabel.BackgroundTransparency = 1
+    HintLabel.TextTransparency = 1
+    HintLabel.ZIndex = 8
+    HintLabel.Parent = Splash
 
     -- // ========================================================
-    -- // SILNIK PŁYNNEJ ANIMACJI W CZASIE RZECZYWISTYM (RenderStepped)
+    -- // DETEKCJA OBSŁUGIWANEJ GRY
+    -- // ========================================================
+    local function resolveDetection(cfg)
+        local cfgGameId = tostring((cfg and cfg.GameId) or "")
+        local cfgTitle  = tostring((cfg and (cfg.Tittle or cfg.Title)) or "")
+        local cfgName   = tostring((cfg and cfg.Name) or "")
+        local placeId   = tostring(game and game.PlaceId or "")
+        local gameId    = tostring(game and game.GameId or "")
+
+        -- 1. Wymuszone lub jawne Universal Suite
+        if cfgGameId == "Universal" or cfgTitle:lower():find("universal") or cfgName:lower():find("universal") then
+            return false, nil
+        end
+
+        -- 2. Pet Simulator X Event
+        if cfgGameId == "85920622393590" or placeId == "85920622393590" or gameId == "85920622393590"
+           or cfgTitle:lower():find("pet simulator") or cfgName:lower():find("pethub") then
+            return true, "PetSimulatorX (Event)"
+        end
+
+        -- 3. Tycoon, but one dropper
+        if cfgGameId == "109949693269081" or placeId == "109949693269081" or gameId == "109949693269081"
+           or cfgTitle:lower():find("tycoon") then
+            return true, "[UPD 3.1] Tycoon, but one dropper"
+        end
+
+        -- 4. Tabela gier
+        local KnownGames = {
+            ["85920622393590"] = "PetSimulatorX (Event)",
+            ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
+        }
+        if KnownGames[placeId] then return true, KnownGames[placeId] end
+        if KnownGames[gameId] then return true, KnownGames[gameId] end
+        if KnownGames[cfgGameId] then return true, KnownGames[cfgGameId] end
+
+        -- 5. Jeśli tytuł jest konkretny i inny niż domyślny
+        if #cfgTitle > 0 and cfgTitle ~= "Universal Suite" and cfgTitle ~= "Menu" and not cfgTitle:lower():find("universal") then
+            return true, cfgTitle
+        end
+
+        return false, nil
+    end
+
+    -- // ========================================================
+    -- // SILNIK PŁYNNEJ ANIMACJI W CZASIE RZECZYWISTYM (SPOWOLNIONY)
     -- // ========================================================
     local isRunning = true
     local rotAngle = 0
@@ -494,16 +614,16 @@ local function createLoadingIndicator(title, isMobile)
                 if not isRunning then return end
                 timeClock = timeClock + (dt or 0.016)
 
-                -- Płynny obrót cząstek orbitalnych (120 stopni / sek)
-                rotAngle = (rotAngle + (dt or 0.016) * 120) % 360
+                -- Zredukowana prędkość obrotu (spokojne 50 stopni / sek)
+                rotAngle = (rotAngle + (dt or 0.016) * 50) % 360
                 OrbitSpinner.Rotation = rotAngle
 
-                -- Delikatny oddech poświaty tła (Sine breathing pulse)
-                local pulse = (math.sin(timeClock * 2.5) + 1) * 0.5
+                -- Spokojny, wolny oddech poświaty tła (Sine breathing pulse)
+                local pulse = (math.sin(timeClock * 1.5) + 1) * 0.5
                 GlowRadial.BackgroundTransparency = 0.90 + (pulse * 0.06)
 
-                -- Płynny ruch lasera w kapsule (Liquid sweep)
-                laserPos = laserPos + ((dt or 0.016) * 130 * laserDir)
+                -- Płynny, spokojny ruch lasera w kapsule
+                laserPos = laserPos + ((dt or 0.016) * 60 * laserDir)
                 if laserPos > 130 then
                     laserPos = 130
                     laserDir = -1
@@ -513,12 +633,12 @@ local function createLoadingIndicator(title, isMobile)
                 end
                 LaserBeam.Position = UDim2.new(0, math.floor(laserPos), 0, 0)
 
-                -- Falowanie 3 płynnych kropek (Staggered liquid sine wave)
+                -- Spokojne falowanie 3 płynnych kropek
                 for idx, d in ipairs(dots) do
                     local dotOffset = (idx - 1) * 0.8
-                    local sinVal = (math.sin(timeClock * 4 + dotOffset) + 1) * 0.5
+                    local sinVal = (math.sin(timeClock * 2.2 + dotOffset) + 1) * 0.5
                     d.BackgroundTransparency = 0.15 + (1 - sinVal) * 0.65
-                    local dSize = 4 + (sinVal * 2.5)
+                    local dSize = 4 + (sinVal * 2.2)
                     d.Size = UDim2.new(0, dSize, 0, dSize)
                 end
             end)
@@ -526,12 +646,12 @@ local function createLoadingIndicator(title, isMobile)
     end
 
     -- Animacja płynnego wejścia (Fade & Float In)
-    TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 0.4 }):Play()
-    TweenService:Create(Splash, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+    TweenService:Create(Backdrop, TweenInfo.new(0.5), { BackgroundTransparency = 0.4 }):Play()
+    TweenService:Create(Splash, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Position = UDim2.new(0.5, 0, 0.5, 0),
         BackgroundTransparency = 0.08
     }):Play()
-    TweenService:Create(SplashStroke, TweenInfo.new(0.4), { Transparency = 0.35 }):Play()
+    TweenService:Create(SplashStroke, TweenInfo.new(0.5), { Transparency = 0.35 }):Play()
 
     -- // ========================================================
     -- // KONTROLER INTERFEJSU
@@ -545,29 +665,69 @@ local function createLoadingIndicator(title, isMobile)
     function controller:Done(timeText, keybindName, onFinishCallback)
         keybindName = tostring(keybindName or "K")
         local isMobileView = isMobile or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
-        local hint = isMobileView and "✓ LIXHUB GOTOWY • DOTKNIJ PRZYCISK" or ("✓ LIXHUB GOTOWY • KLAWISZ [" .. keybindName .. "]")
 
-        -- Błysk sukcesu na rdzeniu logo
-        TweenService:Create(CoreStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.1 }):Play()
-        TweenService:Create(OrbitStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.3 }):Play()
-        TweenService:Create(Satellite1, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
-        TweenService:Create(Satellite2, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
+        -- Detekcja gry i przygotowanie tekstu statusu
+        local isDetected, detectedGameName = resolveDetection(config)
 
-        -- Schowaj laser i kropki, pokaż elegancką informację o klawiszu
+        if isDetected then
+            local gName = detectedGameName or "PetSimulatorX (Event)"
+            DetectText.Text = "game detect :" .. gName
+            DetectText.TextColor3 = Color3.fromRGB(134, 239, 172)
+            DetectDot.BackgroundColor3 = Color3.fromRGB(74, 222, 128)
+            DetectBadge.BackgroundColor3 = Color3.fromRGB(15, 30, 22)
+            DetectStroke.Color = Color3.fromRGB(74, 222, 128)
+
+            TweenService:Create(CoreStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.1 }):Play()
+            TweenService:Create(OrbitStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.3 }):Play()
+            TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
+            TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
+        else
+            DetectText.Text = "game not supported : loading universal Hub"
+            DetectText.TextColor3 = Color3.fromRGB(253, 224, 71)
+            DetectDot.BackgroundColor3 = Color3.fromRGB(251, 191, 36)
+            DetectBadge.BackgroundColor3 = Color3.fromRGB(36, 26, 14)
+            DetectStroke.Color = Color3.fromRGB(251, 191, 36)
+
+            TweenService:Create(CoreStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(251, 191, 36), Transparency = 0.1 }):Play()
+            TweenService:Create(OrbitStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(251, 191, 36), Transparency = 0.3 }):Play()
+            TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(251, 191, 36) }):Play()
+            TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(251, 191, 36) }):Play()
+        end
+
+        HintLabel.Text = isMobileView and "• DOTKNIJ PRZYCISK ABY OTWORZYĆ MENU •" or ("• KLAWISZ [" .. keybindName .. "] OTWIERA MENU •")
+
+        -- Schowaj wskaźniki ładowania oraz tytuł wstępny
         TweenService:Create(WaveCapsule, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
         TweenService:Create(LaserBeam, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
         for _, d in ipairs(dots) do
             TweenService:Create(d, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
         end
+        TweenService:Create(LixText, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+        TweenService:Create(HubBadge, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
+        TweenService:Create(HubText, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+        TweenService:Create(HbStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
 
-        ReadyLabel.Text = hint
-        TweenService:Create(ReadyLabel, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        -- Pokaż piękny ekran powitalny "Welcome to LixHub" oraz status gry
+        TweenService:Create(WelcomeLabel, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             TextTransparency = 0,
-            Position = UDim2.new(0.5, 0, 0, 16)
+            Position = UDim2.new(0.5, 0, 0, 90)
         }):Play()
 
-        -- Po 0.8 sekundy płynne rozejście loadera i ujawnienie menu
-        task.delay(0.8, function()
+        TweenService:Create(DetectBadge, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0.25,
+            Position = UDim2.new(0.5, 0, 0, 126)
+        }):Play()
+        TweenService:Create(DetectStroke, TweenInfo.new(0.45), { Transparency = 0.45 }):Play()
+        TweenService:Create(DetectText, TweenInfo.new(0.45), { TextTransparency = 0 }):Play()
+        TweenService:Create(DetectDot, TweenInfo.new(0.45), { BackgroundTransparency = 0 }):Play()
+
+        TweenService:Create(HintLabel, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            TextTransparency = 0.35,
+            Position = UDim2.new(0.5, 0, 0, 166)
+        }):Play()
+
+        -- Po 1.8 sekundy płynne rozejście loadera i ujawnienie menu w zwolnionym tempie
+        task.delay(1.8, function()
             isRunning = false
             if animConn then pcall(function() animConn:Disconnect() end) end
 
@@ -575,13 +735,26 @@ local function createLoadingIndicator(title, isMobile)
                 pcall(onFinishCallback)
             end
 
-            local twSplash = TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+            local twSplash = TweenService:Create(Splash, TweenInfo.new(0.55, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                 Position = UDim2.new(0.5, 0, 0.46, 0),
-                Size = UDim2.new(0, 330, 0, 205),
+                Size = UDim2.new(0, 380, 0, 225),
                 BackgroundTransparency = 1
             })
-            local twStroke = TweenService:Create(SplashStroke, TweenInfo.new(0.3), { Transparency = 1 })
-            local twBackdrop = TweenService:Create(Backdrop, TweenInfo.new(0.35), { BackgroundTransparency = 1 })
+            local twStroke = TweenService:Create(SplashStroke, TweenInfo.new(0.45), { Transparency = 1 })
+            local twBackdrop = TweenService:Create(Backdrop, TweenInfo.new(0.55), { BackgroundTransparency = 1 })
+
+            TweenService:Create(WelcomeLabel, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+            TweenService:Create(DetectBadge, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(DetectStroke, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+            TweenService:Create(DetectText, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+            TweenService:Create(DetectDot, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(HintLabel, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+            TweenService:Create(CoreOrb, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(CoreIcon, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+            TweenService:Create(OrbitRing, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(OrbitStroke, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+            TweenService:Create(Satellite1, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(Satellite2, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
 
             twSplash:Play()
             twStroke:Play()
@@ -607,8 +780,8 @@ function MenuLib:CreateWindow(options)
     local startTime = os.clock()
     local isMobile = isMobileDevice(Config)
 
-    -- Uruchomienie wskaźnika procesu ładowania
-    local loader = createLoadingIndicator(Name, isMobile)
+    -- Uruchomienie wskaźnika procesu ładowania z przekazaniem konfiguracji gry
+    local loader = createLoadingIndicator(Name, isMobile, Config)
 
     -- CLEANUP
     local Connections = {}
