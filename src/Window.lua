@@ -462,18 +462,9 @@ function Window:Create(config)
         defaultH = math.clamp(math.floor(viewport.Y * 0.90), 260, 420)
     end
 
-    -- Cień
-    local Shadow = Instance.new("ImageLabel")
-    Shadow.Name = "Shadow"
-    Shadow.BackgroundTransparency = 1
-    Shadow.ZIndex = 0
-    Shadow.Image = "rbxassetid://10385930982"
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.5
-    Shadow.ScaleType = Enum.ScaleType.Slice
-    Shadow.SliceCenter = Rect.new(49, 49, 50, 50)
-    Shadow.Parent = ScreenGui
-    UI.Shadow = Shadow
+    -- Cień okna wyłączony w celu zapewnienia idealnie zaokrąglonych narożników 32px squircle bez ostrych krawędzi
+    local Shadow = nil
+    UI.Shadow = nil
 
     -- MainFrame (Apple VisionOS Liquid Glass Shell)
     local MainFrame = Instance.new("Frame")
@@ -495,9 +486,9 @@ function Window:Create(config)
     MainConstraint.MinSize = Vector2.new(isMobile and 360 or 520, isMobile and 280 or 400)
     MainConstraint.MaxSize = Vector2.new(2560, 1440)
 
-    -- VisionOS Organic Rounded Corners (24px)
+    -- VisionOS Organic Rounded Corners (32px Squircle)
     local MainCorner = Instance.new("UICorner", MainFrame)
-    MainCorner.CornerRadius = UDim.new(0, 24)
+    MainCorner.CornerRadius = UDim.new(0, 32)
 
     -- Subtelny, wyważony obrys okna w stylu Apple Dark Mode
     local MainStroke = Instance.new("UIStroke", MainFrame)
@@ -514,21 +505,27 @@ function Window:Create(config)
     BackgroundContainer.Size = UDim2.new(1, 0, 1, 0)
     BackgroundContainer.Position = UDim2.new(0, 0, 0, 0)
     BackgroundContainer.BackgroundTransparency = 1
-    BackgroundContainer.ClipsDescendants = true
+    BackgroundContainer.ClipsDescendants = false
     BackgroundContainer.ZIndex = 1
     BackgroundContainer.Parent = MainFrame
     UI.BackgroundContainer = BackgroundContainer
 
+    local BgCorner = Instance.new("UICorner", BackgroundContainer)
+    BgCorner.CornerRadius = UDim.new(0, 32)
+
     local WaveLayer = Instance.new("Frame")
     WaveLayer.Name = "WaveLayer"
-    WaveLayer.Size = UDim2.new(1.6, 0, 1.6, 0)
-    WaveLayer.Position = UDim2.new(0.5, 0, 0.5, 0)
-    WaveLayer.AnchorPoint = Vector2.new(0.5, 0.5)
+    WaveLayer.Size = UDim2.new(1, 0, 1, 0)
+    WaveLayer.Position = UDim2.new(0, 0, 0, 0)
+    WaveLayer.AnchorPoint = Vector2.new(0, 0)
     WaveLayer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    WaveLayer.BackgroundTransparency = 0.90
+    WaveLayer.BackgroundTransparency = 0.94
     WaveLayer.BorderSizePixel = 0
     WaveLayer.ZIndex = 1
     WaveLayer.Parent = BackgroundContainer
+
+    local WlCorner = Instance.new("UICorner", WaveLayer)
+    WlCorner.CornerRadius = UDim.new(0, 32)
 
     local WaveGradient = Instance.new("UIGradient", WaveLayer)
     WaveGradient.Rotation = 45
@@ -543,24 +540,27 @@ function Window:Create(config)
     GifImageLayer.ZIndex = 1
     GifImageLayer.Parent = BackgroundContainer
 
+    local GifCorner = Instance.new("UICorner", GifImageLayer)
+    GifCorner.CornerRadius = UDim.new(0, 32)
+
     local animPresets = {
         ["Aurora"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 240, 150)),
-                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 180, 255)),
-                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(130, 40, 240)),
-                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 20, 60))
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 210, 140)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 160, 220)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(100, 50, 200)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 20, 45))
             }),
-            DefaultTransparency = 0.90
+            DefaultTransparency = 0.94
         },
         ["Cyberpunk"] = {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 0, 128)),
-                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(120, 0, 255)),
-                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(0, 240, 255)),
-                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(20, 10, 40))
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(99, 102, 241)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(14, 165, 233)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(79, 70, 229)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 17, 26))
             }),
-            DefaultTransparency = 0.88
+            DefaultTransparency = 0.94
         },
         ["Cosmic"] = {
             Color = ColorSequence.new({
@@ -859,7 +859,7 @@ function Window:Create(config)
     -- =========================================================================
     -- KONTENER STRON (PAGES CONTAINER) - PŁYWAJĄCY POD DOCKIEM GÓRNYM
     -- =========================================================================
-    local totalHeaderSpace = 70
+    local totalHeaderSpace = 72
     local bottomSpace = dockHeight + 18
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
@@ -884,7 +884,7 @@ function Window:Create(config)
         local destStrokeTrans = isLiquidGlass and 0.45 or 0.85
         local destDockTrans = isLiquidGlass and 0.22 or 0
         local destStatusTrans = isLiquidGlass and 0.35 or 0
-        local destCorner = isLiquidGlass and 24 or 12
+        local destCorner = 32
 
         TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             BackgroundTransparency = destMainTrans
@@ -1012,22 +1012,6 @@ function Window:Create(config)
     end
 
     -- Cień śledzi MainFrame
-    Shadow.AnchorPoint = MainFrame.AnchorPoint
-    local SHADOW_OFFSET = 35
-    RunService.RenderStepped:Connect(function()
-        if MainFrame.Visible then
-            Shadow.Position = UDim2.new(0,
-                MainFrame.AbsolutePosition.X + MainFrame.AbsoluteSize.X / 2,
-                0,
-                MainFrame.AbsolutePosition.Y + MainFrame.AbsoluteSize.Y / 2)
-            Shadow.Size = UDim2.new(0,
-                MainFrame.AbsoluteSize.X + SHADOW_OFFSET * 2,
-                0,
-                MainFrame.AbsoluteSize.Y + SHADOW_OFFSET * 2)
-        end
-        Shadow.Visible = MainFrame.Visible
-    end)
-
     -- // ============================================================
     -- // ZUNIFIKOWANA LOGIKA TOGGLE MENU DLA PC ORAZ MOBILE
     -- // ============================================================
@@ -1058,7 +1042,7 @@ function Window:Create(config)
 
         if isMenuVisible then
             MainFrame.Visible = true
-            Shadow.Visible = true
+            if Shadow then Shadow.Visible = true end
             local destPos = (lastNormalPos and lastNormalPos.X.Offset > -100) and lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
             currentToggleTween = TweenService:Create(MainFrame,
                 TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
@@ -1078,7 +1062,7 @@ function Window:Create(config)
             currentToggleTween.Completed:Connect(function()
                 if not isMenuVisible then
                     MainFrame.Visible = false
-                    Shadow.Visible = false
+                    if Shadow then Shadow.Visible = false end
                 end
                 currentToggleTween = nil
             end)

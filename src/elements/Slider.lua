@@ -150,8 +150,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
 
     local FillGradient = Instance.new("UIGradient", Fill)
     FillGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(99, 102, 241)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 95, 210)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241))
     })
 
     -- Gałka suwaka (Knob z efektem neonowej kropki)
@@ -168,8 +168,8 @@ return function(options, themeManager, parent, menuConfig, saveMenuConfig)
     KnobCorner.CornerRadius = UDim.new(1, 0)
 
     local KnobStroke = Instance.new("UIStroke", Knob)
-    KnobStroke.Color = Color3.fromRGB(99, 102, 241)
-    KnobStroke.Thickness = 2
+    KnobStroke.Color = Color3.fromRGB(110, 125, 205)
+    KnobStroke.Thickness = 1.5
 
     local KnobGlow = Instance.new("Frame")
     KnobGlow.Name = "InnerGlow"

@@ -1,5 +1,5 @@
 -- // ==========================================================================
--- // MENUTEST CYBER-SETTINGS HUB (CYBER-APEX V3.0)
+-- // MENUTEST CYBER-SETTINGS HUB (APPLE iOS 27.2 BENTO SYSTEM)
 -- // Kompleksowe centrum zarządzania konfiguracją, motywami wizualnymi,
 -- // efektami ambient FX, ochroną klienta (AntiAFK, AntiFling) oraz chmurą configów.
 -- // ==========================================================================
@@ -54,7 +54,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local SliderElement = safeLoadSub("elements/Slider.lua", baseUrl .. "elements/Slider.lua")
 
-    -- Rejestrujemy pełną zakładkę Settings w głównym pasku zakładek (Dock)
+    -- Rejestrujemy zakładkę Settings w głównym pasku zakładek (Dock)
     local TabElements = UI:CreateTab("Settings", "settings", order or 999)
     local Page = TabElements.Page
     Page.Name = "SettingsPage"
@@ -67,22 +67,60 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
     local PageLayout = Page:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout", Page)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    PageLayout.Padding = UDim.new(0, 14)
+    PageLayout.Padding = UDim.new(0, 16)
 
+    -- Przestrzeń pod dockiem górnym (72px w Window.lua + 18px tutaj = 90px całkowitej przestrzeni)
     local PagePadding = Page:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding", Page)
-    PagePadding.PaddingTop = UDim.new(0, 14)
+    PagePadding.PaddingTop = UDim.new(0, 18)
     PagePadding.PaddingRight = UDim.new(0, 18)
     PagePadding.PaddingLeft = UDim.new(0, 18)
-    PagePadding.PaddingBottom = UDim.new(0, 30)
+    PagePadding.PaddingBottom = UDim.new(0, 36)
 
-    -- Pomocnicza funkcja do tworzenia nagłówków sekcji Bento
-    local function createSectionHeader(titleText, iconName, subtext)
-        local SecHeader = Instance.new("Frame")
-        SecHeader.Name = "SectionHeader"
-        SecHeader.Size = UDim2.new(1, 0, 0, 32)
-        SecHeader.BackgroundTransparency = 1
+    local isMobile = (UI and UI.IsMobile) or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
 
-        local HLayout = Instance.new("UIListLayout", SecHeader)
+    -- Pomocnicza funkcja tworzenia standardowej karty Bento (Apple iOS Glass Card)
+    local function createBentoCard(name, layoutOrder)
+        local Card = Instance.new("Frame")
+        Card.Name = name
+        Card.Size = UDim2.new(1, 0, 0, 0)
+        Card.AutomaticSize = Enum.AutomaticSize.Y
+        Card.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
+        Card.BackgroundTransparency = 0.35
+        Card.BorderSizePixel = 0
+        Card.LayoutOrder = layoutOrder or 1
+        Card.Parent = Page
+
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 16)
+
+        local Stroke = Instance.new("UIStroke", Card)
+        Stroke.Color = Color3.fromRGB(45, 52, 75)
+        Stroke.Thickness = 1
+        Stroke.Transparency = 0.60
+        Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        local Pad = Instance.new("UIPadding", Card)
+        Pad.PaddingLeft = UDim.new(0, 14)
+        Pad.PaddingRight = UDim.new(0, 14)
+        Pad.PaddingTop = UDim.new(0, 14)
+        Pad.PaddingBottom = UDim.new(0, 14)
+
+        local Lay = Instance.new("UIListLayout", Card)
+        Lay.SortOrder = Enum.SortOrder.LayoutOrder
+        Lay.Padding = UDim.new(0, 12)
+
+        return Card, Lay
+    end
+
+    -- Pomocnicza funkcja nagłówka karty Bento
+    local function createCardHeader(parentCard, titleText, iconName, subtext, order)
+        local Header = Instance.new("Frame")
+        Header.Name = "Header"
+        Header.Size = UDim2.new(1, 0, 0, 28)
+        Header.BackgroundTransparency = 1
+        Header.LayoutOrder = order or 1
+        Header.Parent = parentCard
+
+        local HLayout = Instance.new("UIListLayout", Header)
         HLayout.FillDirection = Enum.FillDirection.Horizontal
         HLayout.VerticalAlignment = Enum.VerticalAlignment.Center
         HLayout.Padding = UDim.new(0, 8)
@@ -91,7 +129,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         IconImg.Size = UDim2.new(0, 16, 0, 16)
         IconImg.BackgroundTransparency = 1
         IconImg.ImageColor3 = Color3.fromRGB(129, 140, 248)
-        IconImg.Parent = SecHeader
+        IconImg.Parent = Header
         if Icons and Icons.Apply then Icons:Apply(IconImg, iconName) end
 
         local TitleLbl = Instance.new("TextLabel")
@@ -102,111 +140,104 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         TitleLbl.Size = UDim2.new(0, 0, 1, 0)
         TitleLbl.AutomaticSize = Enum.AutomaticSize.X
         TitleLbl.BackgroundTransparency = 1
-        TitleLbl.Parent = SecHeader
+        TitleLbl.Parent = Header
 
         if subtext and #subtext > 0 then
             local Dot = Instance.new("Frame")
             Dot.Size = UDim2.new(0, 3, 0, 3)
             Dot.BackgroundColor3 = Color3.fromRGB(80, 85, 110)
             Dot.BorderSizePixel = 0
-            Dot.Parent = SecHeader
+            Dot.Parent = Header
             Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
 
             local SubLbl = Instance.new("TextLabel")
             SubLbl.Text = subtext
             SubLbl.Font = Enum.Font.GothamMedium
             SubLbl.TextSize = 10
-            SubLbl.TextColor3 = Color3.fromRGB(130, 135, 160)
+            SubLbl.TextColor3 = Color3.fromRGB(130, 138, 165)
             SubLbl.Size = UDim2.new(0, 0, 1, 0)
             SubLbl.AutomaticSize = Enum.AutomaticSize.X
             SubLbl.BackgroundTransparency = 1
-            SubLbl.Parent = SecHeader
+            SubLbl.Parent = Header
         end
 
-        return SecHeader
+        return Header
     end
 
-    -- // =========================================================================
-    -- // =========================================================================
-    -- // 0. HERO APPLE iPHONE (iOS 18) LIQUID GLASS SHOWCASE CARD
-    -- // =========================================================================
-    local GlassHero = Instance.new("Frame")
-    GlassHero.Name = "GlassHero"
-    GlassHero.Size = UDim2.new(1, 0, 0, 74)
-    GlassHero.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
-    GlassHero.BackgroundTransparency = 0.30
-    GlassHero.BorderSizePixel = 0
-    GlassHero.LayoutOrder = 0
-    GlassHero.Parent = Page
-    Instance.new("UICorner", GlassHero).CornerRadius = UDim.new(0, 18)
+    -- =========================================================================
+    -- BENTO 1: WYGLĄD I EFEKTY WIZUALNE (APPLE LIQUID GLASS & AMBIENT WAVE FX)
+    -- =========================================================================
+    local VisualCard, _ = createBentoCard("VisualCard", 1)
 
-    local GhStroke = Instance.new("UIStroke", GlassHero)
-    GhStroke.Color = Color3.fromRGB(48, 54, 76)
-    GhStroke.Thickness = 1
-    GhStroke.Transparency = 0.65
+    -- Nagłówek sekcji wizualnej
+    createCardHeader(VisualCard, "PERSONALIZACJA I EFEKTY WIZUALNE", "layers", "Apple iPhone Liquid Glass oraz dynamiczne fale świetlne", 1)
 
-    local GhGrad = Instance.new("UIGradient", GlassHero)
-    GhGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 23, 34)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 15, 22))
-    })
+    -- Wiersz 1: Apple iPhone Liquid Glass Hero Toggle
+    local GlassRow = Instance.new("Frame")
+    GlassRow.Name = "GlassRow"
+    GlassRow.Size = UDim2.new(1, 0, 0, 56)
+    GlassRow.BackgroundColor3 = Color3.fromRGB(22, 26, 38)
+    GlassRow.BackgroundTransparency = 0.4
+    GlassRow.LayoutOrder = 2
+    GlassRow.Parent = VisualCard
+    Instance.new("UICorner", GlassRow).CornerRadius = UDim.new(0, 12)
 
-    local GhPadding = Instance.new("UIPadding", GlassHero)
-    GhPadding.PaddingLeft = UDim.new(0, 16)
-    GhPadding.PaddingRight = UDim.new(0, 16)
-    GhPadding.PaddingTop = UDim.new(0, 12)
-    GhPadding.PaddingBottom = UDim.new(0, 12)
+    local GrStroke = Instance.new("UIStroke", GlassRow)
+    GrStroke.Color = Color3.fromRGB(48, 56, 80)
+    GrStroke.Thickness = 1
+    GrStroke.Transparency = 0.65
 
-    local GhIconBox = Instance.new("Frame")
-    GhIconBox.Size = UDim2.new(0, 44, 0, 44)
-    GhIconBox.Position = UDim2.new(0, 0, 0.5, 0)
-    GhIconBox.AnchorPoint = Vector2.new(0, 0.5)
-    GhIconBox.BackgroundColor3 = Color3.fromRGB(24, 28, 40)
-    GhIconBox.BackgroundTransparency = 0.3
-    GhIconBox.BorderSizePixel = 0
-    GhIconBox.Parent = GlassHero
-    Instance.new("UICorner", GhIconBox).CornerRadius = UDim.new(1, 0)
-    local GibStroke = Instance.new("UIStroke", GhIconBox)
-    GibStroke.Color = Color3.fromRGB(50, 60, 85)
-    GibStroke.Thickness = 1
-    GibStroke.Transparency = 0.6
+    local GrPad = Instance.new("UIPadding", GlassRow)
+    GrPad.PaddingLeft = UDim.new(0, 12)
+    GrPad.PaddingRight = UDim.new(0, 12)
 
-    local GhIcon = Instance.new("ImageLabel")
-    GhIcon.Size = UDim2.new(0, 22, 0, 22)
-    GhIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    GhIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    GhIcon.BackgroundTransparency = 1
-    GhIcon.ImageColor3 = Color3.fromRGB(150, 165, 195)
-    GhIcon.Parent = GhIconBox
-    if Icons and Icons.Apply then Icons:Apply(GhIcon, "layers") end
+    local GrIconBox = Instance.new("Frame")
+    GrIconBox.Size = UDim2.new(0, 36, 0, 36)
+    GrIconBox.Position = UDim2.new(0, 0, 0.5, 0)
+    GrIconBox.AnchorPoint = Vector2.new(0, 0.5)
+    GrIconBox.BackgroundColor3 = Color3.fromRGB(30, 36, 54)
+    GrIconBox.BackgroundTransparency = 0.3
+    GrIconBox.BorderSizePixel = 0
+    GrIconBox.Parent = GlassRow
+    Instance.new("UICorner", GrIconBox).CornerRadius = UDim.new(0, 8)
 
-    local GhTextFrame = Instance.new("Frame")
-    GhTextFrame.Size = UDim2.new(1, -160, 1, 0)
-    GhTextFrame.Position = UDim2.new(0, 56, 0.5, 0)
-    GhTextFrame.AnchorPoint = Vector2.new(0, 0.5)
-    GhTextFrame.BackgroundTransparency = 1
-    GhTextFrame.Parent = GlassHero
+    local GrIcon = Instance.new("ImageLabel")
+    GrIcon.Size = UDim2.new(0, 18, 0, 18)
+    GrIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+    GrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    GrIcon.BackgroundTransparency = 1
+    GrIcon.ImageColor3 = Color3.fromRGB(150, 165, 210)
+    GrIcon.Parent = GrIconBox
+    if Icons and Icons.Apply then Icons:Apply(GrIcon, "layers") end
 
-    local GhTitle = Instance.new("TextLabel")
-    GhTitle.Text = "APPLE iPHONE (iOS 27.2) LIQUID GLASS"
-    GhTitle.Font = Enum.Font.GothamBold
-    GhTitle.TextSize = 13
-    GhTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    GhTitle.TextXAlignment = Enum.TextXAlignment.Left
-    GhTitle.Size = UDim2.new(1, 0, 0, 18)
-    GhTitle.BackgroundTransparency = 1
-    GhTitle.Parent = GhTextFrame
+    local GrTextFrame = Instance.new("Frame")
+    GrTextFrame.Size = UDim2.new(1, -120, 1, 0)
+    GrTextFrame.Position = UDim2.new(0, 46, 0, 0)
+    GrTextFrame.BackgroundTransparency = 1
+    GrTextFrame.Parent = GlassRow
 
-    local GhSub = Instance.new("TextLabel")
-    GhSub.Text = "Dynamic Island 2.0, matowe szkło Liquid Glass z iOS 27.2, krawędzie 26px squircle i przełącznik Apple Green #34C759"
-    GhSub.Font = Enum.Font.GothamMedium
-    GhSub.TextSize = 10
-    GhSub.TextColor3 = Color3.fromRGB(150, 165, 195)
-    GhSub.TextXAlignment = Enum.TextXAlignment.Left
-    GhSub.Size = UDim2.new(1, 0, 0, 16)
-    GhSub.Position = UDim2.new(0, 0, 0, 20)
-    GhSub.BackgroundTransparency = 1
-    GhSub.Parent = GhTextFrame
+    local GrTitle = Instance.new("TextLabel")
+    GrTitle.Text = "Apple iPhone Liquid Glass (iOS 27.2)"
+    GrTitle.Font = Enum.Font.GothamBold
+    GrTitle.TextSize = 12
+    GrTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GrTitle.TextXAlignment = Enum.TextXAlignment.Left
+    GrTitle.Position = UDim2.new(0, 0, 0, 10)
+    GrTitle.Size = UDim2.new(1, 0, 0, 16)
+    GrTitle.BackgroundTransparency = 1
+    GrTitle.Parent = GrTextFrame
+
+    local GrSub = Instance.new("TextLabel")
+    GrSub.Text = "Dynamic Island 2.0, matowe szkło Control Center i przełącznik Apple Green #34C759"
+    GrSub.Font = Enum.Font.GothamMedium
+    GrSub.TextSize = 10
+    GrSub.TextColor3 = Color3.fromRGB(140, 150, 180)
+    GrSub.TextXAlignment = Enum.TextXAlignment.Left
+    GrSub.TextTruncate = Enum.TextTruncate.AtEnd
+    GrSub.Position = UDim2.new(0, 0, 0, 28)
+    GrSub.Size = UDim2.new(1, 0, 0, 14)
+    GrSub.BackgroundTransparency = 1
+    GrSub.Parent = GrTextFrame
 
     -- Główny przełącznik Liquid Glass (Apple iOS Switch)
     local isLgOn = true
@@ -214,43 +245,42 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         isLgOn = (UI.MenuConfig["LiquidGlass"] == true)
     end
 
-    local GhSwitch = Instance.new("TextButton")
-    GhSwitch.Size = UDim2.new(0, 52, 0, 28)
-    GhSwitch.Position = UDim2.new(1, 0, 0.5, 0)
-    GhSwitch.AnchorPoint = Vector2.new(1, 0.5)
-    GhSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
-    GhSwitch.BackgroundTransparency = 0.15
-    GhSwitch.Text = ""
-    GhSwitch.AutoButtonColor = false
-    GhSwitch.Parent = GlassHero
-    Instance.new("UICorner", GhSwitch).CornerRadius = UDim.new(1, 0)
-    local GhsStroke = Instance.new("UIStroke", GhSwitch)
-    GhsStroke.Color = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
-    GhsStroke.Thickness = 1.2
-    GhsStroke.Transparency = 0.35
+    local LgSwitch = Instance.new("TextButton")
+    LgSwitch.Size = UDim2.new(0, 48, 0, 26)
+    LgSwitch.Position = UDim2.new(1, 0, 0.5, 0)
+    LgSwitch.AnchorPoint = Vector2.new(1, 0.5)
+    LgSwitch.BackgroundColor3 = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(45, 50, 65)
+    LgSwitch.BackgroundTransparency = 0.15
+    LgSwitch.Text = ""
+    LgSwitch.AutoButtonColor = false
+    LgSwitch.Parent = GlassRow
+    Instance.new("UICorner", LgSwitch).CornerRadius = UDim.new(1, 0)
 
-    local GhDot = Instance.new("Frame")
-    GhDot.Size = UDim2.new(0, 22, 0, 22)
-    GhDot.Position = isLgOn and UDim2.new(1, -25, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-    GhDot.AnchorPoint = Vector2.new(0, 0.5)
-    GhDot.BackgroundColor3 = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
-    GhDot.BorderSizePixel = 0
-    GhDot.Parent = GhSwitch
-    Instance.new("UICorner", GhDot).CornerRadius = UDim.new(1, 0)
+    local LgsStroke = Instance.new("UIStroke", LgSwitch)
+    LgsStroke.Color = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(65, 72, 90)
+    LgsStroke.Thickness = 1
+    LgsStroke.Transparency = 0.4
 
-    GhSwitch.MouseButton1Click:Connect(function()
+    local LgDot = Instance.new("Frame")
+    LgDot.Size = UDim2.new(0, 20, 0, 20)
+    LgDot.Position = isLgOn and UDim2.new(1, -23, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+    LgDot.AnchorPoint = Vector2.new(0, 0.5)
+    LgDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    LgDot.BorderSizePixel = 0
+    LgDot.Parent = LgSwitch
+    Instance.new("UICorner", LgDot).CornerRadius = UDim.new(1, 0)
+
+    LgSwitch.MouseButton1Click:Connect(function()
         isLgOn = not isLgOn
-        local destPos = isLgOn and UDim2.new(1, -25, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
-        local destBg = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(50, 54, 66)
-        local destStrk = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(70, 75, 90)
-        local destDot = isLgOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(240, 242, 250)
+        local destPos = isLgOn and UDim2.new(1, -23, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local destBg = isLgOn and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(45, 50, 65)
+        local destStrk = isLgOn and Color3.fromRGB(82, 222, 118) or Color3.fromRGB(65, 72, 90)
 
-        TweenService:Create(GhDot, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = destPos,
-            BackgroundColor3 = destDot
+        TweenService:Create(LgDot, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = destPos
         }):Play()
-        TweenService:Create(GhSwitch, TweenInfo.new(0.22), { BackgroundColor3 = destBg }):Play()
-        TweenService:Create(GhsStroke, TweenInfo.new(0.22), { Color = destStrk }):Play()
+        TweenService:Create(LgSwitch, TweenInfo.new(0.22), { BackgroundColor3 = destBg }):Play()
+        TweenService:Create(LgsStroke, TweenInfo.new(0.22), { Color = destStrk }):Play()
 
         if UI and UI.SetLiquidGlass then
             UI:SetLiquidGlass(isLgOn)
@@ -263,171 +293,164 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end
     end)
 
-    -- // =========================================================================
-    -- // 1. HERO SYSTEM COMMAND HUD (TELEMETRIA SILNIKA)
-    -- // =========================================================================
-    local HeroTile = Instance.new("Frame")
-    HeroTile.Name = "HeroTile"
-    HeroTile.Size = UDim2.new(1, 0, 0, 68)
-    HeroTile.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    HeroTile.BorderSizePixel = 0
-    HeroTile.LayoutOrder = 1
-    HeroTile.Parent = Page
-    Instance.new("UICorner", HeroTile).CornerRadius = UDim.new(0, 10)
-    local HtStroke = Instance.new("UIStroke", HeroTile)
-    HtStroke.Color = Color3.fromRGB(36, 38, 56)
-    HtStroke.Thickness = 1.2
+    -- Subtelna linia podziału
+    local Divider1 = Instance.new("Frame")
+    Divider1.Name = "Divider"
+    Divider1.Size = UDim2.new(1, 0, 0, 1)
+    Divider1.BackgroundColor3 = Color3.fromRGB(45, 52, 75)
+    Divider1.BackgroundTransparency = 0.65
+    Divider1.BorderSizePixel = 0
+    Divider1.LayoutOrder = 3
+    Divider1.Parent = VisualCard
 
-    local HtGrad = Instance.new("UIGradient", HeroTile)
-    HtGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 22, 34)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 15, 22))
-    })
+    -- Wiersz 2: Presety Ambient Wave FX (Chips Row)
+    local PresetsContainer = Instance.new("Frame")
+    PresetsContainer.Name = "PresetsContainer"
+    PresetsContainer.Size = UDim2.new(1, 0, 0, 36)
+    PresetsContainer.BackgroundTransparency = 1
+    PresetsContainer.LayoutOrder = 4
+    PresetsContainer.Parent = VisualCard
 
-    local HtPadding = Instance.new("UIPadding", HeroTile)
-    HtPadding.PaddingLeft = UDim.new(0, 16)
-    HtPadding.PaddingRight = UDim.new(0, 16)
-    HtPadding.PaddingTop = UDim.new(0, 12)
-    HtPadding.PaddingBottom = UDim.new(0, 12)
+    local PcTitle = Instance.new("TextLabel")
+    PcTitle.Text = "Preset fali świetlnej:"
+    PcTitle.Font = Enum.Font.GothamBold
+    PcTitle.TextSize = 11
+    PcTitle.TextColor3 = Color3.fromRGB(180, 190, 215)
+    PcTitle.TextXAlignment = Enum.TextXAlignment.Left
+    PcTitle.Size = UDim2.new(0, 130, 1, 0)
+    PcTitle.BackgroundTransparency = 1
+    PcTitle.Parent = PresetsContainer
 
-    -- Lewa strona: Game ID i wersja
-    local HtLeft = Instance.new("Frame")
-    HtLeft.Size = UDim2.new(0.5, 0, 1, 0)
-    HtLeft.BackgroundTransparency = 1
-    HtLeft.Parent = HeroTile
+    local ChipsRow = Instance.new("Frame")
+    ChipsRow.Name = "ChipsRow"
+    ChipsRow.Size = UDim2.new(1, -135, 1, 0)
+    ChipsRow.Position = UDim2.new(0, 135, 0, 0)
+    ChipsRow.BackgroundTransparency = 1
+    ChipsRow.Parent = PresetsContainer
 
-    local HtTitle = Instance.new("TextLabel")
-    HtTitle.Text = "SYSTEM CONFIGURATION & SECURITY"
-    HtTitle.Font = Enum.Font.GothamBold
-    HtTitle.TextSize = 13
-    HtTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HtTitle.TextXAlignment = Enum.TextXAlignment.Left
-    HtTitle.Size = UDim2.new(1, 0, 0, 18)
-    HtTitle.BackgroundTransparency = 1
-    HtTitle.Parent = HtLeft
+    local ChipsLayout = Instance.new("UIListLayout", ChipsRow)
+    ChipsLayout.FillDirection = Enum.FillDirection.Horizontal
+    ChipsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    ChipsLayout.Padding = UDim.new(0, 6)
 
-    local HtSub = Instance.new("TextLabel")
-    HtSub.Text = "MenuTest Framework • Place ID: " .. GameId .. " • Sandbox Active"
-    HtSub.Font = Enum.Font.GothamMedium
-    HtSub.TextSize = 10
-    HtSub.TextColor3 = Color3.fromRGB(130, 138, 165)
-    HtSub.TextXAlignment = Enum.TextXAlignment.Left
-    HtSub.Size = UDim2.new(1, 0, 0, 16)
-    HtSub.Position = UDim2.new(0, 0, 0, 20)
-    HtSub.BackgroundTransparency = 1
-    HtSub.Parent = HtLeft
+    local wavePresets = {"None", "Aurora", "Cosmic", "Cyberpunk", "Emerald", "Sunset"}
+    local currentWave = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedTheme"]) or "Cyberpunk"
+    local waveChips = {}
 
-    -- Prawa strona: Kasetki telemetryczne na żywo
-    local HtRight = Instance.new("Frame")
-    HtRight.Size = UDim2.new(0.5, 0, 1, 0)
-    HtRight.Position = UDim2.new(0.5, 0, 0, 0)
-    HtRight.BackgroundTransparency = 1
-    HtRight.Parent = HeroTile
-
-    local HtRightLayout = Instance.new("UIListLayout", HtRight)
-    HtRightLayout.FillDirection = Enum.FillDirection.Horizontal
-    HtRightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    HtRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    HtRightLayout.Padding = UDim.new(0, 8)
-
-    local function makeHeroBadge(lblText, valText, color)
-        local b = Instance.new("Frame")
-        b.Size = UDim2.new(0, 0, 0, 32)
-        b.AutomaticSize = Enum.AutomaticSize.X
-        b.BackgroundColor3 = Color3.fromRGB(22, 24, 36)
-        b.Parent = HtRight
-        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-        local s = Instance.new("UIStroke", b)
-        s.Color = Color3.fromRGB(40, 44, 65)
-        s.Thickness = 1
-        local pad = Instance.new("UIPadding", b)
-        pad.PaddingLeft = UDim.new(0, 10)
-        pad.PaddingRight = UDim.new(0, 10)
-        local lay = Instance.new("UIListLayout", b)
-        lay.FillDirection = Enum.FillDirection.Vertical
-        lay.VerticalAlignment = Enum.VerticalAlignment.Center
-
-        local top = Instance.new("TextLabel")
-        top.Text = lblText
-        top.Font = Enum.Font.GothamMedium
-        top.TextSize = 8
-        top.TextColor3 = Color3.fromRGB(140, 145, 170)
-        top.Size = UDim2.new(0, 0, 0, 11)
-        top.AutomaticSize = Enum.AutomaticSize.X
-        top.BackgroundTransparency = 1
-        top.Parent = b
-
-        local val = Instance.new("TextLabel")
-        val.Text = valText
-        val.Font = Enum.Font.GothamBold
-        val.TextSize = 11
-        val.TextColor3 = color
-        val.Size = UDim2.new(0, 0, 0, 14)
-        val.AutomaticSize = Enum.AutomaticSize.X
-        val.BackgroundTransparency = 1
-        val.Parent = b
-        return val
+    local function selectWavePreset(preset)
+        currentWave = preset
+        if UI and UI.SetAnimatedTheme then
+            UI:SetAnimatedTheme(preset)
+        end
+        for p, btn in pairs(waveChips) do
+            local isSel = (p == preset)
+            TweenService:Create(btn, TweenInfo.new(0.18), {
+                BackgroundColor3 = isSel and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(24, 28, 42),
+                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+            }):Play()
+            local strk = btn:FindFirstChildOfClass("UIStroke")
+            if strk then
+                strk.Color = isSel and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+            end
+        end
     end
 
-    local MemoryVal = makeHeroBadge("LUA MEMORY", "18.4 MB", Color3.fromRGB(129, 140, 248))
-    local SecurityVal = makeHeroBadge("PROTECTION", "SECURE", Color3.fromRGB(16, 185, 129))
+    for idx, preset in ipairs(wavePresets) do
+        local Chip = Instance.new("TextButton")
+        Chip.Name = preset
+        Chip.Size = UDim2.new(0, 0, 0, 28)
+        Chip.AutomaticSize = Enum.AutomaticSize.X
+        Chip.BackgroundColor3 = (preset == currentWave) and Color3.fromRGB(80, 95, 210) or Color3.fromRGB(24, 28, 42)
+        Chip.Text = "  " .. preset .. "  "
+        Chip.Font = Enum.Font.GothamBold
+        Chip.TextSize = 10
+        Chip.TextColor3 = (preset == currentWave) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
+        Chip.AutoButtonColor = false
+        Chip.LayoutOrder = idx
+        Chip.Parent = ChipsRow
+        Instance.new("UICorner", Chip).CornerRadius = UDim.new(0, 8)
 
-    task.spawn(function()
-        while task.wait(2) do
-            if not HeroTile.Parent then break end
-            pcall(function()
-                local mem = math.floor(gcinfo() / 1024 * 10) / 10
-                MemoryVal.Text = tostring(mem) .. " MB"
-            end)
-        end
-    end)
+        local CStroke = Instance.new("UIStroke", Chip)
+        CStroke.Color = (preset == currentWave) and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(42, 48, 68)
+        CStroke.Thickness = 1
 
-    -- // =========================================================================
-    -- // 2. THEMES SHOWROOM (WIZUALNA GALERIA PALET)
-    -- // =========================================================================
-    local ThemesSection = Instance.new("Frame")
-    ThemesSection.Name = "ThemesSection"
-    ThemesSection.Size = UDim2.new(1, 0, 0, 0)
-    ThemesSection.AutomaticSize = Enum.AutomaticSize.Y
-    ThemesSection.BackgroundTransparency = 1
-    ThemesSection.LayoutOrder = 2
-    ThemesSection.Parent = Page
+        waveChips[preset] = Chip
 
-    local ThemesSecLayout = Instance.new("UIListLayout", ThemesSection)
-    ThemesSecLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ThemesSecLayout.Padding = UDim.new(0, 8)
+        Chip.MouseButton1Click:Connect(function()
+            selectWavePreset(preset)
+        end)
+    end
 
-    local ThHeader = createSectionHeader("THEMES SHOWROOM", "palette", "Wybierz luksusową paletę kolorystyczną dla całego menu")
-    ThHeader.LayoutOrder = 1
-    ThHeader.Parent = ThemesSection
+    -- Wiersz 3: Precyzyjne suwaki intensywności oraz szybkości (zwarte, 2 kolumny na PC)
+    local SlidersGrid = Instance.new("Frame")
+    SlidersGrid.Name = "SlidersGrid"
+    SlidersGrid.Size = UDim2.new(1, 0, 0, 0)
+    SlidersGrid.AutomaticSize = Enum.AutomaticSize.Y
+    SlidersGrid.BackgroundTransparency = 1
+    SlidersGrid.LayoutOrder = 5
+    SlidersGrid.Parent = VisualCard
 
-    local ThemesCard = Instance.new("Frame")
-    ThemesCard.Name = "ThemesCard"
-    ThemesCard.Size = UDim2.new(1, 0, 0, 0)
-    ThemesCard.AutomaticSize = Enum.AutomaticSize.Y
-    ThemesCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    ThemesCard.BorderSizePixel = 0
-    ThemesCard.LayoutOrder = 2
-    ThemesCard.Parent = ThemesSection
-    Instance.new("UICorner", ThemesCard).CornerRadius = UDim.new(0, 10)
-    local TcStroke = Instance.new("UIStroke", ThemesCard)
-    TcStroke.Color = Color3.fromRGB(34, 36, 52)
-    TcStroke.Thickness = 1.2
+    local SgLayout = Instance.new("UIGridLayout", SlidersGrid)
+    SgLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+    SgLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 56) or UDim2.new(0.5, -5, 0, 56)
+    SgLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    local TcPadding = Instance.new("UIPadding", ThemesCard)
-    TcPadding.PaddingLeft = UDim.new(0, 12)
-    TcPadding.PaddingRight = UDim.new(0, 12)
-    TcPadding.PaddingTop = UDim.new(0, 12)
-    TcPadding.PaddingBottom = UDim.new(0, 12)
+    local Slider1Col = Instance.new("Frame", SlidersGrid)
+    Slider1Col.Name = "Col1"
+    Slider1Col.BackgroundTransparency = 1
+    Slider1Col.Size = UDim2.new(1, 0, 1, 0)
+    Slider1Col.LayoutOrder = 1
+
+    local Slider2Col = Instance.new("Frame", SlidersGrid)
+    Slider2Col.Name = "Col2"
+    Slider2Col.BackgroundTransparency = 1
+    Slider2Col.Size = UDim2.new(1, 0, 1, 0)
+    Slider2Col.LayoutOrder = 2
+
+    if SliderElement then
+        local savedInt = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeIntensity"]) or 12
+        SliderElement({
+            Name = "Intensywność Fali",
+            Min = 2,
+            Max = 35,
+            Default = math.floor(savedInt <= 1 and (savedInt * 100) or savedInt),
+            Suffix = "%",
+            Flag = "AnimatedThemeIntensity",
+            Callback = function(val)
+                if UI and UI.SetAnimatedTheme then
+                    UI:SetAnimatedTheme(nil, val / 100, nil)
+                end
+            end
+        }, ThemeManager, Slider1Col, UI.MenuConfig, UI.SaveMenuConfig)
+
+        local savedSpeed = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeSpeed"]) or 5
+        SliderElement({
+            Name = "Szybkość Animacji",
+            Min = 1,
+            Max = 25,
+            Default = math.floor(savedSpeed <= 2.5 and (savedSpeed * 10) or savedSpeed),
+            Suffix = "x",
+            Callback = function(val)
+                if UI and UI.SetAnimatedTheme then
+                    UI:SetAnimatedTheme(nil, nil, val / 10)
+                end
+            end
+        }, ThemeManager, Slider2Col, UI.MenuConfig, UI.SaveMenuConfig)
+    end
+
+    -- =========================================================================
+    -- BENTO 2: PALETY KOLORYSTYCZNE (THEMES SHOWROOM)
+    -- =========================================================================
+    local ThemesCard, _ = createBentoCard("ThemesCard", 2)
+    createCardHeader(ThemesCard, "PALETY KOLORYSTYCZNE", "palette", "Wybierz luksusową paletę kolorystyczną dla całego menu", 1)
 
     local ThemesGrid = Instance.new("Frame")
     ThemesGrid.Name = "ThemesGrid"
     ThemesGrid.Size = UDim2.new(1, 0, 0, 0)
     ThemesGrid.AutomaticSize = Enum.AutomaticSize.Y
     ThemesGrid.BackgroundTransparency = 1
+    ThemesGrid.LayoutOrder = 2
     ThemesGrid.Parent = ThemesCard
-
-    local isMobile = (UI and UI.IsMobile) or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
 
     local TgLayout = Instance.new("UIGridLayout", ThemesGrid)
     TgLayout.CellPadding = UDim2.new(0, 8, 0, 8)
@@ -494,7 +517,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             local isCur = (key == selectedKey)
             if stroke then
                 TweenService:Create(stroke, TweenInfo.new(0.2), {
-                    Color = isCur and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(36, 38, 54),
+                    Color = isCur and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62),
                     Thickness = isCur and 1.5 or 1
                 }):Play()
             end
@@ -509,14 +532,15 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         local tData = builtins[tKey]
         local TCard = Instance.new("TextButton")
         TCard.Name = "Theme_" .. tKey
-        TCard.BackgroundColor3 = Color3.fromRGB(20, 21, 32)
+        TCard.BackgroundColor3 = Color3.fromRGB(20, 24, 35)
         TCard.Text = ""
         TCard.AutoButtonColor = false
         TCard.LayoutOrder = idx
         TCard.Parent = ThemesGrid
-        Instance.new("UICorner", TCard).CornerRadius = UDim.new(0, 7)
+        Instance.new("UICorner", TCard).CornerRadius = UDim.new(0, 10)
+
         local TcCardStroke = Instance.new("UIStroke", TCard)
-        TcCardStroke.Color = (tKey == activeThemeName) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(36, 38, 54)
+        TcCardStroke.Color = (tKey == activeThemeName) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(38, 44, 62)
         TcCardStroke.Thickness = (tKey == activeThemeName) and 1.5 or 1
 
         local CardPad = Instance.new("UIPadding", TCard)
@@ -525,7 +549,6 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         CardPad.PaddingTop = UDim.new(0, 8)
         CardPad.PaddingBottom = UDim.new(0, 8)
 
-        -- Swatche kolorów
         local SwatchFrame = Instance.new("Frame")
         SwatchFrame.Size = UDim2.new(1, 0, 0, 14)
         SwatchFrame.BackgroundTransparency = 1
@@ -570,10 +593,10 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         themeCards[tKey] = TCard
 
         TCard.MouseEnter:Connect(function()
-            TweenService:Create(TCard, TweenInfo.new(0.18), { BackgroundColor3 = Color3.fromRGB(26, 28, 42) }):Play()
+            TweenService:Create(TCard, TweenInfo.new(0.18), { BackgroundColor3 = Color3.fromRGB(28, 33, 48) }):Play()
         end)
         TCard.MouseLeave:Connect(function()
-            TweenService:Create(TCard, TweenInfo.new(0.18), { BackgroundColor3 = Color3.fromRGB(20, 21, 32) }):Play()
+            TweenService:Create(TCard, TweenInfo.new(0.18), { BackgroundColor3 = Color3.fromRGB(20, 24, 35) }):Play()
         end)
         TCard.MouseButton1Click:Connect(function()
             ThemeManager:Apply(tData.Colors)
@@ -581,157 +604,11 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         end)
     end
 
-    -- // =========================================================================
-    -- // 3. AMBIENT LIVE BACKGROUND FX (FALE I GLOW)
-    -- // =========================================================================
-    local AmbientSection = Instance.new("Frame")
-    AmbientSection.Name = "AmbientSection"
-    AmbientSection.Size = UDim2.new(1, 0, 0, 0)
-    AmbientSection.AutomaticSize = Enum.AutomaticSize.Y
-    AmbientSection.BackgroundTransparency = 1
-    AmbientSection.LayoutOrder = 3
-    AmbientSection.Parent = Page
-
-    local AmbSecLayout = Instance.new("UIListLayout", AmbientSection)
-    AmbSecLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    AmbSecLayout.Padding = UDim.new(0, 8)
-
-    local AmbHeader = createSectionHeader("LIVE AMBIENT WAVE FX", "activity", "Wybierz gradient fali świetlnej w tle okna")
-    AmbHeader.LayoutOrder = 1
-    AmbHeader.Parent = AmbientSection
-
-    local AmbientCard = Instance.new("Frame")
-    AmbientCard.Name = "AmbientCard"
-    AmbientCard.Size = UDim2.new(1, 0, 0, 0)
-    AmbientCard.AutomaticSize = Enum.AutomaticSize.Y
-    AmbientCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    AmbientCard.BorderSizePixel = 0
-    AmbientCard.LayoutOrder = 2
-    AmbientCard.Parent = AmbientSection
-    Instance.new("UICorner", AmbientCard).CornerRadius = UDim.new(0, 10)
-    local AmbStroke = Instance.new("UIStroke", AmbientCard)
-    AmbStroke.Color = Color3.fromRGB(34, 36, 52)
-    AmbStroke.Thickness = 1.2
-
-    local AmbPad = Instance.new("UIPadding", AmbientCard)
-    AmbPad.PaddingLeft = UDim.new(0, 12)
-    AmbPad.PaddingRight = UDim.new(0, 12)
-    AmbPad.PaddingTop = UDim.new(0, 12)
-    AmbPad.PaddingBottom = UDim.new(0, 12)
-
-    local AmbList = Instance.new("UIListLayout", AmbientCard)
-    AmbList.SortOrder = Enum.SortOrder.LayoutOrder
-    AmbList.Padding = UDim.new(0, 10)
-
-    -- Preset Chips Row
-    local ChipsRow = Instance.new("Frame")
-    ChipsRow.Name = "ChipsRow"
-    ChipsRow.Size = UDim2.new(1, 0, 0, 32)
-    ChipsRow.BackgroundTransparency = 1
-    ChipsRow.LayoutOrder = 1
-    ChipsRow.Parent = AmbientCard
-
-    local ChipsLayout = Instance.new("UIListLayout", ChipsRow)
-    ChipsLayout.FillDirection = Enum.FillDirection.Horizontal
-    ChipsLayout.Padding = UDim.new(0, 6)
-
-    local wavePresets = {"Aurora", "Cyberpunk", "Cosmic", "Sunset", "Emerald", "None"}
-    local currentWave = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedTheme"]) or "Aurora"
-    local waveChips = {}
-
-    local function selectWavePreset(preset)
-        currentWave = preset
-        if UI and UI.SetAnimatedTheme then
-            UI:SetAnimatedTheme(preset)
-        end
-        for p, btn in pairs(waveChips) do
-            local isSel = (p == preset)
-            TweenService:Create(btn, TweenInfo.new(0.18), {
-                BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 24, 36),
-                TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
-            }):Play()
-            local strk = btn:FindFirstChildOfClass("UIStroke")
-            if strk then
-                strk.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(36, 38, 54)
-            end
-        end
-    end
-
-    for idx, preset in ipairs(wavePresets) do
-        local Chip = Instance.new("TextButton")
-        Chip.Name = preset
-        Chip.Size = UDim2.new(0, 0, 1, 0)
-        Chip.AutomaticSize = Enum.AutomaticSize.X
-        Chip.BackgroundColor3 = (preset == currentWave) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 24, 36)
-        Chip.Text = "  " .. preset .. "  "
-        Chip.Font = Enum.Font.GothamBold
-        Chip.TextSize = 11
-        Chip.TextColor3 = (preset == currentWave) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 155, 175)
-        Chip.AutoButtonColor = false
-        Chip.LayoutOrder = idx
-        Chip.Parent = ChipsRow
-        Instance.new("UICorner", Chip).CornerRadius = UDim.new(0, 6)
-        local CStroke = Instance.new("UIStroke", Chip)
-        CStroke.Color = (preset == currentWave) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(36, 38, 54)
-        CStroke.Thickness = 1
-
-        waveChips[preset] = Chip
-
-        Chip.MouseButton1Click:Connect(function()
-            selectWavePreset(preset)
-        end)
-    end
-
-    -- Sliders for intensity and speed
-    if SliderElement then
-        local savedInt = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeIntensity"]) or 12
-        SliderElement({
-            Name = "Live Glow Intensity",
-            Min = 2,
-            Max = 35,
-            Default = math.floor(savedInt <= 1 and (savedInt * 100) or savedInt),
-            Suffix = "%",
-            Flag = "AnimatedThemeIntensity",
-            Callback = function(val)
-                if UI and UI.SetAnimatedTheme then
-                    UI:SetAnimatedTheme(nil, val / 100, nil)
-                end
-            end
-        }, ThemeManager, AmbientCard, UI.MenuConfig, UI.SaveMenuConfig)
-
-        local savedSpeed = (UI and UI.MenuConfig and UI.MenuConfig["AnimatedThemeSpeed"]) or 5
-        SliderElement({
-            Name = "Wave Animation Speed",
-            Min = 1,
-            Max = 25,
-            Default = math.floor(savedSpeed <= 2.5 and (savedSpeed * 10) or savedSpeed),
-            Suffix = "x",
-            Callback = function(val)
-                if UI and UI.SetAnimatedTheme then
-                    UI:SetAnimatedTheme(nil, nil, val / 10)
-                end
-            end
-        }, ThemeManager, AmbientCard, UI.MenuConfig, UI.SaveMenuConfig)
-    end
-
-    -- // =========================================================================
-    -- // 4. DEFENSE & CLIENT POWER OPTIONS (BENTO GRID TILES)
-    -- // =========================================================================
-    local PowerSection = Instance.new("Frame")
-    PowerSection.Name = "PowerSection"
-    PowerSection.Size = UDim2.new(1, 0, 0, 0)
-    PowerSection.AutomaticSize = Enum.AutomaticSize.Y
-    PowerSection.BackgroundTransparency = 1
-    PowerSection.LayoutOrder = 4
-    PowerSection.Parent = Page
-
-    local PowerSecLayout = Instance.new("UIListLayout", PowerSection)
-    PowerSecLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    PowerSecLayout.Padding = UDim.new(0, 8)
-
-    local PwrHeader = createSectionHeader("CLIENT DEFENSE & POWER OPTIONS", "shield", "Zabezpieczenia sesji, bindy oraz moduły pomocnicze")
-    PwrHeader.LayoutOrder = 1
-    PwrHeader.Parent = PowerSection
+    -- =========================================================================
+    -- BENTO 3: OCHRONA KLIENTA I BINDY (CLIENT DEFENSE & POWER OPTIONS)
+    -- =========================================================================
+    local DefenseCard, _ = createBentoCard("DefenseCard", 3)
+    createCardHeader(DefenseCard, "BEZPIECZEŃSTWO I STEROWANIE", "shield", "Ochrona sesji, bind klawisza menu i moduły pomocnicze", 1)
 
     local PowerGrid = Instance.new("Frame")
     PowerGrid.Name = "PowerGrid"
@@ -739,24 +616,25 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     PowerGrid.AutomaticSize = Enum.AutomaticSize.Y
     PowerGrid.BackgroundTransparency = 1
     PowerGrid.LayoutOrder = 2
-    PowerGrid.Parent = PowerSection
+    PowerGrid.Parent = DefenseCard
 
     local PgLayout = Instance.new("UIGridLayout", PowerGrid)
     PgLayout.CellPadding = UDim2.new(0, 10, 0, 10)
-    PgLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 68) or UDim2.new(0.5, -5, 0, 72)
+    PgLayout.CellSize = isMobile and UDim2.new(1, 0, 0, 62) or UDim2.new(0.5, -5, 0, 62)
     PgLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     local function makePowerCard(titleText, descText, iconName, defaultVal, callback)
         local Card = Instance.new("Frame")
-        Card.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
-        Card.BackgroundTransparency = 0.35
+        Card.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+        Card.BackgroundTransparency = 0.4
         Card.BorderSizePixel = 0
         Card.Parent = PowerGrid
-        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 14)
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 12)
+
         local cStroke = Instance.new("UIStroke", Card)
-        cStroke.Color = Color3.fromRGB(60, 72, 105)
-        cStroke.Thickness = 1.2
-        cStroke.Transparency = 0.55
+        cStroke.Color = Color3.fromRGB(45, 52, 75)
+        cStroke.Thickness = 1
+        cStroke.Transparency = 0.65
 
         local cPad = Instance.new("UIPadding", Card)
         cPad.PaddingLeft = UDim.new(0, 12)
@@ -765,25 +643,21 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         cPad.PaddingBottom = UDim.new(0, 10)
 
         local IconBox = Instance.new("Frame")
-        IconBox.Size = UDim2.new(0, 28, 0, 28)
+        IconBox.Size = UDim2.new(0, 32, 0, 32)
         IconBox.Position = UDim2.new(0, 0, 0.5, 0)
         IconBox.AnchorPoint = Vector2.new(0, 0.5)
-        IconBox.BackgroundColor3 = Color3.fromRGB(28, 33, 50)
-        IconBox.BackgroundTransparency = 0.4
+        IconBox.BackgroundColor3 = Color3.fromRGB(28, 34, 52)
+        IconBox.BackgroundTransparency = 0.35
         IconBox.BorderSizePixel = 0
         IconBox.Parent = Card
         Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 8)
-        local ibStroke = Instance.new("UIStroke", IconBox)
-        ibStroke.Color = Color3.fromRGB(70, 80, 120)
-        ibStroke.Thickness = 1
-        ibStroke.Transparency = 0.6
 
         local IcoImg = Instance.new("ImageLabel")
-        IcoImg.Size = UDim2.new(0, 15, 0, 15)
+        IcoImg.Size = UDim2.new(0, 16, 0, 16)
         IcoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
         IcoImg.AnchorPoint = Vector2.new(0.5, 0.5)
         IcoImg.BackgroundTransparency = 1
-        IcoImg.ImageColor3 = Color3.fromRGB(140, 160, 250)
+        IcoImg.ImageColor3 = Color3.fromRGB(135, 150, 220)
         IcoImg.Parent = IconBox
         if Icons and Icons.Apply then Icons:Apply(IcoImg, iconName) end
 
@@ -793,8 +667,8 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         Title.TextSize = 12
         Title.TextColor3 = Color3.fromRGB(255, 255, 255)
         Title.TextXAlignment = Enum.TextXAlignment.Left
-        Title.Position = UDim2.new(0, 36, 0, 4)
-        Title.Size = UDim2.new(1, -90, 0, 16)
+        Title.Position = UDim2.new(0, 42, 0, 2)
+        Title.Size = UDim2.new(1, -95, 0, 16)
         Title.BackgroundTransparency = 1
         Title.Parent = Card
 
@@ -802,35 +676,36 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         Desc.Text = descText
         Desc.Font = Enum.Font.GothamMedium
         Desc.TextSize = 10
-        Desc.TextColor3 = Color3.fromRGB(150, 160, 185)
+        Desc.TextColor3 = Color3.fromRGB(140, 148, 175)
         Desc.TextXAlignment = Enum.TextXAlignment.Left
         Desc.TextTruncate = Enum.TextTruncate.AtEnd
-        Desc.Position = UDim2.new(0, 36, 0, 22)
-        Desc.Size = UDim2.new(1, -90, 0, 14)
+        Desc.Position = UDim2.new(0, 42, 0, 20)
+        Desc.Size = UDim2.new(1, -95, 0, 14)
         Desc.BackgroundTransparency = 1
         Desc.Parent = Card
 
-        -- Pill switch
+        -- Apple-style Pill Switch
         local SwitchBtn = Instance.new("TextButton")
-        SwitchBtn.Size = UDim2.new(0, 42, 0, 22)
+        SwitchBtn.Size = UDim2.new(0, 44, 0, 24)
         SwitchBtn.Position = UDim2.new(1, 0, 0.5, 0)
         SwitchBtn.AnchorPoint = Vector2.new(1, 0.5)
-        SwitchBtn.BackgroundColor3 = defaultVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
-        SwitchBtn.BackgroundTransparency = 0.3
+        SwitchBtn.BackgroundColor3 = defaultVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(34, 40, 58)
+        SwitchBtn.BackgroundTransparency = 0.2
         SwitchBtn.Text = ""
         SwitchBtn.AutoButtonColor = false
         SwitchBtn.Parent = Card
         Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
+
         local swStroke = Instance.new("UIStroke", SwitchBtn)
-        swStroke.Color = defaultVal and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
+        swStroke.Color = defaultVal and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(50, 58, 82)
         swStroke.Thickness = 1
         swStroke.Transparency = 0.5
 
         local Dot = Instance.new("Frame")
-        Dot.Size = UDim2.new(0, 14, 0, 14)
-        Dot.Position = defaultVal and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
+        Dot.Size = UDim2.new(0, 16, 0, 16)
+        Dot.Position = defaultVal and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
         Dot.AnchorPoint = Vector2.new(0, 0.5)
-        Dot.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+        Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         Dot.BorderSizePixel = 0
         Dot.Parent = SwitchBtn
         Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
@@ -838,14 +713,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         local currentVal = defaultVal
         SwitchBtn.MouseButton1Click:Connect(function()
             currentVal = not currentVal
-            local destPos = currentVal and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 4, 0.5, 0)
-            local destBg = currentVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(28, 33, 50)
-            local destStrk = currentVal and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(60, 72, 105)
-            local destDot = currentVal and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 190, 215)
+            local destPos = currentVal and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+            local destBg = currentVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(34, 40, 58)
+            local destStrk = currentVal and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(50, 58, 82)
 
             TweenService:Create(Dot, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = destPos,
-                BackgroundColor3 = destDot
+                Position = destPos
             }):Play()
             TweenService:Create(SwitchBtn, TweenInfo.new(0.2), { BackgroundColor3 = destBg }):Play()
             TweenService:Create(swStroke, TweenInfo.new(0.2), { Color = destStrk }):Play()
@@ -856,24 +729,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         return Card
     end
 
-    -- Liquid Glass Mode (Apple iPhone iOS 27.2) Toggle
-    local liquidGlassDefault = true
-    if UI and UI.MenuConfig and UI.MenuConfig["LiquidGlass"] ~= nil then
-        liquidGlassDefault = (UI.MenuConfig["LiquidGlass"] == true)
-    end
-    makePowerCard("iPhone Liquid Glass", "Dynamic Island 2.0, matowe szkło Control Center i przełączniki iOS 27.2", "layers", liquidGlassDefault, function(state)
-        if UI and UI.SetLiquidGlass then
-            UI:SetLiquidGlass(state)
-        end
-        if UI and UI.MenuConfig then
-            UI.MenuConfig["LiquidGlass"] = state
-        end
-        if UI and UI.SaveMenuConfig then
-            pcall(function() UI.SaveMenuConfig("LiquidGlass", state) end)
-        end
-    end)
-
-    -- AntiAFK
+    -- 1. AntiAFK
     local antiAfkConnection = nil
     local function enableAntiAfk()
         local speaker = Players.LocalPlayer
@@ -906,7 +762,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         if UI and UI.MenuConfig then UI.MenuConfig["AntiAfk"] = state end
     end)
 
-    -- AntiFling
+    -- 2. AntiFling
     local antiFlingConnection = nil
     local function enableAntiFling()
         if antiFlingConnection then antiFlingConnection:Disconnect(); antiFlingConnection = nil end
@@ -943,7 +799,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         if UI and UI.MenuConfig then UI.MenuConfig["AntiFling"] = state end
     end)
 
-    -- Keybinds Overlay
+    -- 3. Keybinds Overlay
     local isOverlayActive = (UI and UI.MenuConfig and UI.MenuConfig["KeybindsOverlay"] == true) or false
     makePowerCard("Keybinds HUD (Overlay)", "Wyświetla ekranową listę aktywnych bindów", "layout", isOverlayActive, function(state)
         if UI and UI.SetKeybindsOverlayVisible then
@@ -952,7 +808,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         if UI and UI.MenuConfig then UI.MenuConfig["KeybindsOverlay"] = state end
     end)
 
-    -- Emotes Menu
+    -- 4. Emotes Menu
     local emoteEnabled = (UI and UI.MenuConfig and UI.MenuConfig["EmotesMenu"] == true) or false
     makePowerCard("Roblox Emotes Menu", "Pływający przycisk koła emotek i animacji", "smile", emoteEnabled, function(state)
         local mod = safeLoadSub("emotes/EmoteMenu.lua", baseUrl .. "emotes/EmoteMenu.lua")
@@ -963,33 +819,36 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         if UI and UI.MenuConfig then UI.MenuConfig["EmotesMenu"] = state end
     end)
 
-    -- Karta Menu Keybind Widget
-    local KeybindCard = Instance.new("Frame")
-    KeybindCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    KeybindCard.BorderSizePixel = 0
-    KeybindCard.Parent = PowerGrid
-    Instance.new("UICorner", KeybindCard).CornerRadius = UDim.new(0, 8)
-    local KcStroke = Instance.new("UIStroke", KeybindCard)
-    KcStroke.Color = Color3.fromRGB(34, 36, 52)
-    KcStroke.Thickness = 1.2
+    -- 5. Karta Menu Keybind (Pełna szerokość dolnego paska w Bento 3)
+    local KeybindRow = Instance.new("Frame")
+    KeybindRow.Name = "KeybindRow"
+    KeybindRow.Size = UDim2.new(1, 0, 0, 50)
+    KeybindRow.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+    KeybindRow.BackgroundTransparency = 0.4
+    KeybindRow.LayoutOrder = 3
+    KeybindRow.Parent = DefenseCard
+    Instance.new("UICorner", KeybindRow).CornerRadius = UDim.new(0, 12)
 
-    local KcPad = Instance.new("UIPadding", KeybindCard)
-    KcPad.PaddingLeft = UDim.new(0, 12)
-    KcPad.PaddingRight = UDim.new(0, 12)
-    KcPad.PaddingTop = UDim.new(0, 10)
-    KcPad.PaddingBottom = UDim.new(0, 10)
+    local KrStroke = Instance.new("UIStroke", KeybindRow)
+    KrStroke.Color = Color3.fromRGB(45, 52, 75)
+    KrStroke.Thickness = 1
+    KrStroke.Transparency = 0.65
+
+    local KrPad = Instance.new("UIPadding", KeybindRow)
+    KrPad.PaddingLeft = UDim.new(0, 12)
+    KrPad.PaddingRight = UDim.new(0, 12)
 
     local KbIcoBox = Instance.new("Frame")
-    KbIcoBox.Size = UDim2.new(0, 28, 0, 28)
+    KbIcoBox.Size = UDim2.new(0, 32, 0, 32)
     KbIcoBox.Position = UDim2.new(0, 0, 0.5, 0)
     KbIcoBox.AnchorPoint = Vector2.new(0, 0.5)
-    KbIcoBox.BackgroundColor3 = Color3.fromRGB(22, 24, 36)
-    KbIcoBox.BorderSizePixel = 0
-    KbIcoBox.Parent = KeybindCard
-    Instance.new("UICorner", KbIcoBox).CornerRadius = UDim.new(0, 6)
+    KbIcoBox.BackgroundColor3 = Color3.fromRGB(28, 34, 52)
+    KbIcoBox.BackgroundTransparency = 0.35
+    KbIcoBox.Parent = KeybindRow
+    Instance.new("UICorner", KbIcoBox).CornerRadius = UDim.new(0, 8)
 
     local KbIcoImg = Instance.new("ImageLabel")
-    KbIcoImg.Size = UDim2.new(0, 15, 0, 15)
+    KbIcoImg.Size = UDim2.new(0, 16, 0, 16)
     KbIcoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
     KbIcoImg.AnchorPoint = Vector2.new(0.5, 0.5)
     KbIcoImg.BackgroundTransparency = 1
@@ -1003,37 +862,38 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     KbTitle.TextSize = 12
     KbTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     KbTitle.TextXAlignment = Enum.TextXAlignment.Left
-    KbTitle.Position = UDim2.new(0, 36, 0, 4)
-    KbTitle.Size = UDim2.new(1, -95, 0, 16)
+    KbTitle.Position = UDim2.new(0, 42, 0, 8)
+    KbTitle.Size = UDim2.new(1, -110, 0, 16)
     KbTitle.BackgroundTransparency = 1
-    KbTitle.Parent = KeybindCard
+    KbTitle.Parent = KeybindRow
 
     local KbDesc = Instance.new("TextLabel")
-    KbDesc.Text = "Kliknij badge, aby przypisać nowy klawisz"
+    KbDesc.Text = "Kliknij plakietkę po prawej, aby zarejestrować nowy skrót klawiszowy"
     KbDesc.Font = Enum.Font.GothamMedium
     KbDesc.TextSize = 10
-    KbDesc.TextColor3 = Color3.fromRGB(130, 135, 155)
+    KbDesc.TextColor3 = Color3.fromRGB(140, 148, 175)
     KbDesc.TextXAlignment = Enum.TextXAlignment.Left
-    KbDesc.Position = UDim2.new(0, 36, 0, 22)
-    KbDesc.Size = UDim2.new(1, -95, 0, 14)
+    KbDesc.Position = UDim2.new(0, 42, 0, 26)
+    KbDesc.Size = UDim2.new(1, -110, 0, 14)
     KbDesc.BackgroundTransparency = 1
-    KbDesc.Parent = KeybindCard
+    KbDesc.Parent = KeybindRow
 
     local KbBadge = Instance.new("TextButton")
-    KbBadge.Size = UDim2.new(0, 44, 0, 24)
+    KbBadge.Size = UDim2.new(0, 52, 0, 26)
     KbBadge.Position = UDim2.new(1, 0, 0.5, 0)
     KbBadge.AnchorPoint = Vector2.new(1, 0.5)
-    KbBadge.BackgroundColor3 = Color3.fromRGB(26, 28, 42)
+    KbBadge.BackgroundColor3 = Color3.fromRGB(28, 34, 50)
     local curK = (UI and UI.CurrentMenuKeyName) or "K"
     KbBadge.Text = "[" .. tostring(curK) .. "]"
     KbBadge.Font = Enum.Font.GothamBold
     KbBadge.TextSize = 11
     KbBadge.TextColor3 = Color3.fromRGB(165, 180, 252)
     KbBadge.AutoButtonColor = false
-    KbBadge.Parent = KeybindCard
-    Instance.new("UICorner", KbBadge).CornerRadius = UDim.new(0, 6)
+    KbBadge.Parent = KeybindRow
+    Instance.new("UICorner", KbBadge).CornerRadius = UDim.new(0, 8)
+
     local KbbStroke = Instance.new("UIStroke", KbBadge)
-    KbbStroke.Color = Color3.fromRGB(48, 52, 75)
+    KbbStroke.Color = Color3.fromRGB(55, 64, 92)
     KbbStroke.Thickness = 1
 
     local isBindingKey = false
@@ -1055,86 +915,51 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
                 end
                 KbBadge.Text = "[" .. nk.Name .. "]"
                 KbBadge.TextColor3 = Color3.fromRGB(165, 180, 252)
-                KbbStroke.Color = Color3.fromRGB(48, 52, 75)
+                KbbStroke.Color = Color3.fromRGB(55, 64, 92)
                 if UI and UI.SetMenuKeybind then UI:SetMenuKeybind(nk) end
             end
         end)
     end)
 
-    -- // =========================================================================
-    -- // 5. CONFIG CLOUD & LOCAL VAULT
-    -- // =========================================================================
-    local ConfigsSection = Instance.new("Frame")
-    ConfigsSection.Name = "ConfigsSection"
-    ConfigsSection.Size = UDim2.new(1, 0, 0, 0)
-    ConfigsSection.AutomaticSize = Enum.AutomaticSize.Y
-    ConfigsSection.BackgroundTransparency = 1
-    ConfigsSection.LayoutOrder = 5
-    ConfigsSection.Parent = Page
-
-    local CfgSecLayout = Instance.new("UIListLayout", ConfigsSection)
-    CfgSecLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    CfgSecLayout.Padding = UDim.new(0, 8)
-
-    local CfgHeader = createSectionHeader("CONFIG CLOUD & LOCAL VAULT", "folder", "Zarządzaj profilami ustawień lokalnie na PC oraz z chmury")
-    CfgHeader.LayoutOrder = 1
-    CfgHeader.Parent = ConfigsSection
-
-    local ConfigsCard = Instance.new("Frame")
-    ConfigsCard.Name = "ConfigsCard"
-    ConfigsCard.Size = UDim2.new(1, 0, 0, 0)
-    ConfigsCard.AutomaticSize = Enum.AutomaticSize.Y
-    ConfigsCard.BackgroundColor3 = Color3.fromRGB(15, 16, 24)
-    ConfigsCard.BorderSizePixel = 0
-    ConfigsCard.LayoutOrder = 2
-    ConfigsCard.Parent = ConfigsSection
-    Instance.new("UICorner", ConfigsCard).CornerRadius = UDim.new(0, 10)
-    local CcStroke = Instance.new("UIStroke", ConfigsCard)
-    CcStroke.Color = Color3.fromRGB(34, 36, 52)
-    CcStroke.Thickness = 1.2
-
-    local CcPadding = Instance.new("UIPadding", ConfigsCard)
-    CcPadding.PaddingLeft = UDim.new(0, 12)
-    CcPadding.PaddingRight = UDim.new(0, 12)
-    CcPadding.PaddingTop = UDim.new(0, 12)
-    CcPadding.PaddingBottom = UDim.new(0, 12)
-
-    local CcList = Instance.new("UIListLayout", ConfigsCard)
-    CcList.SortOrder = Enum.SortOrder.LayoutOrder
-    CcList.Padding = UDim.new(0, 10)
+    -- =========================================================================
+    -- BENTO 4: CONFIG CLOUD & LOCAL VAULT (PROFILE I CHMURA)
+    -- =========================================================================
+    local ConfigsCard, _ = createBentoCard("ConfigsCard", 4)
+    createCardHeader(ConfigsCard, "CONFIG CLOUD & LOCAL VAULT", "folder", "Zarządzaj profilami ustawień lokalnie na PC oraz z chmury", 1)
 
     -- Wiersz 1: Szukajka + Filtry (All / Local / Public)
     local CfgTopBar = Instance.new("Frame")
     CfgTopBar.Name = "CfgTopBar"
-    CfgTopBar.Size = UDim2.new(1, 0, 0, 32)
+    CfgTopBar.Size = UDim2.new(1, 0, 0, 34)
     CfgTopBar.BackgroundTransparency = 1
-    CfgTopBar.LayoutOrder = 1
+    CfgTopBar.LayoutOrder = 2
     CfgTopBar.Parent = ConfigsCard
 
     local SearchBoxFrame = Instance.new("Frame")
     SearchBoxFrame.Size = UDim2.new(1, -170, 1, 0)
-    SearchBoxFrame.BackgroundColor3 = Color3.fromRGB(20, 21, 32)
+    SearchBoxFrame.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
     SearchBoxFrame.Parent = CfgTopBar
-    Instance.new("UICorner", SearchBoxFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", SearchBoxFrame).CornerRadius = UDim.new(0, 8)
+
     local SbfStroke = Instance.new("UIStroke", SearchBoxFrame)
-    SbfStroke.Color = Color3.fromRGB(36, 38, 54)
+    SbfStroke.Color = Color3.fromRGB(42, 48, 70)
     SbfStroke.Thickness = 1
 
     local SIco = Instance.new("ImageLabel")
     SIco.Size = UDim2.new(0, 14, 0, 14)
-    SIco.Position = UDim2.new(0, 8, 0.5, 0)
+    SIco.Position = UDim2.new(0, 10, 0.5, 0)
     SIco.AnchorPoint = Vector2.new(0, 0.5)
     SIco.BackgroundTransparency = 1
-    SIco.ImageColor3 = Color3.fromRGB(120, 125, 145)
+    SIco.ImageColor3 = Color3.fromRGB(130, 138, 160)
     SIco.Parent = SearchBoxFrame
     if Icons and Icons.Apply then Icons:Apply(SIco, "search") end
 
     local SearchInput = Instance.new("TextBox")
-    SearchInput.Size = UDim2.new(1, -30, 1, 0)
-    SearchInput.Position = UDim2.new(0, 26, 0, 0)
+    SearchInput.Size = UDim2.new(1, -34, 1, 0)
+    SearchInput.Position = UDim2.new(0, 28, 0, 0)
     SearchInput.BackgroundTransparency = 1
     SearchInput.PlaceholderText = "Szukaj profilu config..."
-    SearchInput.PlaceholderColor3 = Color3.fromRGB(90, 95, 115)
+    SearchInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
     SearchInput.TextColor3 = Color3.fromRGB(255, 255, 255)
     SearchInput.Font = Enum.Font.GothamMedium
     SearchInput.TextSize = 11
@@ -1160,7 +985,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     local function makeFilterBtn(key, labelText, order)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(0, 50, 1, 0)
-        btn.BackgroundColor3 = (key == activeFilter) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(20, 21, 32)
+        btn.BackgroundColor3 = (key == activeFilter) and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
         btn.Text = labelText
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 10
@@ -1168,9 +993,9 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         btn.AutoButtonColor = false
         btn.LayoutOrder = order
         btn.Parent = FilterDock
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
         local bs = Instance.new("UIStroke", btn)
-        bs.Color = (key == activeFilter) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(36, 38, 54)
+        bs.Color = (key == activeFilter) and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70)
         bs.Thickness = 1
         filterBtns[key] = btn
         return btn
@@ -1183,18 +1008,19 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     -- Wiersz 2: Zapis nowego profilu
     local SaveRow = Instance.new("Frame")
     SaveRow.Name = "SaveRow"
-    SaveRow.Size = UDim2.new(1, 0, 0, 32)
+    SaveRow.Size = UDim2.new(1, 0, 0, 34)
     SaveRow.BackgroundTransparency = 1
-    SaveRow.LayoutOrder = 2
+    SaveRow.LayoutOrder = 3
     SaveRow.Parent = ConfigsCard
 
     local NameBox = Instance.new("Frame")
-    NameBox.Size = UDim2.new(1, -115, 1, 0)
-    NameBox.BackgroundColor3 = Color3.fromRGB(20, 21, 32)
+    NameBox.Size = UDim2.new(1, -120, 1, 0)
+    NameBox.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
     NameBox.Parent = SaveRow
-    Instance.new("UICorner", NameBox).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", NameBox).CornerRadius = UDim.new(0, 8)
+
     local NbStroke = Instance.new("UIStroke", NameBox)
-    NbStroke.Color = Color3.fromRGB(36, 38, 54)
+    NbStroke.Color = Color3.fromRGB(42, 48, 70)
     NbStroke.Thickness = 1
 
     local NameInput = Instance.new("TextBox")
@@ -1202,7 +1028,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     NameInput.Position = UDim2.new(0, 8, 0, 0)
     NameInput.BackgroundTransparency = 1
     NameInput.PlaceholderText = "Nazwa nowego configu..."
-    NameInput.PlaceholderColor3 = Color3.fromRGB(90, 95, 115)
+    NameInput.PlaceholderColor3 = Color3.fromRGB(100, 108, 130)
     NameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
     NameInput.Font = Enum.Font.GothamMedium
     NameInput.TextSize = 11
@@ -1211,7 +1037,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     NameInput.Parent = NameBox
 
     local SaveBtn = Instance.new("TextButton")
-    SaveBtn.Size = UDim2.new(0, 105, 1, 0)
+    SaveBtn.Size = UDim2.new(0, 110, 1, 0)
     SaveBtn.Position = UDim2.new(1, 0, 0, 0)
     SaveBtn.AnchorPoint = Vector2.new(1, 0)
     SaveBtn.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
@@ -1221,7 +1047,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     SaveBtn.AutoButtonColor = false
     SaveBtn.Parent = SaveRow
-    Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
 
     -- Kontener listy configów
     local CfgListContainer = Instance.new("Frame")
@@ -1229,12 +1055,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     CfgListContainer.Size = UDim2.new(1, 0, 0, 0)
     CfgListContainer.AutomaticSize = Enum.AutomaticSize.Y
     CfgListContainer.BackgroundTransparency = 1
-    CfgListContainer.LayoutOrder = 3
+    CfgListContainer.LayoutOrder = 4
     CfgListContainer.Parent = ConfigsCard
 
     local ClLayout = Instance.new("UIListLayout", CfgListContainer)
     ClLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ClLayout.Padding = UDim.new(0, 6)
+    ClLayout.Padding = UDim.new(0, 8)
 
     local function applyConfigData(data)
         if type(data) ~= "table" then return false end
@@ -1259,10 +1085,10 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         for fKey, btn in pairs(filterBtns) do
             local isSel = (fKey == activeFilter)
-            btn.BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(20, 21, 32)
+            btn.BackgroundColor3 = isSel and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(22, 26, 38)
             btn.TextColor3 = isSel and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 145, 165)
             local st = btn:FindFirstChildOfClass("UIStroke")
-            if st then st.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(36, 38, 54) end
+            if st then st.Color = isSel and Color3.fromRGB(165, 180, 252) or Color3.fromRGB(42, 48, 70) end
         end
 
         local query = SearchInput.Text:lower():gsub("^%s+", ""):gsub("%s+$", "")
@@ -1369,11 +1195,11 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
         if #items == 0 then
             local emptyLabel = Instance.new("TextLabel")
-            emptyLabel.Size = UDim2.new(1, 0, 0, 40)
+            emptyLabel.Size = UDim2.new(1, 0, 0, 36)
             emptyLabel.BackgroundTransparency = 1
             emptyLabel.Font = Enum.Font.GothamMedium
             emptyLabel.TextSize = 11
-            emptyLabel.TextColor3 = Color3.fromRGB(130, 135, 155)
+            emptyLabel.TextColor3 = Color3.fromRGB(130, 138, 160)
             emptyLabel.Text = (query ~= "") and ("Brak konfiguracji pasujących do: '" .. query .. "'") or "Brak zapisanych profili. Wpisz nazwę powyżej i kliknij '+ Zapisz Config'."
             emptyLabel.Parent = CfgListContainer
             return
@@ -1382,17 +1208,18 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         for idx, item in ipairs(items) do
             local Card = Instance.new("Frame")
             Card.Name = item.Name
-            Card.Size = UDim2.new(1, 0, 0, 38)
-            Card.BackgroundColor3 = Color3.fromRGB(20, 21, 32)
+            Card.Size = UDim2.new(1, 0, 0, 40)
+            Card.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
             Card.LayoutOrder = idx
             Card.Parent = CfgListContainer
-            Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+            Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 10)
+
             local cStrk = Instance.new("UIStroke", Card)
-            cStrk.Color = Color3.fromRGB(36, 38, 54)
+            cStrk.Color = Color3.fromRGB(42, 48, 70)
             cStrk.Thickness = 1
 
             local CIco = Instance.new("ImageLabel")
-            CIco.Size = UDim2.new(0, 15, 0, 15)
+            CIco.Size = UDim2.new(0, 16, 0, 16)
             CIco.Position = UDim2.new(0, 10, 0.5, 0)
             CIco.AnchorPoint = Vector2.new(0, 0.5)
             CIco.BackgroundTransparency = 1
@@ -1404,7 +1231,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
             local NameLbl = Instance.new("TextLabel")
             NameLbl.Size = UDim2.new(1, isLocal and -240 or -150, 1, 0)
-            NameLbl.Position = UDim2.new(0, 32, 0, 0)
+            NameLbl.Position = UDim2.new(0, 34, 0, 0)
             NameLbl.BackgroundTransparency = 1
             NameLbl.Font = Enum.Font.GothamBold
             NameLbl.TextSize = 12
@@ -1416,12 +1243,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
             -- Badge typu
             local Badge = Instance.new("Frame")
-            Badge.Size = UDim2.new(0, 48, 0, 18)
+            Badge.Size = UDim2.new(0, 50, 0, 20)
             Badge.Position = UDim2.new(1, isLocal and -148 or -62, 0.5, 0)
             Badge.AnchorPoint = Vector2.new(1, 0.5)
-            Badge.BackgroundColor3 = (item.Type == "public") and Color3.fromRGB(15, 30, 50) or Color3.fromRGB(15, 40, 25)
+            Badge.BackgroundColor3 = (item.Type == "public") and Color3.fromRGB(18, 32, 54) or Color3.fromRGB(18, 42, 30)
             Badge.Parent = Card
-            Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 4)
+            Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 6)
 
             local Blbl = Instance.new("TextLabel")
             Blbl.Size = UDim2.new(1, 0, 1, 0)
@@ -1434,17 +1261,17 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
             if isLocal then
                 local SaveItemBtn = Instance.new("TextButton")
-                SaveItemBtn.Size = UDim2.new(0, 48, 0, 24)
+                SaveItemBtn.Size = UDim2.new(0, 48, 0, 26)
                 SaveItemBtn.Position = UDim2.new(1, -94, 0.5, 0)
                 SaveItemBtn.AnchorPoint = Vector2.new(1, 0.5)
                 SaveItemBtn.Text = "Save"
                 SaveItemBtn.Font = Enum.Font.GothamBold
                 SaveItemBtn.TextSize = 10
-                SaveItemBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 48)
+                SaveItemBtn.BackgroundColor3 = Color3.fromRGB(30, 36, 52)
                 SaveItemBtn.TextColor3 = Color3.fromRGB(220, 225, 245)
                 SaveItemBtn.AutoButtonColor = false
                 SaveItemBtn.Parent = Card
-                Instance.new("UICorner", SaveItemBtn).CornerRadius = UDim.new(0, 5)
+                Instance.new("UICorner", SaveItemBtn).CornerRadius = UDim.new(0, 6)
 
                 SaveItemBtn.MouseButton1Click:Connect(function()
                     local enc = HttpService:JSONEncode(UI.MenuConfig or {})
@@ -1459,7 +1286,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             end
 
             local LoadItemBtn = Instance.new("TextButton")
-            LoadItemBtn.Size = UDim2.new(0, 48, 0, 24)
+            LoadItemBtn.Size = UDim2.new(0, 48, 0, 26)
             LoadItemBtn.Position = UDim2.new(1, isLocal and -40 or -6, 0.5, 0)
             LoadItemBtn.AnchorPoint = Vector2.new(1, 0.5)
             LoadItemBtn.Text = "Load"
@@ -1469,7 +1296,7 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             LoadItemBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             LoadItemBtn.AutoButtonColor = false
             LoadItemBtn.Parent = Card
-            Instance.new("UICorner", LoadItemBtn).CornerRadius = UDim.new(0, 5)
+            Instance.new("UICorner", LoadItemBtn).CornerRadius = UDim.new(0, 6)
 
             LoadItemBtn.MouseButton1Click:Connect(function()
                 local d = item.Load()
@@ -1488,14 +1315,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
 
             if isLocal and item.Delete then
                 local DelBtn = Instance.new("TextButton")
-                DelBtn.Size = UDim2.new(0, 26, 0, 24)
+                DelBtn.Size = UDim2.new(0, 28, 0, 26)
                 DelBtn.Position = UDim2.new(1, -6, 0.5, 0)
                 DelBtn.AnchorPoint = Vector2.new(1, 0.5)
                 DelBtn.Text = ""
                 DelBtn.BackgroundColor3 = Color3.fromRGB(225, 29, 72)
                 DelBtn.AutoButtonColor = false
                 DelBtn.Parent = Card
-                Instance.new("UICorner", DelBtn).CornerRadius = UDim.new(0, 5)
+                Instance.new("UICorner", DelBtn).CornerRadius = UDim.new(0, 6)
 
                 local DelIco = Instance.new("ImageLabel")
                 DelIco.Size = UDim2.new(0, 12, 0, 12)
