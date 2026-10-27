@@ -178,7 +178,7 @@ local function isMobileDevice(cfg)
 end
 
 -- // ============================================================
--- // WSKAŹNIK PROCESU ŁADOWANIA (Elegancki HUD Toast)
+-- // EKRAN INICJALIZACJI: PŁYNNA ANIMACJA LIXHUB (VISIONOS GLASS EMBLEM)
 -- // ============================================================
 local function createLoadingIndicator(title, isMobile)
     local screenParent
@@ -186,185 +186,392 @@ local function createLoadingIndicator(title, isMobile)
     if not screenParent then screenParent = PlayerGui end
 
     local loaderGui = Instance.new("ScreenGui")
-    loaderGui.Name = "MenuLoaderToast_" .. math.random(1000, 9999)
+    loaderGui.Name = "LixHub_LoaderSplash"
     loaderGui:SetAttribute("MenuLoaderIndicator", true)
     loaderGui.ResetOnSpawn = false
     loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     loaderGui.DisplayOrder = 999999
+    pcall(function() loaderGui.IgnoreGuiInset = true end)
     pcall(function() loaderGui.Parent = screenParent end)
 
-    local Toast = Instance.new("Frame")
-    Toast.Name = "Toast"
-    Toast.Size = UDim2.new(0, 240, 0, 48)
-    Toast.Position = UDim2.new(0.5, -120, 0, -60)
-    Toast.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    Toast.BackgroundTransparency = 0.1
-    Toast.BorderSizePixel = 0
-    Toast.ClipsDescendants = true
-    Toast.Parent = loaderGui
+    -- Ciemne tło winiety kinowej (Cinematic Glass Backdrop)
+    local Backdrop = Instance.new("Frame")
+    Backdrop.Name = "Backdrop"
+    Backdrop.Size = UDim2.new(1, 0, 1, 0)
+    Backdrop.BackgroundColor3 = Color3.fromRGB(5, 6, 9)
+    Backdrop.BackgroundTransparency = 1
+    Backdrop.BorderSizePixel = 0
+    Backdrop.ZIndex = 1
+    Backdrop.Parent = loaderGui
 
-    Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 8)
-    local ToastStroke = Instance.new("UIStroke", Toast)
-    ToastStroke.Color = Color3.fromRGB(55, 55, 62)
-    ToastStroke.Thickness = 1.2
-    ToastStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    -- Główna karta Splash LixHub
+    local Splash = Instance.new("Frame")
+    Splash.Name = "LixHub_Splash"
+    Splash.Size = UDim2.new(0, 310, 0, 195)
+    Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
+    Splash.AnchorPoint = Vector2.new(0.5, 0.5)
+    Splash.BackgroundColor3 = Color3.fromRGB(13, 14, 21)
+    Splash.BackgroundTransparency = 1
+    Splash.BorderSizePixel = 0
+    Splash.ClipsDescendants = true
+    Splash.ZIndex = 2
+    Splash.Parent = loaderGui
 
-    local IconDot = Instance.new("Frame")
-    IconDot.Size = UDim2.new(0, 10, 0, 10)
-    IconDot.Position = UDim2.new(0, 14, 0, 15)
-    IconDot.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
-    IconDot.BorderSizePixel = 0
-    IconDot.Parent = Toast
-    Instance.new("UICorner", IconDot).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", Splash).CornerRadius = UDim.new(0, 22)
+    local SplashStroke = Instance.new("UIStroke", Splash)
+    SplashStroke.Color = Color3.fromRGB(80, 95, 145)
+    SplashStroke.Thickness = 1.2
+    SplashStroke.Transparency = 1
+    SplashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Text = title or "Menu"
-    TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.TextSize = 12
-    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.Position = UDim2.new(0, 32, 0, 8)
-    TitleLabel.Size = UDim2.new(1, -40, 0, 14)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Parent = Toast
+    -- Rozświetlenie poświaty tła w karcie (Ambient Glow Gradient)
+    local GlowRadial = Instance.new("Frame")
+    GlowRadial.Size = UDim2.new(0, 160, 0, 160)
+    GlowRadial.Position = UDim2.new(0.5, 0, 0.28, 0)
+    GlowRadial.AnchorPoint = Vector2.new(0.5, 0.5)
+    GlowRadial.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    GlowRadial.BackgroundTransparency = 0.92
+    GlowRadial.BorderSizePixel = 0
+    GlowRadial.ZIndex = 3
+    GlowRadial.Parent = Splash
+    Instance.new("UICorner", GlowRadial).CornerRadius = UDim.new(1, 0)
 
-    local StatusLabel = Instance.new("TextLabel")
-    StatusLabel.Text = "Ładowanie modułów..."
-    StatusLabel.Font = Enum.Font.Gotham
-    StatusLabel.TextSize = 10
-    StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
-    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    StatusLabel.Position = UDim2.new(0, 32, 0, 23)
-    StatusLabel.Size = UDim2.new(1, -40, 0, 14)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Parent = Toast
+    -- // ========================================================
+    -- // ORBITAL LOGO CORE (Animowany rdzeń z obracającymi się cząstkami)
+    -- // ========================================================
+    local LogoContainer = Instance.new("Frame")
+    LogoContainer.Name = "LogoContainer"
+    LogoContainer.Size = UDim2.new(0, 64, 0, 64)
+    LogoContainer.Position = UDim2.new(0.5, 0, 0, 44)
+    LogoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+    LogoContainer.BackgroundTransparency = 1
+    LogoContainer.ZIndex = 4
+    LogoContainer.Parent = Splash
 
-    local BarBg = Instance.new("Frame")
-    BarBg.Size = UDim2.new(1, 0, 0, 3)
-    BarBg.Position = UDim2.new(0, 0, 1, -3)
-    BarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-    BarBg.BorderSizePixel = 0
-    BarBg.Parent = Toast
+    -- Zewnętrzny pierścień orbitalny
+    local OrbitRing = Instance.new("Frame")
+    OrbitRing.Size = UDim2.new(1, 0, 1, 0)
+    OrbitRing.BackgroundTransparency = 1
+    OrbitRing.ZIndex = 4
+    OrbitRing.Parent = LogoContainer
+    Instance.new("UICorner", OrbitRing).CornerRadius = UDim.new(1, 0)
+    local OrbitStroke = Instance.new("UIStroke", OrbitRing)
+    OrbitStroke.Color = Color3.fromRGB(60, 70, 105)
+    OrbitStroke.Thickness = 1
+    OrbitStroke.Transparency = 0.55
 
-    local BarFill = Instance.new("Frame")
-    BarFill.Size = UDim2.new(0, 0, 1, 0)
-    BarFill.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
-    BarFill.BorderSizePixel = 0
-    BarFill.Parent = BarBg
+    -- Rotator cząstek orbitalnych
+    local OrbitSpinner = Instance.new("Frame")
+    OrbitSpinner.Size = UDim2.new(1, 0, 1, 0)
+    OrbitSpinner.BackgroundTransparency = 1
+    OrbitSpinner.ZIndex = 5
+    OrbitSpinner.Parent = LogoContainer
 
-    TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -120, 0, 18)
+    local Satellite1 = Instance.new("Frame")
+    Satellite1.Size = UDim2.new(0, 7, 0, 7)
+    Satellite1.Position = UDim2.new(0.5, -3.5, 0, -3.5)
+    Satellite1.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    Satellite1.BorderSizePixel = 0
+    Satellite1.ZIndex = 6
+    Satellite1.Parent = OrbitSpinner
+    Instance.new("UICorner", Satellite1).CornerRadius = UDim.new(1, 0)
+    local Sat1Stroke = Instance.new("UIStroke", Satellite1)
+    Sat1Stroke.Color = Color3.fromRGB(168, 85, 247)
+    Sat1Stroke.Thickness = 1.2
+
+    local Satellite2 = Instance.new("Frame")
+    Satellite2.Size = UDim2.new(0, 5, 0, 5)
+    Satellite2.Position = UDim2.new(0.5, -2.5, 1, -2.5)
+    Satellite2.BackgroundColor3 = Color3.fromRGB(56, 189, 248)
+    Satellite2.BorderSizePixel = 0
+    Satellite2.ZIndex = 6
+    Satellite2.Parent = OrbitSpinner
+    Instance.new("UICorner", Satellite2).CornerRadius = UDim.new(1, 0)
+
+    -- Środkowa szklana kula monogramu LixHub
+    local CoreOrb = Instance.new("Frame")
+    CoreOrb.Name = "CoreOrb"
+    CoreOrb.Size = UDim2.new(0, 46, 0, 46)
+    CoreOrb.Position = UDim2.new(0.5, 0, 0.5, 0)
+    CoreOrb.AnchorPoint = Vector2.new(0.5, 0.5)
+    CoreOrb.BackgroundColor3 = Color3.fromRGB(22, 25, 38)
+    CoreOrb.BorderSizePixel = 0
+    CoreOrb.ZIndex = 7
+    CoreOrb.Parent = LogoContainer
+    Instance.new("UICorner", CoreOrb).CornerRadius = UDim.new(1, 0)
+
+    local CoreStroke = Instance.new("UIStroke", CoreOrb)
+    CoreStroke.Color = Color3.fromRGB(110, 130, 245)
+    CoreStroke.Thickness = 1.2
+    CoreStroke.Transparency = 0.35
+
+    local CoreGradient = Instance.new("UIGradient", CoreOrb)
+    CoreGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(36, 40, 65)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 20, 32))
+    })
+    CoreGradient.Rotation = 45
+
+    local CoreIcon = Instance.new("TextLabel")
+    CoreIcon.Text = "L"
+    CoreIcon.Font = Enum.Font.GothamBold
+    CoreIcon.TextSize = 22
+    CoreIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CoreIcon.Size = UDim2.new(1, 0, 1, 0)
+    CoreIcon.BackgroundTransparency = 1
+    CoreIcon.ZIndex = 8
+    CoreIcon.Parent = CoreOrb
+
+    -- // ========================================================
+    -- // TYPOGRAFIA MARKI "LixHub"
+    -- // ========================================================
+    local TitleRow = Instance.new("Frame")
+    TitleRow.Name = "TitleRow"
+    TitleRow.Size = UDim2.new(1, 0, 0, 26)
+    TitleRow.Position = UDim2.new(0.5, 0, 0, 96)
+    TitleRow.AnchorPoint = Vector2.new(0.5, 0)
+    TitleRow.BackgroundTransparency = 1
+    TitleRow.ZIndex = 5
+    TitleRow.Parent = Splash
+
+    local TitleLayout = Instance.new("UIListLayout", TitleRow)
+    TitleLayout.FillDirection = Enum.FillDirection.Horizontal
+    TitleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    TitleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    TitleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TitleLayout.Padding = UDim.new(0, 5)
+
+    local LixText = Instance.new("TextLabel")
+    LixText.Name = "LixText"
+    LixText.Text = "LIX"
+    LixText.Font = Enum.Font.GothamBold
+    LixText.TextSize = 21
+    LixText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    LixText.AutomaticSize = Enum.AutomaticSize.X
+    LixText.Size = UDim2.new(0, 0, 1, 0)
+    LixText.BackgroundTransparency = 1
+    LixText.LayoutOrder = 1
+    LixText.ZIndex = 6
+    LixText.Parent = TitleRow
+
+    local HubBadge = Instance.new("Frame")
+    HubBadge.Name = "HubBadge"
+    HubBadge.Size = UDim2.new(0, 44, 0, 20)
+    HubBadge.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
+    HubBadge.BorderSizePixel = 0
+    HubBadge.LayoutOrder = 2
+    HubBadge.ZIndex = 6
+    HubBadge.Parent = TitleRow
+    Instance.new("UICorner", HubBadge).CornerRadius = UDim.new(0, 6)
+
+    local HbStroke = Instance.new("UIStroke", HubBadge)
+    HbStroke.Color = Color3.fromRGB(168, 85, 247)
+    HbStroke.Thickness = 1
+    HbStroke.Transparency = 0.45
+
+    local HubText = Instance.new("TextLabel")
+    HubText.Text = "HUB"
+    HubText.Font = Enum.Font.GothamBold
+    HubText.TextSize = 11
+    HubText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    HubText.Size = UDim2.new(1, 0, 1, 0)
+    HubText.BackgroundTransparency = 1
+    HubText.ZIndex = 7
+    HubText.Parent = HubBadge
+
+    -- // ========================================================
+    -- // PŁYNNA ANIMACJA WSKAŹNIKA (LASER WAVE + FLUID PULSE DOTS)
+    -- // Zamiast brzydkiego paska postępu i surowego napisu
+    -- // ========================================================
+    local AnimContainer = Instance.new("Frame")
+    AnimContainer.Name = "AnimContainer"
+    AnimContainer.Size = UDim2.new(1, 0, 0, 40)
+    AnimContainer.Position = UDim2.new(0.5, 0, 0, 132)
+    AnimContainer.AnchorPoint = Vector2.new(0.5, 0)
+    AnimContainer.BackgroundTransparency = 1
+    AnimContainer.ZIndex = 5
+    AnimContainer.Parent = Splash
+
+    -- 1. Płynna kapsuła fali laserowej (Laser Wave Beam)
+    local WaveCapsule = Instance.new("Frame")
+    WaveCapsule.Name = "WaveCapsule"
+    WaveCapsule.Size = UDim2.new(0, 130, 0, 3)
+    WaveCapsule.Position = UDim2.new(0.5, 0, 0, 10)
+    WaveCapsule.AnchorPoint = Vector2.new(0.5, 0.5)
+    WaveCapsule.BackgroundColor3 = Color3.fromRGB(25, 28, 42)
+    WaveCapsule.BackgroundTransparency = 0.3
+    WaveCapsule.BorderSizePixel = 0
+    WaveCapsule.ClipsDescendants = true
+    WaveCapsule.ZIndex = 6
+    WaveCapsule.Parent = AnimContainer
+    Instance.new("UICorner", WaveCapsule).CornerRadius = UDim.new(1, 0)
+
+    local LaserBeam = Instance.new("Frame")
+    LaserBeam.Name = "LaserBeam"
+    LaserBeam.Size = UDim2.new(0, 50, 1, 0)
+    LaserBeam.Position = UDim2.new(0, -50, 0, 0)
+    LaserBeam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    LaserBeam.BorderSizePixel = 0
+    LaserBeam.ZIndex = 7
+    LaserBeam.Parent = WaveCapsule
+
+    local BeamGrad = Instance.new("UIGradient", LaserBeam)
+    BeamGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(56, 189, 248)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(168, 85, 247)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(99, 102, 241))
+    })
+    BeamGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.5, 0),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+
+    -- 2. Trzy płynnie pulsujące kropki ciekłego szkła (Fluid Liquid Dots)
+    local DotsRow = Instance.new("Frame")
+    DotsRow.Name = "DotsRow"
+    DotsRow.Size = UDim2.new(0, 48, 0, 12)
+    DotsRow.Position = UDim2.new(0.5, 0, 0, 24)
+    DotsRow.AnchorPoint = Vector2.new(0.5, 0.5)
+    DotsRow.BackgroundTransparency = 1
+    DotsRow.ZIndex = 6
+    DotsRow.Parent = AnimContainer
+
+    local DotsLayout = Instance.new("UIListLayout", DotsRow)
+    DotsLayout.FillDirection = Enum.FillDirection.Horizontal
+    DotsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    DotsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    DotsLayout.Padding = UDim.new(0, 8)
+
+    local dots = {}
+    for i = 1, 3 do
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.new(0, 5, 0, 5)
+        dot.BackgroundColor3 = (i == 2) and Color3.fromRGB(168, 85, 247) or Color3.fromRGB(99, 102, 241)
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 7
+        dot.Parent = DotsRow
+        Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+        table.insert(dots, dot)
+    end
+
+    -- Dynamiczna etykieta statusu gotowości (Ready Status) po ukończeniu
+    local ReadyLabel = Instance.new("TextLabel")
+    ReadyLabel.Name = "ReadyLabel"
+    ReadyLabel.Text = ""
+    ReadyLabel.Font = Enum.Font.GothamBold
+    ReadyLabel.TextSize = 11
+    ReadyLabel.TextColor3 = Color3.fromRGB(74, 222, 128)
+    ReadyLabel.TextTransparency = 1
+    ReadyLabel.Size = UDim2.new(1, 0, 0, 20)
+    ReadyLabel.Position = UDim2.new(0.5, 0, 0, 16)
+    ReadyLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    ReadyLabel.BackgroundTransparency = 1
+    ReadyLabel.ZIndex = 8
+    ReadyLabel.Parent = AnimContainer
+
+    -- // ========================================================
+    -- // SILNIK PŁYNNEJ ANIMACJI W CZASIE RZECZYWISTYM (RenderStepped)
+    -- // ========================================================
+    local isRunning = true
+    local rotAngle = 0
+    local laserPos = 0
+    local laserDir = 1
+    local timeClock = 0
+
+    local animConn = RunService.RenderStepped:Connect(function(dt)
+        if not isRunning then return end
+        timeClock = timeClock + dt
+
+        -- Płynny obrót cząstek orbitalnych (120 stopni / sek)
+        rotAngle = (rotAngle + dt * 120) % 360
+        OrbitSpinner.Rotation = rotAngle
+
+        -- Delikatny oddech poświaty tła (Sine breathing pulse)
+        local pulse = (math.sin(timeClock * 2.5) + 1) * 0.5
+        GlowRadial.BackgroundTransparency = 0.90 + (pulse * 0.06)
+
+        -- Płynny ruch lasera w kapsule (Liquid sweep)
+        laserPos = laserPos + (dt * 130 * laserDir)
+        if laserPos > 130 then
+            laserPos = 130
+            laserDir = -1
+        elseif laserPos < -50 then
+            laserPos = -50
+            laserDir = 1
+        end
+        LaserBeam.Position = UDim2.new(0, math.floor(laserPos), 0, 0)
+
+        -- Falowanie 3 płynnych kropek (Staggered liquid sine wave)
+        for idx, d in ipairs(dots) do
+            local dotOffset = (idx - 1) * 0.8
+            local sinVal = (math.sin(timeClock * 4 + dotOffset) + 1) * 0.5
+            d.BackgroundTransparency = 0.15 + (1 - sinVal) * 0.65
+            local dSize = 4 + (sinVal * 2.5)
+            d.Size = UDim2.new(0, dSize, 0, dSize)
+        end
+    end)
+
+    -- Animacja płynnego wejścia (Fade & Float In)
+    TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 0.4 }):Play()
+    TweenService:Create(Splash, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        BackgroundTransparency = 0.08
     }):Play()
+    TweenService:Create(SplashStroke, TweenInfo.new(0.4), { Transparency = 0.35 }):Play()
 
+    -- // ========================================================
+    -- // KONTROLER INTERFEJSU
+    -- // ========================================================
     local controller = {}
+
     function controller:Update(progress, statusText)
-        progress = math.clamp(progress, 0, 1)
-        if statusText then StatusLabel.Text = statusText end
-        TweenService:Create(BarFill, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(progress, 0, 1, 0)
-        }):Play()
+        -- Bez brzydkich napisów i tradycyjnych pasków — animacja LixHub płynie sama
     end
 
     function controller:Done(timeText, keybindName)
         keybindName = tostring(keybindName or "K")
-        IconDot.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        BarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        StatusLabel.Text = "Załadowano w " .. (timeText or "0.2s")
-        TweenService:Create(BarFill, TweenInfo.new(0.08), { Size = UDim2.new(1, 0, 1, 0) }):Play()
-
-        local camera = workspace.CurrentCamera
-        local vp = camera and camera.ViewportSize or Vector2.new(1280, 720)
         local isMobileView = isMobile or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
-        local splashWidth = math.min(360, vp.X - 24)
+        local hint = isMobileView and "✓ LIXHUB GOTOWY • DOTKNIJ PRZYCISK" or ("✓ LIXHUB GOTOWY • KLAWISZ [" .. keybindName .. "]")
 
-        -- Center Splash Modal: "Loaded - Keybind For Open: keybind"
-        local Splash = Instance.new("Frame")
-        Splash.Name = "Splash"
-        Splash.Size = UDim2.new(0, splashWidth, 0, 115)
-        Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
-        Splash.AnchorPoint = Vector2.new(0.5, 0.5)
-        Splash.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-        Splash.BackgroundTransparency = 1
-        Splash.ClipsDescendants = true
-        Splash.ZIndex = 1000
-        Splash.Parent = loaderGui
+        -- Błysk sukcesu na rdzeniu logo
+        TweenService:Create(CoreStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.1 }):Play()
+        TweenService:Create(OrbitStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.3 }):Play()
+        TweenService:Create(Satellite1, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
+        TweenService:Create(Satellite2, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
 
-        Instance.new("UICorner", Splash).CornerRadius = UDim.new(0, 10)
-        local SplashStroke = Instance.new("UIStroke", Splash)
-        SplashStroke.Color = Color3.fromRGB(65, 140, 255)
-        SplashStroke.Thickness = 1.5
-        SplashStroke.Transparency = 1
-        SplashStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        -- Schowaj laser i kropki, pokaż elegancką informację o klawiszu
+        TweenService:Create(WaveCapsule, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
+        TweenService:Create(LaserBeam, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
+        for _, d in ipairs(dots) do
+            TweenService:Create(d, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
+        end
 
-        local SplashHeader = Instance.new("TextLabel")
-        SplashHeader.Text = "✓ LOADED SUCCESSFULLY"
-        SplashHeader.Font = Enum.Font.GothamBold
-        SplashHeader.TextSize = 12
-        SplashHeader.TextColor3 = Color3.fromRGB(100, 255, 140)
-        SplashHeader.TextTransparency = 1
-        SplashHeader.Size = UDim2.new(1, 0, 0, 22)
-        SplashHeader.Position = UDim2.new(0, 0, 0, 14)
-        SplashHeader.BackgroundTransparency = 1
-        SplashHeader.ZIndex = 1001
-        SplashHeader.Parent = Splash
-
-        local keyTextValue = isMobileView and "Mobile Button Enabled" or ("Keybind For Open: \"" .. keybindName .. "\"")
-        local hintTextValue = isMobileView and "Tap floating button to toggle Menu | Drag to move" or ("Press [" .. keybindName .. "] to toggle Menu | Change in Settings")
-
-        local KeybindText = Instance.new("TextLabel")
-        KeybindText.Text = keyTextValue
-        KeybindText.Font = Enum.Font.GothamBold
-        KeybindText.TextSize = isMobile and 15 or 16
-        KeybindText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        KeybindText.TextTransparency = 1
-        KeybindText.Size = UDim2.new(1, -20, 0, 26)
-        KeybindText.Position = UDim2.new(0, 10, 0, 40)
-        KeybindText.BackgroundTransparency = 1
-        KeybindText.ZIndex = 1001
-        KeybindText.Parent = Splash
-
-        local HintText = Instance.new("TextLabel")
-        HintText.Text = hintTextValue
-        HintText.Font = Enum.Font.Gotham
-        HintText.TextSize = 11
-        HintText.TextColor3 = Color3.fromRGB(160, 165, 180)
-        HintText.TextTransparency = 1
-        HintText.Size = UDim2.new(1, -20, 0, 20)
-        HintText.Position = UDim2.new(0, 10, 0, 74)
-        HintText.BackgroundTransparency = 1
-        HintText.ZIndex = 1001
-        HintText.Parent = Splash
-
-        -- Animacja wejścia
-        TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            BackgroundTransparency = 0.05
+        ReadyLabel.Text = hint
+        TweenService:Create(ReadyLabel, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            TextTransparency = 0,
+            Position = UDim2.new(0.5, 0, 0, 16)
         }):Play()
-        TweenService:Create(SplashStroke, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Transparency = 0
-        }):Play()
-        TweenService:Create(SplashHeader, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
-        TweenService:Create(KeybindText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
-        TweenService:Create(HintText, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
 
-        -- Po 2.2 sekundy płynne zniknięcie i usunięcie GUI
-        task.delay(2.2, function()
-            local tw1 = TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, 0, 0.47, 0),
+        -- Po 1.2 sekundy płynne rozejście i usunięcie loadera
+        task.delay(1.2, function()
+            isRunning = false
+            if animConn then pcall(function() animConn:Disconnect() end) end
+
+            local twSplash = TweenService:Create(Splash, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, 0, 0.46, 0),
+                Size = UDim2.new(0, 330, 0, 205),
                 BackgroundTransparency = 1
             })
-            local tw2 = TweenService:Create(SplashStroke, TweenInfo.new(0.35), { Transparency = 1 })
-            local twH = TweenService:Create(SplashHeader, TweenInfo.new(0.3), { TextTransparency = 1 })
-            local twK = TweenService:Create(KeybindText, TweenInfo.new(0.3), { TextTransparency = 1 })
-            local twHint = TweenService:Create(HintText, TweenInfo.new(0.3), { TextTransparency = 1 })
-            local twToast = TweenService:Create(Toast, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, -120, 0, -60),
-                BackgroundTransparency = 1
-            })
-            tw1:Play(); tw2:Play(); twH:Play(); twK:Play(); twHint:Play(); twToast:Play()
-            tw1.Completed:Connect(function()
-                loaderGui:Destroy()
+            local twStroke = TweenService:Create(SplashStroke, TweenInfo.new(0.35), { Transparency = 1 })
+            local twBackdrop = TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 1 })
+
+            twSplash:Play()
+            twStroke:Play()
+            twBackdrop:Play()
+
+            twSplash.Completed:Connect(function()
+                pcall(function() loaderGui:Destroy() end)
             end)
         end)
     end
