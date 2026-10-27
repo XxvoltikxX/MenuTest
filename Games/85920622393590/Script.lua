@@ -63,17 +63,42 @@ local LocalPlayer = Players.LocalPlayer
 -- Flaga żywotności skryptu dla pętli w tle
 local ScriptRunning = true
 
--- // INICJALIZACJA FRAMEWORK LIBRARY GRY (Pet Simulator X / 99)
+-- // INICJALIZACJA FRAMEWORK / LIBRARY GRY (Pet Simulator X / 99)
 local Framework = nil
-pcall(function()
-    local fw = ReplicatedStorage:WaitForChild("Framework", 3)
-    if fw then
-        local lib = fw:WaitForChild("Library", 3)
-        if lib then
-            Framework = require(lib)
+local Library = nil
+
+local function loadGameLibrary()
+    if Framework and (Framework.Network or Framework.Things) then return Framework end
+    local candidates = {
+        function() return require(ReplicatedStorage.Library) end,
+        function() return require(ReplicatedStorage:WaitForChild("Library", 1)) end,
+        function() return require(ReplicatedStorage.Framework.Library) end,
+        function() return require(ReplicatedStorage:WaitForChild("Framework", 1):WaitForChild("Library", 1)) end,
+    }
+    for _, fn in ipairs(candidates) do
+        local ok, res = pcall(fn)
+        if ok and type(res) == "table" then
+            Framework = res
+            Library = res
+            return res
         end
     end
-end)
+    if typeof(getloadedmodules) == "function" then
+        for _, mod in ipairs(getloadedmodules()) do
+            if mod.Name == "Library" or mod.Name == "Framework" then
+                local ok, res = pcall(require, mod)
+                if ok and type(res) == "table" and (res.Network or res.Directory) then
+                    Framework = res
+                    Library = res
+                    return res
+                end
+            end
+        end
+    end
+    return nil
+end
+
+pcall(loadGameLibrary)
 
 -- Bezpieczne pobranie Things i Map
 local function getThingsFolder()
@@ -1208,43 +1233,65 @@ SpeedModule:AddSlider({
 -- // ==========================================================================
 
 local GhostBypassEnabled = true
+local GhostAnchorEnabled = false
+local IsBypassing = false
 local CurrentOpenMachine = nil
 local CurrentOpenPad = nil
+local AnchorOriginalHrpCF = nil
+local AnchorOriginalCamCF = nil
+local AnchorOriginalCamType = nil
 
 local MachineRemoteMap = {
     -- Fuse Pets
     ["fuse pets"] = "Fuse Pets",
+    ["fuse pet"] = "Fuse Pets",
     ["fuse"] = "Fuse Pets",
+    ["fusing"] = "Fuse Pets",
+    ["fuse machine"] = "Fuse Pets",
+    ["fuse machine: fuse"] = "Fuse Pets",
+    ["use fuse pets"] = "Fuse Pets",
+    ["use fuse machine"] = "Fuse Pets",
 
     -- Gold Machine
     ["gold pets"] = "Gold Machine",
+    ["gold pet"] = "Gold Machine",
     ["golden pets"] = "Gold Machine",
+    ["golden pet"] = "Gold Machine",
     ["use golden machine"] = "Gold Machine",
+    ["use gold machine"] = "Gold Machine",
     ["make golden"] = "Gold Machine",
+    ["make gold"] = "Gold Machine",
     ["golden"] = "Gold Machine",
     ["gold"] = "Gold Machine",
+    ["gold machine"] = "Gold Machine",
 
     -- Rainbow Machine
     ["rainbow pets"] = "Rainbow Machine",
+    ["rainbow pet"] = "Rainbow Machine",
     ["use rainbow machine"] = "Rainbow Machine",
     ["make rainbow"] = "Rainbow Machine",
     ["rainbow"] = "Rainbow Machine",
+    ["rainbow machine"] = "Rainbow Machine",
 
     -- Dark Matter Machine
     ["convert to dark matter"] = "Dark Matter",
     ["dark matter"] = "Dark Matter",
     ["darkmatter"] = "Dark Matter",
     ["claim dark matter"] = "Dark Matter",
+    ["dark matter machine"] = "Dark Matter",
+    ["use dark matter machine"] = "Dark Matter",
 
     -- Huge Machine
     ["use huge machine"] = "Huge Machine",
     ["huge machine"] = "Huge Machine",
+    ["huge-a-tron"] = "Huge Machine",
     ["huge"] = "Huge Machine",
 
     -- Upgrade Station
     ["buy upgrade"] = "Upgrade Station",
     ["upgrade"] = "Upgrade Station",
     ["upgrades"] = "Upgrade Station",
+    ["upgrade station"] = "Upgrade Station",
 
     -- Bank
     ["deposit"] = "Bank",
@@ -1255,11 +1302,13 @@ local MachineRemoteMap = {
     -- Pet Collection / Index
     ["pet collection"] = "Pet Collection Machine",
     ["index"] = "Pet Collection Machine",
-    ["claim collection reward"] = "Pet Collection Machine"
+    ["claim collection reward"] = "Pet Collection Machine",
+    ["pet collection machine"] = "Pet Collection Machine"
 }
 
 local function matchMachineByRemote(remoteName)
-    local low = tostring(remoteName or ""):lower()
+    if not remoteName then return nil end
+    local low = tostring(remoteName):lower()
     if MachineRemoteMap[low] then
         return MachineRemoteMap[low]
     end
@@ -1268,6 +1317,51 @@ local function matchMachineByRemote(remoteName)
             return mName
         end
     end
+    -- Fallback po słowach kluczowych
+    if low:find("fuse") then
+        return "Fuse Pets"
+    elseif low:find("gold") then
+        return "Gold Machine"
+    elseif low:find("rainbow") then
+        return "Rainbow Machine"
+    elseif low:find("dark") and low:find("matter") then
+        return "Dark Matter"
+    elseif low:find("huge") then
+        return "Huge Machine"
+    elseif low:find("upgrade") then
+        return "Upgrade Station"
+    elseif low:find("bank") then
+        return "Bank"
+    elseif low:find("collection") or low:find("index") then
+        return "Pet Collection Machine"
+    end
+    return nil
+end
+
+local function getMachineForInvocation(self, method, ...)
+    local args = { ... }
+    local candidates = {}
+
+    if typeof(self) == "Instance" then
+        table.insert(candidates, self.Name)
+    end
+    for i = 1, math.min(#args, 3) do
+        if type(args[i]) == "string" then
+            table.insert(candidates, args[i])
+        end
+    end
+
+    for _, cName in ipairs(candidates) do
+        local matched = matchMachineByRemote(cName)
+        if matched then
+            return matched
+        end
+    end
+
+    if CurrentOpenMachine then
+        return CurrentOpenMachine
+    end
+
     return nil
 end
 
@@ -1306,16 +1400,43 @@ local function findInteractiveMachine(name)
     return Workspace:FindFirstChild(name, true)
 end
 
+local function getMachinePad(machine)
+    if not machine then return nil end
+    local direct = {
+        machine:FindFirstChild("Pad"),
+        machine:FindFirstChild("Center"),
+        machine:FindFirstChild("Base"),
+        machine:FindFirstChild("IndexPart"),
+        machine:FindFirstChild("Platform")
+    }
+    for _, part in ipairs(direct) do
+        if part and part:IsA("BasePart") then return part end
+    end
+    for _, child in ipairs(machine:GetDescendants()) do
+        if child:IsA("BasePart") and (child.Name:lower() == "pad" or child.Name:lower():find("pad") or child.Name:lower() == "center") then
+            return child
+        end
+    end
+    if machine:IsA("BasePart") then return machine end
+    if machine:IsA("Model") then
+        return machine.PrimaryPart or machine:FindFirstChildWhichIsA("BasePart")
+    end
+    return nil
+end
+
 -- // GŁÓWNY SILNIK GHOST BYPASS (BEZSZWOWY MICRO-PULS BEZ RUSZANIA EKRANU GRACZA)
 local function executeWithGhostBypass(machineName, callback)
     if not GhostBypassEnabled then
+        return callback()
+    end
+    if IsBypassing then
         return callback()
     end
 
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
     local machine = findInteractiveMachine(machineName)
-    local pad = machine and (machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart"))
+    local pad = getMachinePad(machine)
 
     if not hrp or not pad then
         return callback()
@@ -1327,7 +1448,9 @@ local function executeWithGhostBypass(machineName, callback)
         return callback()
     end
 
-    -- Zamrożenie widoku kamery — gracz nie widzi żadnego szarpnięcia ekranu
+    IsBypassing = true
+
+    -- 1. Zamrożenie widoku kamery — gracz nie widzi żadnego szarpnięcia ekranu
     local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
     local oldCamType = camera and camera.CameraType
     local oldCamCF = camera and camera.CFrame
@@ -1339,32 +1462,48 @@ local function executeWithGhostBypass(machineName, callback)
         camera.CFrame = oldCamCF
     end
 
-    -- Chwilowy przeskok na podest maszyny
-    hrp.CFrame = pad.CFrame * CFrame.new(0, 2, 0)
-    pcall(function() hrp.AssemblyLinearVelocity = Vector3.zero end)
+    -- 2. Chwilowy przeskok na podest maszyny
+    local targetCF = pad.CFrame * CFrame.new(0, 3, 0)
+    hrp.CFrame = targetCF
+    pcall(function()
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end)
 
-    -- Odczekanie 70ms na replikację pakietu pozycji do serwera
-    task.wait(0.07)
+    -- 3. Odczekanie 160ms na wysłanie i zatwierdzenie pakietu replikacji fizyki przez serwer
+    task.wait(0.16)
 
-    -- Wykonanie oryginalnego zapytania do serwera (Fuse, Gold, Rainbow itp.)
-    local success, res = pcall(callback)
-
-    -- Błyskawiczny powrót postaci na dokładnie to samo miejsce
-    if hrp and oldHrpCF then
-        hrp.CFrame = oldHrpCF
-        pcall(function() hrp.AssemblyLinearVelocity = oldVel end)
+    -- Ponowne upewnienie się pozycji przed samym wywołaniem remote
+    if hrp then
+        hrp.CFrame = targetCF
     end
 
-    -- Przywrócenie trybu kamery
+    -- 4. Wykonanie oryginalnego zapytania do serwera (Fuse, Gold, Rainbow itp.)
+    local success, res = pcall(callback)
+
+    -- 5. Odczekanie 80ms na zarejestrowanie transakcji przez silnik gry
+    task.wait(0.08)
+
+    -- 6. Błyskawiczny powrót postaci na dokładnie to samo miejsce
+    if hrp and oldHrpCF then
+        hrp.CFrame = oldHrpCF
+        pcall(function()
+            hrp.AssemblyLinearVelocity = oldVel
+        end)
+    end
+
+    -- 7. Przywrócenie trybu kamery
     if camera and oldCamType then
         task.defer(function()
-            task.wait(0.02)
+            task.wait(0.04)
             if camera then
                 camera.CameraType = oldCamType
                 if oldCamCF then camera.CFrame = oldCamCF end
             end
         end)
     end
+
+    IsBypassing = false
 
     if success then
         return res
@@ -1374,14 +1513,19 @@ local function executeWithGhostBypass(machineName, callback)
     end
 end
 
--- Podpięcie do Framework.Network gry
+-- Podpięcie do Framework.Network / Library.Network gry
 local function hookNetworkFramework()
-    if not (Framework and Framework.Network) then return end
+    local net = (Framework and Framework.Network) or (Library and Library.Network)
+    if not net then
+        pcall(loadGameLibrary)
+        net = (Framework and Framework.Network) or (Library and Library.Network)
+    end
+    if not net then return end
 
-    if type(Framework.Network.Invoke) == "function" and not Framework.Network._GhostHookedInvoke then
-        local rawInvoke = Framework.Network.Invoke
-        Framework.Network._GhostHookedInvoke = true
-        Framework.Network.Invoke = function(name, ...)
+    if type(net.Invoke) == "function" and not net._GhostHookedInvoke then
+        local rawInvoke = net.Invoke
+        net._GhostHookedInvoke = true
+        net.Invoke = function(name, ...)
             local targetMachine = matchMachineByRemote(name)
             if targetMachine and GhostBypassEnabled then
                 local args = { ... }
@@ -1393,10 +1537,10 @@ local function hookNetworkFramework()
         end
     end
 
-    if type(Framework.Network.Fire) == "function" and not Framework.Network._GhostHookedFire then
-        local rawFire = Framework.Network.Fire
-        Framework.Network._GhostHookedFire = true
-        Framework.Network.Fire = function(name, ...)
+    if type(net.Fire) == "function" and not net._GhostHookedFire then
+        local rawFire = net.Fire
+        net._GhostHookedFire = true
+        net.Fire = function(name, ...)
             local targetMachine = matchMachineByRemote(name)
             if targetMachine and GhostBypassEnabled then
                 local args = { ... }
@@ -1411,16 +1555,16 @@ end
 
 pcall(hookNetworkFramework)
 
--- Opcjonalne zaawansowane hooki metametod (jeśli executor je wspiera)
+-- Zaawansowane hooki metametod (jeśli executor je wspiera)
 pcall(function()
     if typeof(hookmetamethod) == "function" and typeof(checkcaller) == "function" and typeof(getnamecallmethod) == "function" then
         local oldNamecall = nil
         oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
             if not checkcaller() and (method == "InvokeServer" or method == "FireServer") then
-                local args = { ... }
-                local targetMachine = matchMachineByRemote(args[1])
+                local targetMachine = getMachineForInvocation(self, method, ...)
                 if targetMachine and GhostBypassEnabled then
+                    local args = { ... }
                     return executeWithGhostBypass(targetMachine, function()
                         return oldNamecall(self, unpack(args))
                     end)
@@ -1432,12 +1576,14 @@ pcall(function()
         local oldIndex = nil
         oldIndex = hookmetamethod(game, "__index", function(self, key)
             if not checkcaller() and key == "Position" and typeof(self) == "Instance" and self:IsA("BasePart") then
-                if CurrentOpenPad and self == CurrentOpenPad then
+                if CurrentOpenPad and (self == CurrentOpenPad or self.Name:lower():find("pad")) then
                     local char = LocalPlayer.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         return hrp.Position
                     end
+                elseif CurrentOpenPad and (self.Name == "HumanoidRootPart" or self.Name == "Torso") then
+                    return CurrentOpenPad.Position
                 end
             end
             return oldIndex(self, key)
@@ -1445,46 +1591,126 @@ pcall(function()
     end
 end)
 
+-- Bezpośredni hook na RemoteFunction/RemoteEvent (fallback dla executorów bez namecall)
+pcall(function()
+    if typeof(hookfunction) == "function" and typeof(checkcaller) == "function" then
+        local testRf = Instance.new("RemoteFunction")
+        local rawInvokeServer = testRf.InvokeServer
+        testRf:Destroy()
+
+        if rawInvokeServer then
+            local oldInvoke = nil
+            oldInvoke = hookfunction(rawInvokeServer, function(self, ...)
+                if not checkcaller() then
+                    local targetMachine = getMachineForInvocation(self, "InvokeServer", ...)
+                    if targetMachine and GhostBypassEnabled then
+                        local args = { ... }
+                        return executeWithGhostBypass(targetMachine, function()
+                            return oldInvoke(self, unpack(args))
+                        end)
+                    end
+                end
+                return oldInvoke(self, ...)
+            end)
+        end
+    end
+end)
+
+-- Automatyczne tłumienie okienka błędu ("You're too far from the machine")
+local function setupPopupAutoDismiss()
+    local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
+    if not pGui then return end
+
+    local function checkAndDismiss(obj)
+        if not obj then return end
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+            local txt = tostring(obj.Text or ""):lower()
+            if txt:find("too far") or txt:find("za daleko") then
+                local frame = obj:FindFirstChildAncestorWhichIsA("Frame") or obj:FindFirstChildAncestorWhichIsA("ScreenGui")
+                if frame then
+                    local okBtn = frame:FindFirstChild("Dobrze", true) or frame:FindFirstChild("Ok", true) or frame:FindFirstChild("Yes", true) or frame:FindFirstChild("Close", true)
+                    if okBtn and (okBtn:IsA("TextButton") or okBtn:IsA("ImageButton")) then
+                        pcall(function()
+                            if typeof(firesignal) == "function" and okBtn.MouseButton1Click then
+                                firesignal(okBtn.MouseButton1Click)
+                            elseif typeof(getconnections) == "function" then
+                                for _, c in ipairs(getconnections(okBtn.MouseButton1Click)) do c:Fire() end
+                            end
+                        end)
+                    end
+                    pcall(function() frame.Visible = false end)
+                end
+            end
+        end
+    end
+
+    pGui.DescendantAdded:Connect(function(descendant)
+        task.defer(function()
+            pcall(checkAndDismiss, descendant)
+        end)
+    end)
+end
+
+pcall(setupPopupAutoDismiss)
+
 local function openRemoteMachine(machineName, extraKeywords)
     CurrentOpenMachine = machineName
     local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+    local pad = getMachinePad(machine)
+    if pad then CurrentOpenPad = pad end
+
     local opened = false
 
-    -- 1. firetouchinterest na Padzie maszyny
-    if machine and hrp and typeof(firetouchinterest) == "function" then
-        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
-        if pad then
-            CurrentOpenPad = pad
-            pcall(function()
-                firetouchinterest(hrp, pad, 0)
-                task.wait(0.08)
-                firetouchinterest(hrp, pad, 1)
-                opened = true
-            end)
+    -- 1. Ghost Anchor mode (ciągły pobyt na padzie z zamrożoną kamerą gracza)
+    if GhostAnchorEnabled and pad and hrp then
+        local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+        if camera and not AnchorOriginalCamCF then
+            AnchorOriginalCamType = camera.CameraType
+            AnchorOriginalCamCF = camera.CFrame
+            AnchorOriginalHrpCF = hrp.CFrame
+            camera.CameraType = Enum.CameraType.Scriptable
+            camera.CFrame = AnchorOriginalCamCF
         end
+        hrp.CFrame = pad.CFrame * CFrame.new(0, 3, 0)
+        pcall(function()
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end)
     end
 
-    -- 2. Wywołanie Framework Signal & GUI (BIG Games native framework)
+    -- 2. firetouchinterest na Padzie maszyny
+    if pad and hrp and typeof(firetouchinterest) == "function" then
+        pcall(function()
+            firetouchinterest(hrp, pad, 0)
+            task.delay(0.25, function()
+                pcall(function() firetouchinterest(hrp, pad, 1) end)
+            end)
+            opened = true
+        end)
+    end
+
+    -- 3. Wywołanie Framework Signal & GUI (BIG Games native framework)
     local keywords = extraKeywords or { machineName }
-    if Framework then
+    local fw = Framework or Library
+    if fw then
         for _, kw in ipairs(keywords) do
             pcall(function()
-                if Framework.Signal and Framework.Signal.Fire then
-                    Framework.Signal.Fire("Open " .. kw)
-                    Framework.Signal.Fire(kw)
+                if fw.Signal and fw.Signal.Fire then
+                    fw.Signal.Fire("Open " .. kw)
+                    fw.Signal.Fire(kw)
                 end
             end)
             pcall(function()
-                if Framework.GUI and Framework.GUI.Open then
-                    Framework.GUI.Open(kw)
+                if fw.GUI and fw.GUI.Open then
+                    fw.GUI.Open(kw)
                 end
             end)
         end
     end
 
-    -- 3. Wymuszenie widoczności Frame w PlayerGui
+    -- 4. Wymuszenie widoczności Frame w PlayerGui
     local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
         pcall(function()
@@ -1523,21 +1749,39 @@ local function closeRemoteMachine(machineName, extraKeywords)
     local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+    local pad = getMachinePad(machine)
 
-    if machine and hrp and typeof(firetouchinterest) == "function" then
-        local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
-        if pad then
-            pcall(function()
-                firetouchinterest(hrp, pad, 1)
-            end)
-        end
+    -- Przywrócenie pozycji i kamery z Ghost Anchor mode
+    if AnchorOriginalHrpCF and hrp then
+        hrp.CFrame = AnchorOriginalHrpCF
+        AnchorOriginalHrpCF = nil
+    end
+
+    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+    if camera and AnchorOriginalCamCF and AnchorOriginalCamType then
+        task.defer(function()
+            task.wait(0.04)
+            if camera then
+                camera.CameraType = AnchorOriginalCamType
+                camera.CFrame = AnchorOriginalCamCF
+            end
+            AnchorOriginalCamCF = nil
+            AnchorOriginalCamType = nil
+        end)
+    end
+
+    if pad and hrp and typeof(firetouchinterest) == "function" then
+        pcall(function()
+            firetouchinterest(hrp, pad, 1)
+        end)
     end
 
     local keywords = extraKeywords or { machineName }
-    if Framework and Framework.GUI and Framework.GUI.Close then
+    local fw = Framework or Library
+    if fw and fw.GUI and fw.GUI.Close then
         for _, kw in ipairs(keywords) do
             pcall(function()
-                Framework.GUI.Close(kw)
+                fw.GUI.Close(kw)
             end)
         end
     end
@@ -1572,7 +1816,7 @@ local function teleportToMachine(machineName)
         return false
     end
 
-    local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
+    local pad = getMachinePad(machine)
     local targetCFrame = nil
     if pad and pad:IsA("BasePart") then
         targetCFrame = pad.CFrame * CFrame.new(0, 3, 0)
@@ -1605,6 +1849,18 @@ local BypassModule = TabMachines:CreateModule({
         GhostBypassEnabled = state
     end
 })
+
+BypassModule:AddToggle({
+    Name = "Ghost Anchor (Ciągły Freeze na Czas Fuzji)",
+    Description = "Trzyma postać na maszynie przy otwartym menu i zamraża kamerę na Twoim miejscu",
+    Default = false,
+    CurrentValue = false,
+    Flag = "Machines_GhostAnchorMode",
+    Callback = function(state)
+        GhostAnchorEnabled = state
+    end
+})
+
 
 -- 1. GOLD MACHINE
 local GoldModule = TabMachines:CreateModule({
