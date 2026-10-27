@@ -30,12 +30,18 @@ if isDev and typeof(readfile) == "function" then
 end
 
 if not MENU then
-    local mainUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
-    local ok, mainRaw = pcall(function() return game:HttpGet(mainUrl) end)
-    if ok and mainRaw and #mainRaw > 0 then
-        local chunk = loadstring(mainRaw:gsub("^\239\187\191", ""))
-        if chunk then
-            MENU = chunk()
+    local urls = {
+        "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/main/Main.lua?_t=" .. tostring(tick()) .. "_" .. tostring(math.random(100000, 999999)),
+        "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_t=" .. tostring(tick()) .. "_" .. tostring(math.random(100000, 999999))
+    }
+    for _, u in ipairs(urls) do
+        local ok, mainRaw = pcall(function() return game:HttpGet(u) end)
+        if ok and mainRaw and #mainRaw > 0 then
+            local chunk = loadstring(mainRaw:gsub("^\239\187\191", ""))
+            if chunk then
+                MENU = chunk()
+                break
+            end
         end
     end
 end

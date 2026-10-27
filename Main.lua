@@ -481,38 +481,49 @@ local function createLoadingIndicator(title, isMobile)
     local laserDir = 1
     local timeClock = 0
 
-    local animConn = RunService.RenderStepped:Connect(function(dt)
-        if not isRunning then return end
-        timeClock = timeClock + dt
+    local rs = RunService
+    if not rs then
+        pcall(function() rs = game:GetService("RunService") end)
+    end
+    local stepEvent = rs and (rs.RenderStepped or rs.Heartbeat)
+    local animConn = nil
 
-        -- Płynny obrót cząstek orbitalnych (120 stopni / sek)
-        rotAngle = (rotAngle + dt * 120) % 360
-        OrbitSpinner.Rotation = rotAngle
+    if stepEvent then
+        pcall(function()
+            animConn = stepEvent:Connect(function(dt)
+                if not isRunning then return end
+                timeClock = timeClock + (dt or 0.016)
 
-        -- Delikatny oddech poświaty tła (Sine breathing pulse)
-        local pulse = (math.sin(timeClock * 2.5) + 1) * 0.5
-        GlowRadial.BackgroundTransparency = 0.90 + (pulse * 0.06)
+                -- Płynny obrót cząstek orbitalnych (120 stopni / sek)
+                rotAngle = (rotAngle + (dt or 0.016) * 120) % 360
+                OrbitSpinner.Rotation = rotAngle
 
-        -- Płynny ruch lasera w kapsule (Liquid sweep)
-        laserPos = laserPos + (dt * 130 * laserDir)
-        if laserPos > 130 then
-            laserPos = 130
-            laserDir = -1
-        elseif laserPos < -50 then
-            laserPos = -50
-            laserDir = 1
-        end
-        LaserBeam.Position = UDim2.new(0, math.floor(laserPos), 0, 0)
+                -- Delikatny oddech poświaty tła (Sine breathing pulse)
+                local pulse = (math.sin(timeClock * 2.5) + 1) * 0.5
+                GlowRadial.BackgroundTransparency = 0.90 + (pulse * 0.06)
 
-        -- Falowanie 3 płynnych kropek (Staggered liquid sine wave)
-        for idx, d in ipairs(dots) do
-            local dotOffset = (idx - 1) * 0.8
-            local sinVal = (math.sin(timeClock * 4 + dotOffset) + 1) * 0.5
-            d.BackgroundTransparency = 0.15 + (1 - sinVal) * 0.65
-            local dSize = 4 + (sinVal * 2.5)
-            d.Size = UDim2.new(0, dSize, 0, dSize)
-        end
-    end)
+                -- Płynny ruch lasera w kapsule (Liquid sweep)
+                laserPos = laserPos + ((dt or 0.016) * 130 * laserDir)
+                if laserPos > 130 then
+                    laserPos = 130
+                    laserDir = -1
+                elseif laserPos < -50 then
+                    laserPos = -50
+                    laserDir = 1
+                end
+                LaserBeam.Position = UDim2.new(0, math.floor(laserPos), 0, 0)
+
+                -- Falowanie 3 płynnych kropek (Staggered liquid sine wave)
+                for idx, d in ipairs(dots) do
+                    local dotOffset = (idx - 1) * 0.8
+                    local sinVal = (math.sin(timeClock * 4 + dotOffset) + 1) * 0.5
+                    d.BackgroundTransparency = 0.15 + (1 - sinVal) * 0.65
+                    local dSize = 4 + (sinVal * 2.5)
+                    d.Size = UDim2.new(0, dSize, 0, dSize)
+                end
+            end)
+        end)
+    end
 
     -- Animacja płynnego wejścia (Fade & Float In)
     TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 0.4 }):Play()
