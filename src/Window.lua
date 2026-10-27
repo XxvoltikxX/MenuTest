@@ -490,6 +490,11 @@ function Window:Create(config)
     UI.MainFrame = MainFrame
     ThemeManager:Register(MainFrame, "BackgroundColor3", "Main")
 
+    -- Engine-level blokada minimalnego rozmiaru okna (Hardware Hard Lock)
+    local MainConstraint = Instance.new("UISizeConstraint", MainFrame)
+    MainConstraint.MinSize = Vector2.new(isMobile and 360 or 520, isMobile and 280 or 400)
+    MainConstraint.MaxSize = Vector2.new(2560, 1440)
+
     -- VisionOS Organic Rounded Corners (24px)
     local MainCorner = Instance.new("UICorner", MainFrame)
     MainCorner.CornerRadius = UDim.new(0, 24)
@@ -1418,6 +1423,29 @@ function Window:Create(config)
         end
         if TabIcon  then TweenService:Create(TabIcon,  TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(240, 245, 255) }):Play() end
         if TabLabel then TweenService:Create(TabLabel, TweenInfo.new(0.2), { TextColor3  = Color3.fromRGB(240, 245, 255) }):Play() end
+
+        -- Automatyczne wycentrowanie wybranej zakładki w ScrollingFrame doka
+        task.spawn(function()
+            if UI.TabList and UI.TabList:IsA("ScrollingFrame") and targetButton then
+                local listAbsX = UI.TabList.AbsolutePosition.X
+                local listW = UI.TabList.AbsoluteSize.X
+                local btnAbsX = targetButton.AbsolutePosition.X
+                local btnW = targetButton.AbsoluteSize.X
+                if listW > 0 and btnW > 0 then
+                    local relX = btnAbsX - listAbsX + UI.TabList.CanvasPosition.X
+                    if relX < UI.TabList.CanvasPosition.X then
+                        TweenService:Create(UI.TabList, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                            CanvasPosition = Vector2.new(math.max(0, relX - 8), 0)
+                        }):Play()
+                    elseif (relX + btnW) > (UI.TabList.CanvasPosition.X + listW) then
+                        local targetScroll = (relX + btnW) - listW + 8
+                        TweenService:Create(UI.TabList, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                            CanvasPosition = Vector2.new(math.max(0, targetScroll), 0)
+                        }):Play()
+                    end
+                end
+            end
+        end)
     end
 
     -- // ============================================================

@@ -127,10 +127,11 @@ function Dashboard:Render(UI, order, passedIcons)
     -- Informacje o graczu
     local InfoContainer = Instance.new("Frame")
     InfoContainer.Name = "InfoContainer"
-    InfoContainer.Size = UDim2.new(0, 260, 1, -20)
+    InfoContainer.Size = UDim2.new(0, 230, 1, -16)
     InfoContainer.Position = UDim2.new(0, 88, 0.5, 0)
-    InfoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+    InfoContainer.AnchorPoint = Vector2.new(0, 0.5)
     InfoContainer.BackgroundTransparency = 1
+    InfoContainer.ClipsDescendants = true
     InfoContainer.Parent = HeroCard
 
     local InfoLayout = Instance.new("UIListLayout", InfoContainer)
@@ -157,6 +158,7 @@ function Dashboard:Render(UI, order, passedIcons)
     DisplayNameLabel.Size = UDim2.new(0, 0, 1, 0)
     DisplayNameLabel.BackgroundTransparency = 1
     DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DisplayNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     DisplayNameLabel.Parent = NameRow
 
     local VipPill = Instance.new("Frame")
@@ -187,6 +189,7 @@ function Dashboard:Render(UI, order, passedIcons)
     UsernameLabel.Size = UDim2.new(1, 0, 0, 14)
     UsernameLabel.BackgroundTransparency = 1
     UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    UsernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     UsernameLabel.Parent = InfoContainer
 
     local AccountAgeLabel = Instance.new("TextLabel")
@@ -197,13 +200,13 @@ function Dashboard:Render(UI, order, passedIcons)
     AccountAgeLabel.Size = UDim2.new(1, 0, 0, 14)
     AccountAgeLabel.BackgroundTransparency = 1
     AccountAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    AccountAgeLabel.TextTruncate = Enum.TextTruncate.AtEnd
     AccountAgeLabel.Parent = InfoContainer
 
-    -- Prawa strona: 4 kasetki z parametrami gracza na żywo
     local GaugesContainer = Instance.new("Frame")
     GaugesContainer.Name = "GaugesContainer"
-    GaugesContainer.Size = UDim2.new(1, -360, 1, -20)
-    GaugesContainer.Position = UDim2.new(1, -16, 0.5, 0)
+    GaugesContainer.Size = UDim2.new(0, 364, 1, -16)
+    GaugesContainer.Position = UDim2.new(1, -14, 0.5, 0)
     GaugesContainer.AnchorPoint = Vector2.new(1, 0.5)
     GaugesContainer.BackgroundTransparency = 1
     GaugesContainer.Parent = HeroCard
@@ -212,11 +215,14 @@ function Dashboard:Render(UI, order, passedIcons)
     GaugesLayout.FillDirection = Enum.FillDirection.Horizontal
     GaugesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     GaugesLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    GaugesLayout.Padding = UDim.new(0, 10)
+    GaugesLayout.Padding = UDim.new(0, 8)
 
-    local function createLiveGauge(title, defaultVal, iconName, accentColor)
+    local liveGaugeList = {}
+
+    local function createLiveGauge(title, defaultVal, iconName, accentColor, key)
         local Gauge = Instance.new("Frame")
-        Gauge.Size = UDim2.new(0, 95, 1, 0)
+        Gauge.Name = "Gauge_" .. (key or title)
+        Gauge.Size = UDim2.new(0, 85, 1, 0)
         Gauge.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
         Gauge.BorderSizePixel = 0
         Gauge.Parent = GaugesContainer
@@ -227,8 +233,8 @@ function Dashboard:Render(UI, order, passedIcons)
         GStroke.Thickness = 1
 
         local GIcon = Instance.new("ImageLabel")
-        GIcon.Size = UDim2.new(0, 14, 0, 14)
-        GIcon.Position = UDim2.new(0, 8, 0, 8)
+        GIcon.Size = UDim2.new(0, 13, 0, 13)
+        GIcon.Position = UDim2.new(0, 7, 0, 7)
         GIcon.BackgroundTransparency = 1
         GIcon.ImageColor3 = accentColor or Color3.fromRGB(99, 102, 241)
         GIcon.Parent = Gauge
@@ -239,30 +245,73 @@ function Dashboard:Render(UI, order, passedIcons)
         GTitle.Font = Enum.Font.GothamMedium
         GTitle.TextSize = 10
         GTitle.TextColor3 = Color3.fromRGB(148, 163, 184)
-        GTitle.Size = UDim2.new(1, -28, 0, 14)
-        GTitle.Position = UDim2.new(0, 26, 0, 8)
+        GTitle.Size = UDim2.new(1, -22, 0, 14)
+        GTitle.Position = UDim2.new(0, 22, 0, 7)
         GTitle.BackgroundTransparency = 1
         GTitle.TextXAlignment = Enum.TextXAlignment.Left
+        GTitle.TextTruncate = Enum.TextTruncate.AtEnd
         GTitle.Parent = Gauge
 
         local GVal = Instance.new("TextLabel")
         GVal.Text = defaultVal
         GVal.Font = Enum.Font.GothamBold
-        GVal.TextSize = 13
+        GVal.TextSize = 12
         GVal.TextColor3 = Color3.fromRGB(241, 245, 249)
-        GVal.Size = UDim2.new(1, -16, 0, 20)
-        GVal.Position = UDim2.new(0, 8, 1, -26)
+        GVal.Size = UDim2.new(1, -14, 0, 18)
+        GVal.Position = UDim2.new(0, 7, 1, -24)
         GVal.BackgroundTransparency = 1
         GVal.TextXAlignment = Enum.TextXAlignment.Left
+        GVal.TextTruncate = Enum.TextTruncate.AtEnd
         GVal.Parent = Gauge
+
+        table.insert(liveGaugeList, { Frame = Gauge, Key = key or title })
 
         return GVal
     end
 
-    local ValSpeed = createLiveGauge("Prędkość", "16.0", "zap", Color3.fromRGB(245, 158, 11))
-    local ValJump  = createLiveGauge("Skok", "50.0", "arrow-up-circle", Color3.fromRGB(16, 185, 129))
-    local ValHP    = createLiveGauge("Zdrowie", "100%", "heart", Color3.fromRGB(239, 68, 68))
-    local ValPing  = createLiveGauge("Ping", "20 ms", "activity", Color3.fromRGB(99, 102, 241))
+    local ValSpeed = createLiveGauge("Prędkość", "16.0", "zap", Color3.fromRGB(245, 158, 11), "Speed")
+    local ValJump  = createLiveGauge("Skok", "50.0", "arrow-up-circle", Color3.fromRGB(16, 185, 129), "Jump")
+    local ValHP    = createLiveGauge("Zdrowie", "100%", "heart", Color3.fromRGB(239, 68, 68), "Health")
+    local ValPing  = createLiveGauge("Ping", "20 ms", "activity", Color3.fromRGB(99, 102, 241), "Ping")
+
+    -- Blokada responsywna: automatyczne skalowanie i chowanie kasetek, aby nigdy nie kolidowały z profilem
+    local function updateHeroResponsiveLayout()
+        local cardW = HeroCard.AbsoluteSize.X
+        if cardW <= 0 then
+            cardW = (Page.AbsoluteSize.X > 0 and Page.AbsoluteSize.X - 40) or 780
+        end
+
+        if cardW < 560 then
+            for _, g in ipairs(liveGaugeList) do
+                if g.Key == "Ping" or g.Key == "Health" then
+                    g.Frame.Visible = false
+                else
+                    g.Frame.Visible = true
+                    g.Frame.Size = UDim2.new(0, 78, 1, 0)
+                end
+            end
+            GaugesContainer.Size = UDim2.new(0, 164, 1, -16)
+        elseif cardW < 740 then
+            for _, g in ipairs(liveGaugeList) do
+                if g.Key == "Ping" then
+                    g.Frame.Visible = false
+                else
+                    g.Frame.Visible = true
+                    g.Frame.Size = UDim2.new(0, 80, 1, 0)
+                end
+            end
+            GaugesContainer.Size = UDim2.new(0, 256, 1, -16)
+        else
+            for _, g in ipairs(liveGaugeList) do
+                g.Frame.Visible = true
+                g.Frame.Size = UDim2.new(0, 85, 1, 0)
+            end
+            GaugesContainer.Size = UDim2.new(0, 364, 1, -16)
+        end
+    end
+
+    HeroCard:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateHeroResponsiveLayout)
+    task.defer(updateHeroResponsiveLayout)
 
     -- Pętla odświeżania statystyk gracza na żywo
     local gaugeConn
@@ -774,6 +823,29 @@ function Dashboard:Render(UI, order, passedIcons)
         end
     end)
 
+    -- Blokada responsywna dla rzędu Bento (Matrix + Serwer)
+    local function updateBentoResponsiveLayout()
+        local bentoW = BentoRow.AbsoluteSize.X
+        if bentoW <= 0 then
+            bentoW = (Page.AbsoluteSize.X > 0 and Page.AbsoluteSize.X - 40) or 780
+        end
+
+        if bentoW < 560 then
+            BentoLayout.FillDirection = Enum.FillDirection.Vertical
+            BentoRow.Size = UDim2.new(1, 0, 0, 426)
+            QuickMatrixCard.Size = UDim2.new(1, 0, 0, 208)
+            ServerCard.Size = UDim2.new(1, 0, 0, 204)
+        else
+            BentoLayout.FillDirection = Enum.FillDirection.Horizontal
+            BentoRow.Size = UDim2.new(1, 0, 0, 215)
+            QuickMatrixCard.Size = UDim2.new(0.58, -7, 1, 0)
+            ServerCard.Size = UDim2.new(0.42, -7, 1, 0)
+        end
+    end
+
+    BentoRow:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateBentoResponsiveLayout)
+    task.defer(updateBentoResponsiveLayout)
+
     -- // =====================================================================
     -- // 3. BOTTOM ROW: SPOŁECZNOŚĆ, KOD ŹRÓDŁOWY I STATUS SYSTEMU
     -- // =====================================================================
@@ -821,6 +893,7 @@ function Dashboard:Render(UI, order, passedIcons)
         pTitle.Position = UDim2.new(0, 36, 0, 7)
         pTitle.BackgroundTransparency = 1
         pTitle.TextXAlignment = Enum.TextXAlignment.Left
+        pTitle.TextTruncate = Enum.TextTruncate.AtEnd
         pTitle.Parent = Pill
 
         local pSub = Instance.new("TextLabel")
@@ -832,6 +905,7 @@ function Dashboard:Render(UI, order, passedIcons)
         pSub.Position = UDim2.new(0, 36, 0, 23)
         pSub.BackgroundTransparency = 1
         pSub.TextXAlignment = Enum.TextXAlignment.Left
+        pSub.TextTruncate = Enum.TextTruncate.AtEnd
         pSub.Parent = Pill
 
         Pill.MouseEnter:Connect(function()

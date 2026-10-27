@@ -51,7 +51,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local BrandSide = Instance.new("Frame")
     BrandSide.Name = "BrandSide"
-    BrandSide.Size = UDim2.new(0, 160, 1, 0)
+    BrandSide.Size = UDim2.new(0, 126, 1, 0)
     BrandSide.Position = UDim2.new(0, 0, 0, 0)
     BrandSide.BackgroundTransparency = 1
     BrandSide.ClipsDescendants = true
@@ -61,12 +61,12 @@ function Sidebar:Create(UI, theme, config, customWidth)
     local BrandLayout = Instance.new("UIListLayout", BrandSide)
     BrandLayout.FillDirection = Enum.FillDirection.Horizontal
     BrandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    BrandLayout.Padding = UDim.new(0, 6)
+    BrandLayout.Padding = UDim.new(0, 5)
 
     -- Apple Slate Glass Orb (Elegancki, matowy kapsułkowy identyfikator)
     local BrandOrb = Instance.new("Frame")
     BrandOrb.Name = "BrandOrb"
-    BrandOrb.Size = UDim2.new(0, 26, 0, 26)
+    BrandOrb.Size = UDim2.new(0, 24, 0, 24)
     BrandOrb.BackgroundColor3 = Color3.fromRGB(24, 28, 40)
     BrandOrb.BackgroundTransparency = 0.2
     BrandOrb.BorderSizePixel = 0
@@ -80,7 +80,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     OrbStroke.Transparency = 0.6
 
     local OrbIcon = Instance.new("ImageLabel")
-    OrbIcon.Size = UDim2.new(0, 13, 0, 13)
+    OrbIcon.Size = UDim2.new(0, 12, 0, 12)
     OrbIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     OrbIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     OrbIcon.BackgroundTransparency = 1
@@ -90,9 +90,10 @@ function Sidebar:Create(UI, theme, config, customWidth)
     if Icons and Icons.Apply then Icons:Apply(OrbIcon, "layers") end
 
     local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "TitleLabel"
     TitleLabel.Text = config.Name or "UNIVERSAL"
     TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.TextSize = 12
+    TitleLabel.TextSize = 11
     TitleLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
     TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     TitleLabel.AutomaticSize = Enum.AutomaticSize.X
@@ -103,11 +104,12 @@ function Sidebar:Create(UI, theme, config, customWidth)
     TitleLabel.Parent = BrandSide
 
     local GlassBadge = Instance.new("TextLabel")
+    GlassBadge.Name = "GlassBadge"
     GlassBadge.Text = "27.2"
     GlassBadge.Font = Enum.Font.GothamBold
     GlassBadge.TextSize = 9
     GlassBadge.TextColor3 = Color3.fromRGB(140, 150, 175)
-    GlassBadge.Size = UDim2.new(0, 36, 0, 17)
+    GlassBadge.Size = UDim2.new(0, 32, 0, 16)
     GlassBadge.BackgroundColor3 = Color3.fromRGB(22, 25, 36)
     GlassBadge.BackgroundTransparency = 0.4
     GlassBadge.ZIndex = 18
@@ -123,8 +125,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local TabList = Instance.new("ScrollingFrame")
     TabList.Name = "VisionTabBar"
-    TabList.Size = UDim2.new(1, -458, 0, 32)
-    TabList.Position = UDim2.new(0, 166, 0.5, 0)
+    TabList.Size = UDim2.new(1, -388, 0, 32)
+    TabList.Position = UDim2.new(0, 134, 0.5, 0)
     TabList.AnchorPoint = Vector2.new(0, 0.5)
     TabList.BackgroundColor3 = Color3.fromRGB(12, 14, 22)
     TabList.BackgroundTransparency = 0.5
@@ -163,7 +165,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local RightSide = Instance.new("Frame")
     RightSide.Name = "RightSide"
-    RightSide.Size = UDim2.new(0, 284, 1, 0)
+    RightSide.Size = UDim2.new(0, 245, 1, 0)
     RightSide.Position = UDim2.new(1, 0, 0.5, 0)
     RightSide.AnchorPoint = Vector2.new(1, 0.5)
     RightSide.BackgroundTransparency = 1
@@ -175,12 +177,12 @@ function Sidebar:Create(UI, theme, config, customWidth)
     RightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     RightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    RightLayout.Padding = UDim.new(0, 6)
+    RightLayout.Padding = UDim.new(0, 5)
 
     -- Szukajka Glass Capsule
     local SearchBoxContainer = Instance.new("Frame")
     SearchBoxContainer.Name = "SearchBoxContainer"
-    SearchBoxContainer.Size = UDim2.new(0, 68, 0, 28)
+    SearchBoxContainer.Size = UDim2.new(0, 56, 0, 26)
     SearchBoxContainer.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
     SearchBoxContainer.BackgroundTransparency = 0.35
     SearchBoxContainer.BorderSizePixel = 0
@@ -194,8 +196,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
     SbStroke.Transparency = 0.6
 
     local SearchIcon = Instance.new("ImageLabel")
-    SearchIcon.Size = UDim2.new(0, 12, 0, 12)
-    SearchIcon.Position = UDim2.new(0, 8, 0.5, 0)
+    SearchIcon.Size = UDim2.new(0, 11, 0, 11)
+    SearchIcon.Position = UDim2.new(0, 7, 0.5, 0)
     SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
     SearchIcon.BackgroundTransparency = 1
     SearchIcon.ImageColor3 = Color3.fromRGB(140, 150, 180)
@@ -205,8 +207,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
 
     local SearchInput = Instance.new("TextBox")
     SearchInput.Name = "SearchInput"
-    SearchInput.Size = UDim2.new(1, -24, 1, 0)
-    SearchInput.Position = UDim2.new(0, 22, 0, 0)
+    SearchInput.Size = UDim2.new(1, -22, 1, 0)
+    SearchInput.Position = UDim2.new(0, 20, 0, 0)
     SearchInput.BackgroundTransparency = 1
     SearchInput.Font = Enum.Font.GothamMedium
     SearchInput.Text = ""
@@ -221,10 +223,10 @@ function Sidebar:Create(UI, theme, config, customWidth)
     UI.SearchInput = SearchInput
 
     SearchInput.Focused:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 105, 0, 28), BackgroundTransparency = 0.1 }):Play()
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 92, 0, 26), BackgroundTransparency = 0.1 }):Play()
     end)
     SearchInput.FocusLost:Connect(function()
-        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 80, 0, 28), BackgroundTransparency = 0.35 }):Play()
+        TweenService:Create(SearchBoxContainer, TweenInfo.new(0.2), { Size = UDim2.new(0, 56, 0, 26), BackgroundTransparency = 0.35 }):Play()
     end)
 
     -- // =====================================================================
@@ -232,7 +234,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- // =====================================================================
     local DynamicIsland = Instance.new("Frame")
     DynamicIsland.Name = "DynamicIsland"
-    DynamicIsland.Size = UDim2.new(0, 84, 0, 28)
+    DynamicIsland.Size = UDim2.new(0, 70, 0, 26)
     DynamicIsland.BackgroundColor3 = Color3.fromRGB(8, 9, 14)
     DynamicIsland.BackgroundTransparency = 0.05
     DynamicIsland.BorderSizePixel = 0
@@ -250,8 +252,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- Apple TrueDepth Camera Sensor Cutout
     local CameraCutout = Instance.new("Frame")
     CameraCutout.Name = "CameraCutout"
-    CameraCutout.Size = UDim2.new(0, 7, 0, 7)
-    CameraCutout.Position = UDim2.new(0, 7, 0.5, 0)
+    CameraCutout.Size = UDim2.new(0, 6, 0, 6)
+    CameraCutout.Position = UDim2.new(0, 6, 0.5, 0)
     CameraCutout.AnchorPoint = Vector2.new(0, 0.5)
     CameraCutout.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
     CameraCutout.BorderSizePixel = 0
@@ -260,7 +262,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     Instance.new("UICorner", CameraCutout).CornerRadius = UDim.new(1, 0)
 
     local CameraLens = Instance.new("Frame")
-    CameraLens.Size = UDim2.new(0, 3, 0, 3)
+    CameraLens.Size = UDim2.new(0, 2, 0, 2)
     CameraLens.Position = UDim2.new(0.5, 0, 0.5, 0)
     CameraLens.AnchorPoint = Vector2.new(0.5, 0.5)
     CameraLens.BackgroundColor3 = Color3.fromRGB(8, 10, 16)
@@ -273,7 +275,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     local PrivacyDot = Instance.new("Frame")
     PrivacyDot.Name = "PrivacyDot"
     PrivacyDot.Size = UDim2.new(0, 4, 0, 4)
-    PrivacyDot.Position = UDim2.new(0, 18, 0.5, 0)
+    PrivacyDot.Position = UDim2.new(0, 16, 0.5, 0)
     PrivacyDot.AnchorPoint = Vector2.new(0, 0.5)
     PrivacyDot.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
     PrivacyDot.BorderSizePixel = 0
@@ -287,8 +289,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
     FpsLabel.Font = Enum.Font.GothamBold
     FpsLabel.TextSize = 9
     FpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FpsLabel.Size = UDim2.new(1, -26, 1, 0)
-    FpsLabel.Position = UDim2.new(0, 26, 0, 0)
+    FpsLabel.Size = UDim2.new(1, -24, 1, 0)
+    FpsLabel.Position = UDim2.new(0, 24, 0, 0)
     FpsLabel.BackgroundTransparency = 1
     FpsLabel.TextXAlignment = Enum.TextXAlignment.Left
     FpsLabel.ZIndex = 19
@@ -300,14 +302,14 @@ function Sidebar:Create(UI, theme, config, customWidth)
     DynamicIsland.MouseEnter:Connect(function()
         isHovered = true
         TweenService:Create(DynamicIsland, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 114, 0, 28)
+            Size = UDim2.new(0, 96, 0, 26)
         }):Play()
         TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(80, 95, 130), Transparency = 0.5 }):Play()
     end)
     DynamicIsland.MouseLeave:Connect(function()
         isHovered = false
         TweenService:Create(DynamicIsland, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 84, 0, 28)
+            Size = UDim2.new(0, 70, 0, 26)
         }):Play()
         TweenService:Create(DiStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(48, 54, 76), Transparency = 0.65 }):Play()
     end)
@@ -330,7 +332,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- Profil gracza + Przycisk Settings (Liquid Glass Avatar Button)
     local ProfilePill = Instance.new("Frame")
     ProfilePill.Name = "ProfilePill"
-    ProfilePill.Size = UDim2.new(0, 44, 0, 28)
+    ProfilePill.Size = UDim2.new(0, 36, 0, 26)
     ProfilePill.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
     ProfilePill.BackgroundTransparency = 0.35
     ProfilePill.BorderSizePixel = 0
@@ -344,7 +346,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     PpStroke.Transparency = 0.6
 
     local AvatarImg = Instance.new("ImageLabel")
-    AvatarImg.Size = UDim2.new(0, 20, 0, 20)
+    AvatarImg.Size = UDim2.new(0, 18, 0, 18)
     AvatarImg.Position = UDim2.new(0, 3, 0.5, 0)
     AvatarImg.AnchorPoint = Vector2.new(0, 0.5)
     AvatarImg.BackgroundColor3 = Color3.fromRGB(30, 32, 45)
@@ -362,8 +364,8 @@ function Sidebar:Create(UI, theme, config, customWidth)
 
     local SettingsBtn = Instance.new("ImageButton")
     SettingsBtn.Name = "SettingsBtn"
-    SettingsBtn.Size = UDim2.new(0, 13, 0, 13)
-    SettingsBtn.Position = UDim2.new(1, -5, 0.5, 0)
+    SettingsBtn.Size = UDim2.new(0, 11, 0, 11)
+    SettingsBtn.Position = UDim2.new(1, -3, 0.5, 0)
     SettingsBtn.AnchorPoint = Vector2.new(1, 0.5)
     SettingsBtn.BackgroundTransparency = 1
     SettingsBtn.ImageColor3 = Color3.fromRGB(150, 160, 190)
@@ -388,7 +390,7 @@ function Sidebar:Create(UI, theme, config, customWidth)
     -- Kontener przycisków okna (Apple Window Controls na samym prawym brzegu)
     local Controls = Instance.new("Frame")
     Controls.Name = "Controls"
-    Controls.Size = UDim2.new(0, 78, 1, 0)
+    Controls.Size = UDim2.new(0, 72, 1, 0)
     Controls.BackgroundTransparency = 1
     Controls.LayoutOrder = 4
     Controls.ZIndex = 18
@@ -399,34 +401,62 @@ function Sidebar:Create(UI, theme, config, customWidth)
     ControlsLayout.FillDirection = Enum.FillDirection.Horizontal
     ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    ControlsLayout.Padding = UDim.new(0, 4)
+    ControlsLayout.Padding = UDim.new(0, 3)
 
-    -- // Automatyczne responsywne skalowanie nagłówka (Mobile / Compact Viewports)
+    -- // Blokada responsywna z dynamicznym dopasowaniem szerokości do dowolnej skali
     local function updateResponsiveHeader()
         local dockW = FloatingDock.AbsoluteSize.X
         if dockW <= 0 then
             dockW = (UI.MainFrame and UI.MainFrame.AbsoluteSize.X or 860) - 28
         end
-        local isNarrow = (dockW < 680) or UI.IsMobile
-        if isNarrow then
+
+        local leftW = 126
+        local rightW = 245
+
+        if dockW < 560 then
             DynamicIsland.Visible = false
-            SearchBoxContainer.Visible = (dockW >= 550)
-            GlassBadge.Visible = (dockW >= 580)
-            local rightW = (dockW >= 550 and 190 or 122)
-            local leftW = (dockW >= 580 and 150 or 110)
-            RightSide.Size = UDim2.new(0, rightW, 1, 0)
+            SearchBoxContainer.Visible = false
+            GlassBadge.Visible = false
+            TitleLabel.Visible = false
+            leftW = 28
             BrandSide.Size = UDim2.new(0, leftW, 1, 0)
-            TabList.Position = UDim2.new(0, leftW + 6, 0.5, 0)
-            TabList.Size = UDim2.new(1, -(leftW + rightW + 12), 0, 32)
+            ProfilePill.Visible = (dockW >= 420)
+            rightW = (dockW >= 420) and 112 or 74
+            RightSide.Size = UDim2.new(0, rightW, 1, 0)
+        elseif dockW < 680 then
+            DynamicIsland.Visible = false
+            SearchBoxContainer.Visible = false
+            GlassBadge.Visible = false
+            TitleLabel.Visible = true
+            leftW = 96
+            BrandSide.Size = UDim2.new(0, leftW, 1, 0)
+            ProfilePill.Visible = true
+            rightW = 114
+            RightSide.Size = UDim2.new(0, rightW, 1, 0)
+        elseif dockW < 790 then
+            DynamicIsland.Visible = false
+            SearchBoxContainer.Visible = true
+            GlassBadge.Visible = true
+            TitleLabel.Visible = true
+            leftW = 126
+            BrandSide.Size = UDim2.new(0, leftW, 1, 0)
+            ProfilePill.Visible = true
+            rightW = 172
+            RightSide.Size = UDim2.new(0, rightW, 1, 0)
         else
             DynamicIsland.Visible = true
             SearchBoxContainer.Visible = true
             GlassBadge.Visible = true
-            RightSide.Size = UDim2.new(0, 284, 1, 0)
-            BrandSide.Size = UDim2.new(0, 160, 1, 0)
-            TabList.Position = UDim2.new(0, 166, 0.5, 0)
-            TabList.Size = UDim2.new(1, -458, 0, 32)
+            TitleLabel.Visible = true
+            leftW = 126
+            BrandSide.Size = UDim2.new(0, leftW, 1, 0)
+            ProfilePill.Visible = true
+            rightW = 245
+            RightSide.Size = UDim2.new(0, rightW, 1, 0)
         end
+
+        TabList.Position = UDim2.new(0, leftW + 8, 0.5, 0)
+        TabList.Size = UDim2.new(1, -(leftW + rightW + 16), 0, 32)
     end
     FloatingDock:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateResponsiveHeader)
     task.defer(updateResponsiveHeader)
