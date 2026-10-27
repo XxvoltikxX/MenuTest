@@ -76,6 +76,8 @@ end
 local Games = {
     [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
     ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
+    [85920622393590] = "Pet Simulator X Event",
+    ["85920622393590"] = "Pet Simulator X Event",
 }
 
 -- // ==========================================================================
