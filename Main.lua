@@ -542,7 +542,7 @@ local function createLoadingIndicator(title, isMobile)
         -- Bez brzydkich napisów i tradycyjnych pasków — animacja LixHub płynie sama
     end
 
-    function controller:Done(timeText, keybindName)
+    function controller:Done(timeText, keybindName, onFinishCallback)
         keybindName = tostring(keybindName or "K")
         local isMobileView = isMobile or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
         local hint = isMobileView and "✓ LIXHUB GOTOWY • DOTKNIJ PRZYCISK" or ("✓ LIXHUB GOTOWY • KLAWISZ [" .. keybindName .. "]")
@@ -566,18 +566,22 @@ local function createLoadingIndicator(title, isMobile)
             Position = UDim2.new(0.5, 0, 0, 16)
         }):Play()
 
-        -- Po 1.2 sekundy płynne rozejście i usunięcie loadera
-        task.delay(1.2, function()
+        -- Po 0.8 sekundy płynne rozejście loadera i ujawnienie menu
+        task.delay(0.8, function()
             isRunning = false
             if animConn then pcall(function() animConn:Disconnect() end) end
 
-            local twSplash = TweenService:Create(Splash, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+            if onFinishCallback then
+                pcall(onFinishCallback)
+            end
+
+            local twSplash = TweenService:Create(Splash, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                 Position = UDim2.new(0.5, 0, 0.46, 0),
                 Size = UDim2.new(0, 330, 0, 205),
                 BackgroundTransparency = 1
             })
-            local twStroke = TweenService:Create(SplashStroke, TweenInfo.new(0.35), { Transparency = 1 })
-            local twBackdrop = TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 1 })
+            local twStroke = TweenService:Create(SplashStroke, TweenInfo.new(0.3), { Transparency = 1 })
+            local twBackdrop = TweenService:Create(Backdrop, TweenInfo.new(0.35), { BackgroundTransparency = 1 })
 
             twSplash:Play()
             twStroke:Play()
@@ -1150,24 +1154,21 @@ function MenuLib:CreateWindow(options)
             task.spawn(cb)
         end
 
-        -- Upewnij się, że okno menu i cień są widoczne
-        if UI.MainFrame then
-            UI.MainFrame.Visible = true
-        end
-        if UI.Shadow then
-            UI.Shadow.Visible = true
-        end
-
-        -- Zakończ proces ładowania i pokaż informację o klawiszu / przycisku mobilnym
-        pcall(function()
-            loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName)
-        end)
-
-        -- 5. Wybierz Dashboard jako domyślną zakładkę
-        task.wait(0.08)
+        -- 5. Wybierz Dashboard jako domyślną zakładkę (w tle, bez mrugania)
         if UI.SelectDashboard then
             pcall(function() UI:SelectDashboard() end)
         end
+
+        -- Zakończ proces ładowania i płynnie ujawnij menu dopiero po zniknięciu animacji LixHub
+        pcall(function()
+            loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName, function()
+                if UI.RevealMenu then
+                    UI:RevealMenu()
+                elseif UI.MainFrame then
+                    UI.MainFrame.Visible = true
+                end
+            end)
+        end)
     end)
 
     return WindowAPI

@@ -485,6 +485,7 @@ function Window:Create(config)
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
+    MainFrame.Visible = false
     MainFrame.ZIndex = 1
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
     MainFrame.BackgroundTransparency = 0.20
@@ -1205,10 +1206,32 @@ function Window:Create(config)
     -- // ============================================================
     -- // ZUNIFIKOWANA LOGIKA TOGGLE MENU DLA PC ORAZ MOBILE
     -- // ============================================================
-    local isMenuVisible = true
+    local isMenuVisible = false
     local currentToggleTween = nil
     local lastNormalPos = MainFrame.Position
     local HiddenPos = UDim2.new(0, -900, 0.5, 0)
+
+    function UI:RevealMenu()
+        isMenuVisible = true
+        MainFrame.Visible = true
+        if Shadow then Shadow.Visible = true end
+        local destPos = (lastNormalPos and lastNormalPos.X.Offset > -100) and lastNormalPos or UDim2.new(0.5, 0, 0.5, 0)
+        MainFrame.Position = UDim2.new(destPos.X.Scale, destPos.X.Offset, destPos.Y.Scale, destPos.Y.Offset + 18)
+        MainFrame.BackgroundTransparency = 1
+
+        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = destPos,
+            BackgroundTransparency = 0.20
+        }):Play()
+
+        if UI.MobileToggleText then
+            UI.MobileToggleText.Text = "CLOSE"
+            UI.MobileToggleText.TextColor3 = Color3.fromRGB(255, 100, 100)
+        end
+        if UI.MobileIcon then
+            Icons:Apply(UI.MobileIcon, "x")
+        end
+    end
 
     function UI:ToggleMenu(forceState)
         local target = (forceState ~= nil) and forceState or (not isMenuVisible)
