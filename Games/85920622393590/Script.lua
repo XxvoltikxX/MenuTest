@@ -1204,8 +1204,72 @@ SpeedModule:AddSlider({
 
 -- // ==========================================================================
 -- // 7. SYSTEM ZDALNYCH MASZYN I ULEPSZEŃ (REMOTE MACHINES & UPGRADES ENGINE)
--- // Pełna obsługa: Gold Machine, Rainbow Machine, Fuse, Dark Matter, Index, Huge, Upgrades, Bank
+-- // WRAZ Z BEZSZWOWYM SYSTEMEM GHOST DISTANCE BYPASS (ELIMINACJA BŁĘDU ODLEGŁOŚCI)
 -- // ==========================================================================
+
+local GhostBypassEnabled = true
+local CurrentOpenMachine = nil
+local CurrentOpenPad = nil
+
+local MachineRemoteMap = {
+    -- Fuse Pets
+    ["fuse pets"] = "Fuse Pets",
+    ["fuse"] = "Fuse Pets",
+
+    -- Gold Machine
+    ["gold pets"] = "Gold Machine",
+    ["golden pets"] = "Gold Machine",
+    ["use golden machine"] = "Gold Machine",
+    ["make golden"] = "Gold Machine",
+    ["golden"] = "Gold Machine",
+    ["gold"] = "Gold Machine",
+
+    -- Rainbow Machine
+    ["rainbow pets"] = "Rainbow Machine",
+    ["use rainbow machine"] = "Rainbow Machine",
+    ["make rainbow"] = "Rainbow Machine",
+    ["rainbow"] = "Rainbow Machine",
+
+    -- Dark Matter Machine
+    ["convert to dark matter"] = "Dark Matter",
+    ["dark matter"] = "Dark Matter",
+    ["darkmatter"] = "Dark Matter",
+    ["claim dark matter"] = "Dark Matter",
+
+    -- Huge Machine
+    ["use huge machine"] = "Huge Machine",
+    ["huge machine"] = "Huge Machine",
+    ["huge"] = "Huge Machine",
+
+    -- Upgrade Station
+    ["buy upgrade"] = "Upgrade Station",
+    ["upgrade"] = "Upgrade Station",
+    ["upgrades"] = "Upgrade Station",
+
+    -- Bank
+    ["deposit"] = "Bank",
+    ["withdraw"] = "Bank",
+    ["invite to bank"] = "Bank",
+    ["bank"] = "Bank",
+
+    -- Pet Collection / Index
+    ["pet collection"] = "Pet Collection Machine",
+    ["index"] = "Pet Collection Machine",
+    ["claim collection reward"] = "Pet Collection Machine"
+}
+
+local function matchMachineByRemote(remoteName)
+    local low = tostring(remoteName or ""):lower()
+    if MachineRemoteMap[low] then
+        return MachineRemoteMap[low]
+    end
+    for pattern, mName in pairs(MachineRemoteMap) do
+        if low:find(pattern, 1, true) then
+            return mName
+        end
+    end
+    return nil
+end
 
 local function findInteractiveMachine(name)
     local map = getMapFolder() or Workspace:FindFirstChild("__MAP")
@@ -1242,7 +1306,147 @@ local function findInteractiveMachine(name)
     return Workspace:FindFirstChild(name, true)
 end
 
+-- // GŁÓWNY SILNIK GHOST BYPASS (BEZSZWOWY MICRO-PULS BEZ RUSZANIA EKRANU GRACZA)
+local function executeWithGhostBypass(machineName, callback)
+    if not GhostBypassEnabled then
+        return callback()
+    end
+
+    local char = LocalPlayer.Character
+    local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+    local machine = findInteractiveMachine(machineName)
+    local pad = machine and (machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart"))
+
+    if not hrp or not pad then
+        return callback()
+    end
+
+    local dist = (hrp.Position - pad.Position).Magnitude
+    -- Jeśli gracz już stoi blisko maszyny (mniej niż 14 studs), wykonaj bezpośrednio
+    if dist <= 14 then
+        return callback()
+    end
+
+    -- Zamrożenie widoku kamery — gracz nie widzi żadnego szarpnięcia ekranu
+    local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+    local oldCamType = camera and camera.CameraType
+    local oldCamCF = camera and camera.CFrame
+    local oldHrpCF = hrp.CFrame
+    local oldVel = hrp.AssemblyLinearVelocity or Vector3.zero
+
+    if camera and oldCamCF then
+        camera.CameraType = Enum.CameraType.Scriptable
+        camera.CFrame = oldCamCF
+    end
+
+    -- Chwilowy przeskok na podest maszyny
+    hrp.CFrame = pad.CFrame * CFrame.new(0, 2, 0)
+    pcall(function() hrp.AssemblyLinearVelocity = Vector3.zero end)
+
+    -- Odczekanie 70ms na replikację pakietu pozycji do serwera
+    task.wait(0.07)
+
+    -- Wykonanie oryginalnego zapytania do serwera (Fuse, Gold, Rainbow itp.)
+    local success, res = pcall(callback)
+
+    -- Błyskawiczny powrót postaci na dokładnie to samo miejsce
+    if hrp and oldHrpCF then
+        hrp.CFrame = oldHrpCF
+        pcall(function() hrp.AssemblyLinearVelocity = oldVel end)
+    end
+
+    -- Przywrócenie trybu kamery
+    if camera and oldCamType then
+        task.defer(function()
+            task.wait(0.02)
+            if camera then
+                camera.CameraType = oldCamType
+                if oldCamCF then camera.CFrame = oldCamCF end
+            end
+        end)
+    end
+
+    if success then
+        return res
+    else
+        warn("[PetHub GhostBypass] Błąd remote: " .. tostring(res))
+        return nil
+    end
+end
+
+-- Podpięcie do Framework.Network gry
+local function hookNetworkFramework()
+    if not (Framework and Framework.Network) then return end
+
+    if type(Framework.Network.Invoke) == "function" and not Framework.Network._GhostHookedInvoke then
+        local rawInvoke = Framework.Network.Invoke
+        Framework.Network._GhostHookedInvoke = true
+        Framework.Network.Invoke = function(name, ...)
+            local targetMachine = matchMachineByRemote(name)
+            if targetMachine and GhostBypassEnabled then
+                local args = { ... }
+                return executeWithGhostBypass(targetMachine, function()
+                    return rawInvoke(name, unpack(args))
+                end)
+            end
+            return rawInvoke(name, ...)
+        end
+    end
+
+    if type(Framework.Network.Fire) == "function" and not Framework.Network._GhostHookedFire then
+        local rawFire = Framework.Network.Fire
+        Framework.Network._GhostHookedFire = true
+        Framework.Network.Fire = function(name, ...)
+            local targetMachine = matchMachineByRemote(name)
+            if targetMachine and GhostBypassEnabled then
+                local args = { ... }
+                return executeWithGhostBypass(targetMachine, function()
+                    return rawFire(name, unpack(args))
+                end)
+            end
+            return rawFire(name, ...)
+        end
+    end
+end
+
+pcall(hookNetworkFramework)
+
+-- Opcjonalne zaawansowane hooki metametod (jeśli executor je wspiera)
+pcall(function()
+    if typeof(hookmetamethod) == "function" and typeof(checkcaller) == "function" and typeof(getnamecallmethod) == "function" then
+        local oldNamecall = nil
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            if not checkcaller() and (method == "InvokeServer" or method == "FireServer") then
+                local args = { ... }
+                local targetMachine = matchMachineByRemote(args[1])
+                if targetMachine and GhostBypassEnabled then
+                    return executeWithGhostBypass(targetMachine, function()
+                        return oldNamecall(self, unpack(args))
+                    end)
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+
+        local oldIndex = nil
+        oldIndex = hookmetamethod(game, "__index", function(self, key)
+            if not checkcaller() and key == "Position" and typeof(self) == "Instance" and self:IsA("BasePart") then
+                if CurrentOpenPad and self == CurrentOpenPad then
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        return hrp.Position
+                    end
+                end
+            end
+            return oldIndex(self, key)
+        end)
+    end
+end)
+
 local function openRemoteMachine(machineName, extraKeywords)
+    CurrentOpenMachine = machineName
     local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
@@ -1252,6 +1456,7 @@ local function openRemoteMachine(machineName, extraKeywords)
     if machine and hrp and typeof(firetouchinterest) == "function" then
         local pad = machine:FindFirstChild("Pad") or machine:FindFirstChild("Center") or machine:FindFirstChild("IndexPart") or machine:FindFirstChildWhichIsA("BasePart")
         if pad then
+            CurrentOpenPad = pad
             pcall(function()
                 firetouchinterest(hrp, pad, 0)
                 task.wait(0.08)
@@ -1310,6 +1515,11 @@ local function openRemoteMachine(machineName, extraKeywords)
 end
 
 local function closeRemoteMachine(machineName, extraKeywords)
+    if CurrentOpenMachine == machineName then
+        CurrentOpenMachine = nil
+        CurrentOpenPad = nil
+    end
+
     local machine = findInteractiveMachine(machineName)
     local char = LocalPlayer.Character
     local hrp = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
@@ -1383,6 +1593,18 @@ end
 -- // 8. DEDYKOWANA ZAKŁADKA "MACHINES" (WSZYSTKIE MASZYNY I ULEPSZENIA W GRZE)
 -- // ==========================================================================
 local TabMachines = Window:CreateTab("Machines", "wrench")
+
+-- 0. GHOST DISTANCE BYPASS (MASTER TOGGLE)
+local BypassModule = TabMachines:CreateModule({
+    Name = "Ghost Distance Bypass",
+    Description = "Eliminuje błąd 'Za daleko od maszyny' podczas Fuse, Gold i Rainbow bez ruszania kamery",
+    Default = true,
+    CurrentValue = true,
+    Flag = "Machines_GhostDistanceBypass",
+    Callback = function(state)
+        GhostBypassEnabled = state
+    end
+})
 
 -- 1. GOLD MACHINE
 local GoldModule = TabMachines:CreateModule({
