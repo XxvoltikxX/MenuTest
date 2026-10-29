@@ -110,6 +110,49 @@ local function getMapFolder()
     return Workspace:FindFirstChild("__MAP")
 end
 
+-- // POMOCNICZE FUNKCJE SIECIOWE (ODPORNE NA WIELKOŚĆ LITER I BEZPOŚREDNIE REMOTES)
+local function fireRemote(name, ...)
+    local called = false
+    if Framework and Framework.Network and Framework.Network.Fire then
+        local ok = pcall(Framework.Network.Fire, name, ...)
+        if ok then
+            called = true
+        else
+            local ok2 = pcall(Framework.Network.Fire, string.lower(name), ...)
+            if ok2 then called = true end
+        end
+    end
+    if not called then
+        local things = getThingsFolder()
+        local remotes = things and things:FindFirstChild("__REMOTES")
+        if remotes then
+            local r = remotes:FindFirstChild(name) or remotes:FindFirstChild(string.lower(name))
+            if r and r:IsA("RemoteEvent") then
+                pcall(r.FireServer, r, ...)
+            end
+        end
+    end
+end
+
+local function invokeRemote(name, ...)
+    if Framework and Framework.Network and Framework.Network.Invoke then
+        local ok, res = pcall(Framework.Network.Invoke, name, ...)
+        if ok and res ~= nil then return res end
+        local ok2, res2 = pcall(Framework.Network.Invoke, string.lower(name), ...)
+        if ok2 and res2 ~= nil then return res2 end
+    end
+    local things = getThingsFolder()
+    local remotes = things and things:FindFirstChild("__REMOTES")
+    if remotes then
+        local r = remotes:FindFirstChild(name) or remotes:FindFirstChild(string.lower(name))
+        if r and r:IsA("RemoteFunction") then
+            local ok, res = pcall(r.InvokeServer, r, ...)
+            if ok and res ~= nil then return res end
+        end
+    end
+    return nil
+end
+
 -- // GŁÓWNA TABELA STANU SKRYPTU
 local State = {
     -- 1. AutoFarm
@@ -118,11 +161,11 @@ local State = {
     CurrentTargetCoin = nil,
 
     -- Wybór celu i priorytetu farmowania
-    FarmTargetType = "Wszystkie (ALL)",     -- Pojedynczy cel lub "Wszystkie (ALL)"
+    FarmTargetType = "Wszystko (ALL)",                     -- Wybór celu lub "Wszystko (ALL)"
     FarmPriority = "ALL (Od Najlepszego do Najsłabszego)", -- Tryb sortowania
-    FarmAreaOnly = false,                   -- Ograniczenie do strefy (domyślnie wyłączone)
+    FarmAreaOnly = false,                                   -- Ograniczenie do strefy (domyślnie wyłączone)
 
-    -- Filtry poszczególnych rodzajów obiektów (używane gdy FarmTargetType to ALL)
+    -- Filtry poszczególnych rodzajów obiektów (używane gdy FarmTargetType to ALL lub Custom)
     FarmTypes = {
         ["Vault"] = true,
         ["Chest"] = true,
@@ -144,7 +187,7 @@ local State = {
     -- 3. Player Speed (SpeedScript gracza)
     PlayerSpeedEnabled = false,
     PlayerSpeedMode = "Legit",
-    PlayerSpeedValue = 16,
+    PlayerSpeedValue = 50,
 
     -- Cache aktualnej mapy dla AutoFarmu
     DetectedMap = "Spawn",
@@ -322,6 +365,7 @@ local function scanCoinsUpvalues()
                                     if type(v) == "table" and (v.n or v.p or v.h) then
                                         for cid, data in pairs(uv) do
                                             CoinsCache[tostring(cid)] = data
+                                            CoinsCache[tonumber(cid)] = data
                                         end
                                         return
                                     end
@@ -335,6 +379,90 @@ local function scanCoinsUpvalues()
     end)
 end
 
+-- Aktywne pobieranie listy monet przez Network
+local lastCoinsFetch = 0
+local function fetchCoinsFromNetwork(force)
+    local now = tick()
+    if not force and (now - lastCoinsFetch < 1.0) then return end
+    lastCoinsFetch = now
+
+    pcall(function()
+        local allCoins = invokeRemote("Get Coins")
+        if type(allCoins) == "table" then
+            for id, data in pairs(allCoins) do
+                CoinsCache[tostring(id)] = data
+                CoinsCache[tonumber(id)] = data
+            end
+        end
+    end)
+    scanCoinsUpvalues()
+end
+
+-- Pobranie bazy na starcie skryptu
+task.spawn(function()
+    fetchCoinsFromNetwork(true)
+end)
+
+-- Głębokie rozpoznawanie kategorii obiektu bezpośrednio z instancji w Workspace
+local function detectCategoryFromInstance(coin)
+    if not coin then return nil, nil end
+
+    for _, attr in ipairs({"CoinType", "Type", "Name", "CoinName", "n", "Category"}) do
+        local val = coin:GetAttribute(attr)
+        if val and type(val) == "string" and not tonumber(val) and #val > 0 then
+            local vLow = string.lower(val)
+            if vLow:find("diamond") or vLow:find("gem") then return "Diamonds", val
+            elseif vLow:find("vault") then return "Vault", val
+            elseif vLow:find("small chest") or vLow:find("small_chest") then return "Small Chest", val
+            elseif vLow:find("chest") then return "Chest", val
+            elseif vLow:find("safe") then return "Safe", val
+            elseif vLow:find("crate") or vLow:find("barrel") or vLow:find("box") then return "Crate", val
+            elseif vLow:find("present") or vLow:find("gift") then return "Present", val
+            elseif vLow:find("large coin") or vLow:find("large_coin") or vLow:find("giant coin") then return "Large Coins", val
+            elseif vLow:find("tiny coin") or vLow:find("tiny_coin") then return "Tiny Coins", val
+            elseif vLow:find("coin") then return "Coins", val
+            end
+        end
+    end
+
+    for _, child in ipairs(coin:GetDescendants()) do
+        local cName = string.lower(child.Name)
+        if cName:find("diamond") or cName:find("gem") then
+            return "Diamonds", child.Name
+        elseif cName:find("small chest") or cName:find("small_chest") then
+            return "Small Chest", child.Name
+        elseif cName:find("chest") then
+            return "Chest", child.Name
+        elseif cName:find("vault") then
+            return "Vault", child.Name
+        elseif cName:find("safe") then
+            return "Safe", child.Name
+        elseif cName:find("crate") or cName:find("barrel") or cName:find("box") then
+            return "Crate", child.Name
+        elseif cName:find("present") or cName:find("gift") then
+            return "Present", child.Name
+        elseif cName:find("large coin") or cName:find("giant coin") then
+            return "Large Coins", child.Name
+        elseif cName:find("tiny coin") then
+            return "Tiny Coins", child.Name
+        end
+
+        if child:IsA("TextLabel") and child.Text and #child.Text > 0 then
+            local t = string.lower(child.Text)
+            if t:find("diamond") or t:find("gem") then return "Diamonds", child.Text
+            elseif t:find("small chest") then return "Small Chest", child.Text
+            elseif t:find("chest") then return "Chest", child.Text
+            elseif t:find("vault") then return "Vault", child.Text
+            elseif t:find("safe") then return "Safe", child.Text
+            elseif t:find("crate") then return "Crate", child.Text
+            elseif t:find("present") then return "Present", child.Text
+            end
+        end
+    end
+
+    return nil, nil
+end
+
 -- Pobranie informacji o monecie (ID, nazwa, zdrowie, max zdrowie)
 local function getCoinInfo(coin)
     local coinId = coin:GetAttribute("ID") or coin.Name
@@ -342,11 +470,11 @@ local function getCoinInfo(coin)
     local hp = coin:GetAttribute("Health")
     local maxHp = coin:GetAttribute("MaxHealth")
 
-    if (not coinName or coinName == "") and CoinsCache[coinId] then
-        local entry = CoinsCache[coinId]
-        coinName = entry.n or entry.name
-        hp = hp or entry.h
-        maxHp = maxHp or entry.mh
+    local entry = CoinsCache[tostring(coinId)] or CoinsCache[tonumber(coinId)]
+    if entry then
+        coinName = entry.n or entry.name or entry.Name or entry.CoinType or coinName
+        hp = hp or entry.h or entry.health
+        maxHp = maxHp or entry.mh or entry.maxHealth or hp
     end
 
     if not coinName or coinName == "" or tonumber(coinName) then
@@ -359,61 +487,104 @@ local function getCoinInfo(coin)
         end
     end
 
-    if not coinName or coinName == "" then
-        coinName = coin.Name
+    if not coinName or coinName == "" or tonumber(coinName) then
+        local detectedCat, detectedName = detectCategoryFromInstance(coin)
+        if detectedName then
+            coinName = detectedName
+        elseif detectedCat then
+            coinName = detectedCat
+        else
+            coinName = coin.Name
+        end
     end
 
     return coinId, coinName, hp or 100, maxHp or hp or 100
 end
 
 -- Klasyfikacja obiektów do kategorii
-local function getCoinCategory(coinName)
-    local name = string.lower(coinName or "")
-    if name:find("tiny coin") or name:find("tiny_coin") then
-        return "Tiny Coins"
-    elseif name:find("large coin") or name:find("large_coin") or name:find("giant coin") then
-        return "Large Coins"
+local function getCoinCategory(coinName, coinInstance)
+    local name = string.lower(tostring(coinName or ""))
+
+    if #name == 0 or tonumber(name) or name == "coin" then
+        if coinInstance then
+            local cat = detectCategoryFromInstance(coinInstance)
+            if cat then return cat end
+        end
+    end
+
+    if name:find("diamond") or name:find("gem") then
+        return "Diamonds"
+    elseif name:find("vault") then
+        return "Vault"
     elseif name:find("small chest") or name:find("small_chest") then
         return "Small Chest"
     elseif name:find("chest") then
         return "Chest"
-    elseif name:find("vault") then
-        return "Vault"
     elseif name:find("safe") then
         return "Safe"
     elseif name:find("crate") or name:find("barrel") or name:find("box") then
         return "Crate"
     elseif name:find("present") or name:find("gift") then
         return "Present"
-    elseif name:find("diamond") or name:find("gem") then
-        return "Diamonds"
+    elseif name:find("tiny coin") or name:find("tiny_coin") then
+        return "Tiny Coins"
+    elseif name:find("large coin") or name:find("large_coin") or name:find("giant coin") then
+        return "Large Coins"
     elseif name:find("coin") then
         return "Coins"
     end
-    return "Other"
+
+    if coinInstance then
+        local cat = detectCategoryFromInstance(coinInstance)
+        if cat then return cat end
+    end
+
+    return "Coins"
 end
 
 -- Mapowanie wyboru z Dropdowna na klucz kategorii
 local DropdownToCategory = {
+    ["Wszystko (ALL)"] = "ALL",
     ["Wszystkie (ALL)"] = "ALL",
-    ["Vault (Skarbce)"] = "Vault",
-    ["Chest (Wielkie Skrzynie)"] = "Chest",
-    ["Small Chest (Małe Skrzynie)"] = "Small Chest",
-    ["Safe (Sejfy)"] = "Safe",
-    ["Crate (Skrzynki drewniane)"] = "Crate",
-    ["Present (Prezenty)"] = "Present",
+    ["Tylko Diamenty (Diamonds)"] = "Diamonds",
     ["Diamonds (Diamenty)"] = "Diamonds",
+    ["Tylko Skrzynie (Wszystkie skrzynie)"] = "AllChests",
+    ["Tylko Wielkie Skrzynie (Big Chests)"] = "Chest",
+    ["Chest (Wielkie Skrzynie)"] = "Chest",
+    ["Tylko Małe Skrzynie (Small Chests)"] = "Small Chest",
+    ["Small Chest (Małe Skrzynie)"] = "Small Chest",
+    ["Tylko Skarbce (Vaults)"] = "Vault",
+    ["Vault (Skarbce)"] = "Vault",
+    ["Tylko Sejfy (Safes)"] = "Safe",
+    ["Safe (Sejfy)"] = "Safe",
+    ["Tylko Skrzynki (Crates)"] = "Crate",
+    ["Crate (Skrzynki drewniane)"] = "Crate",
+    ["Tylko Prezenty (Presents)"] = "Present",
+    ["Present (Prezenty)"] = "Present",
+    ["Tylko Duże Monety (Large Coins)"] = "Large Coins",
     ["Large Coins (Duże Monety)"] = "Large Coins",
+    ["Tylko Zwykłe Monety (Coins)"] = "Coins",
     ["Coins (Zwykłe Monety)"] = "Coins",
+    ["Tylko Małe Monety (Tiny Coins)"] = "Tiny Coins",
     ["Tiny Coins (Małe Monety)"] = "Tiny Coins",
+    ["Wybrane w przełącznikach poniżej (Custom)"] = "CUSTOM",
 }
 
 -- Weryfikacja czy dany rodzaj obiektu jest dopuszczony do farmowania
 local function isCoinAllowed(category)
-    local selectedTarget = State.FarmTargetType or "Wszystkie (ALL)"
+    local selectedTarget = State.FarmTargetType or "Wszystko (ALL)"
     local targetCategory = DropdownToCategory[selectedTarget] or selectedTarget
 
-    if targetCategory and targetCategory ~= "ALL" then
+    if targetCategory == "ALL" then
+        return true
+    elseif targetCategory == "CUSTOM" then
+        if State.FarmTypes and State.FarmTypes[category] ~= nil then
+            return State.FarmTypes[category] == true
+        end
+        return false
+    elseif targetCategory == "AllChests" then
+        return category == "Chest" or category == "Small Chest"
+    elseif targetCategory and targetCategory ~= "" then
         return category == targetCategory
     end
 
@@ -476,12 +647,15 @@ local function findBestCoin()
                 local inRadius, dist = isCoinInRadius(coin, pPos, State.FarmRange)
                 if inRadius then
                     local _, coinName, hp, maxHp = getCoinInfo(coin)
-                    local category = getCoinCategory(coinName)
+                    local category = getCoinCategory(coinName, coin)
 
                     if isCoinAllowed(category) then
                         local isAllowedArea = true
                         if State.FarmAreaOnly and currentMap ~= "Spawn" then
                             local coinArea = coin:GetAttribute("Area")
+                            if not coinArea and CoinsCache[coin.Name] then
+                                coinArea = CoinsCache[coin.Name].a
+                            end
                             local coinNameLower = string.lower(coinName)
                             if coinArea and coinArea ~= "" then
                                 isAllowedArea = string.lower(coinArea):find(currentLower, 1, true) ~= nil
@@ -555,23 +729,15 @@ local function attackCoin(coin)
         end
 
         -- 2. Game Native Network Fire
-        if Framework and Framework.Network and Framework.Network.Fire then
-            pcall(function()
-                Framework.Network.Fire("Select Coin", coin.Name, true)
-            end)
-        end
+        fireRemote("Select Coin", coin.Name, true)
 
         -- 3. Direct Network Invoke (Join Coin + Farm Coin)
-        if Framework and Framework.Network and Framework.Network.Invoke then
-            pcall(function()
-                local equippedUids = getEquippedPets()
-                if #equippedUids > 0 then
-                    Framework.Network.Invoke("Join Coin", coinId, equippedUids)
-                    for _, uid in ipairs(equippedUids) do
-                        Framework.Network.Fire("Farm Coin", coinId, uid)
-                    end
-                end
-            end)
+        local equippedUids = getEquippedPets()
+        if #equippedUids > 0 then
+            invokeRemote("Join Coin", coinId, equippedUids)
+            for _, uid in ipairs(equippedUids) do
+                fireRemote("Farm Coin", coinId, uid)
+            end
         end
 
         -- 4. ClickDetector fallback
@@ -634,10 +800,8 @@ local function collectOrbsClean()
         end
     end
 
-    if #claimedIds > 0 and Framework and Framework.Network then
-        pcall(function()
-            Framework.Network.Fire("Claim Orbs", claimedIds)
-        end)
+    if #claimedIds > 0 then
+        fireRemote("Claim Orbs", claimedIds)
     end
 end
 
@@ -695,13 +859,18 @@ local function collectLootbagsClean()
 end
 
 -- // ==========================================================================
--- // 4. SYSTEM PRĘDKOŚCI GRACZA
+-- // 4. SYSTEM PRĘDKOŚCI GRACZA (SPEED ENGINE)
 -- // ==========================================================================
-local function isPlayerMoving()
+local function getMoveDirection()
     local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum and hum.MoveDirection.Magnitude > 0 then
+        return true, hum.MoveDirection
+    end
+
     local camera = Workspace.CurrentCamera
     if not char or not char:FindFirstChild("HumanoidRootPart") or not camera then
-        return false, Vector3.new()
+        return false, Vector3.zero
     end
 
     local look = camera.CFrame.LookVector
@@ -710,17 +879,102 @@ local function isPlayerMoving()
         moveDir = moveDir.Unit
     end
 
-    local movement = Vector3.new()
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then movement = movement + moveDir end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then movement = movement - moveDir end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then movement = movement + Vector3.new(-moveDir.Z, 0, moveDir.X) end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then movement = movement + Vector3.new(moveDir.Z, 0, -moveDir.X) end
+    local movement = Vector3.zero
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then movement = movement + moveDir end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then movement = movement - moveDir end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.Right) then movement = movement + Vector3.new(-moveDir.Z, 0, moveDir.X) end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.Left) then movement = movement + Vector3.new(moveDir.Z, 0, -moveDir.X) end
 
     if movement.Magnitude > 0 then
         return true, movement.Unit
     end
-    return false, Vector3.new()
+    return false, Vector3.zero
 end
+
+local speedHeartbeatConn = nil
+local speedRenderConn = nil
+
+local function stopSpeedConnections()
+    if speedHeartbeatConn then speedHeartbeatConn:Disconnect() speedHeartbeatConn = nil end
+    if speedRenderConn then speedRenderConn:Disconnect() speedRenderConn = nil end
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
+    end)
+end
+
+local function initSpeedConnections()
+    if not speedHeartbeatConn then
+        speedHeartbeatConn = RunService.Heartbeat:Connect(function()
+            if not ScriptRunning then return end
+            if not (State.PlayerSpeedEnabled or _G.SpeedEnabled) then return end
+
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hrp or not hum then return end
+
+            local targetSpeed = tonumber(State.PlayerSpeedValue or _G.SpeedValue or 50) or 50
+            local mode = State.PlayerSpeedMode or _G.SpeedMode or "Legit"
+
+            if mode == "Normal" then
+                if hum.WalkSpeed ~= targetSpeed then
+                    hum.WalkSpeed = targetSpeed
+                end
+            elseif mode == "Legit" or mode == "HVH" then
+                local moving, moveDir = getMoveDirection()
+                if mode == "HVH" and (UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum:GetState() == Enum.HumanoidStateType.Freefall) then
+                    hum.Jump = true
+                end
+
+                if moving then
+                    local currentY = hrp.AssemblyLinearVelocity and hrp.AssemblyLinearVelocity.Y or hrp.Velocity.Y
+                    local newVel = Vector3.new(moveDir.X * targetSpeed, currentY, moveDir.Z * targetSpeed)
+                    pcall(function() hrp.AssemblyLinearVelocity = newVel end)
+                    pcall(function() hrp.Velocity = newVel end)
+                end
+            end
+        end)
+    end
+
+    if not speedRenderConn then
+        speedRenderConn = RunService.RenderStepped:Connect(function(dt)
+            if not ScriptRunning then return end
+            if not (State.PlayerSpeedEnabled or _G.SpeedEnabled) then return end
+
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hrp or not hum then return end
+
+            local targetSpeed = tonumber(State.PlayerSpeedValue or _G.SpeedValue or 50) or 50
+            local mode = State.PlayerSpeedMode or _G.SpeedMode or "Legit"
+
+            if mode == "CFrame" then
+                local moving, moveDir = getMoveDirection()
+                if moving then
+                    local delta = (dt and dt > 0) and dt or (1 / 60)
+                    hrp.CFrame = hrp.CFrame + (moveDir * (targetSpeed * delta))
+                end
+            end
+        end)
+    end
+end
+
+initSpeedConnections()
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    if State.PlayerSpeedEnabled or _G.SpeedEnabled then
+        task.wait(0.2)
+        local hum = newChar:WaitForChild("Humanoid", 3)
+        if hum and (State.PlayerSpeedMode == "Normal") then
+            hum.WalkSpeed = State.PlayerSpeedValue or 50
+        end
+    end
+end)
 
 -- // ==========================================================================
 -- // 5. PĘTLE W TLE (BACKGROUND LOOPS)
@@ -738,7 +992,7 @@ task.spawn(function()
                 State.CurrentTargetCoin = nil
             else
                 local _, cName = getCoinInfo(current)
-                local cat = getCoinCategory(cName)
+                local cat = getCoinCategory(cName, current)
                 if not isCoinAllowed(cat) then
                     current = nil
                     State.CurrentTargetCoin = nil
@@ -775,8 +1029,8 @@ task.spawn(function()
                         local curPos = getCoinPosition(current) or pPos
                         local bPos = getCoinPosition(betterCoin) or pPos
 
-                        local curScore = evaluateCoinScore(getCoinCategory(curName), curHp, curMaxHp, (pPos - curPos).Magnitude)
-                        local bScore = evaluateCoinScore(getCoinCategory(bName), bHp, bMaxHp, (pPos - bPos).Magnitude)
+                        local curScore = evaluateCoinScore(getCoinCategory(curName, current), curHp, curMaxHp, (pPos - curPos).Magnitude)
+                        local bScore = evaluateCoinScore(getCoinCategory(bName, betterCoin), bHp, bMaxHp, (pPos - bPos).Magnitude)
 
                         if bScore > (curScore + 150000) then
                             attackCoin(betterCoin)
@@ -817,19 +1071,9 @@ task.spawn(function()
     while ScriptRunning do
         if State.FarmActive then
             bindCoinsRespawnListeners()
-            pcall(function()
-                if Framework and Framework.Network and Framework.Network.Invoke then
-                    local allCoins = Framework.Network.Invoke("Get Coins")
-                    if type(allCoins) == "table" then
-                        for id, data in pairs(allCoins) do
-                            CoinsCache[tostring(id)] = data
-                        end
-                    end
-                end
-            end)
-            scanCoinsUpvalues()
+            fetchCoinsFromNetwork()
         end
-        task.wait(4.0)
+        task.wait(1.5)
     end
 end)
 
@@ -865,53 +1109,6 @@ task.spawn(function()
     end
 end)
 
--- Pętla fizyki gracza (RenderStepped)
-local speedConn
-speedConn = RunService.RenderStepped:Connect(function()
-    if not ScriptRunning then
-        if speedConn then speedConn:Disconnect() end
-        return
-    end
-
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") or not character:FindFirstChild("Humanoid") then return end
-
-    local hrp = character.HumanoidRootPart
-    local humanoid = character.Humanoid
-
-    if State.PlayerSpeedEnabled or _G.SpeedEnabled then
-        if humanoid:GetState() == Enum.HumanoidStateType.None then
-            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end
-        humanoid.PlatformStand = false
-
-        local moving, direction = isPlayerMoving()
-        local targetSpeed = State.PlayerSpeedValue or _G.SpeedValue or 16
-
-        if moving then
-            if State.PlayerSpeedMode == "Normal" then
-                humanoid.WalkSpeed = targetSpeed
-            elseif State.PlayerSpeedMode == "CFrame" then
-                hrp.CFrame = hrp.CFrame + (direction * (targetSpeed / 50))
-            elseif State.PlayerSpeedMode == "Legit" or State.PlayerSpeedMode == "HVH" then
-                if State.PlayerSpeedMode == "HVH" and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    humanoid.Jump = true
-                end
-                hrp.Velocity = Vector3.new(direction.X * targetSpeed, hrp.Velocity.Y, direction.Z * targetSpeed)
-            end
-        else
-            if State.PlayerSpeedMode == "Legit" or State.PlayerSpeedMode == "HVH" then
-                hrp.Velocity = Vector3.new(0, hrp.Velocity.Y, 0)
-            end
-        end
-    else
-        if humanoid.PlatformStand then
-            humanoid.PlatformStand = false
-            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end
-    end
-end)
-
 -- // ==========================================================================
 -- // 6. INTERFEJS UŻYTKOWNIKA MENUTEST (JEDNA GŁÓWNA ZAKŁADKA "GENERAL")
 -- // ==========================================================================
@@ -929,7 +1126,7 @@ local Window = MENU:CreateWindow({
 if Window and Window.ScreenGui then
     Window.ScreenGui.Destroying:Connect(function()
         ScriptRunning = false
-        if speedConn then speedConn:Disconnect() end
+        stopSpeedConnections()
         State.FarmActive = false
         State.AutoOrbs = false
         State.AutoLootbags = false
@@ -993,22 +1190,24 @@ FarmModule:AddSlider({
 })
 
 FarmModule:AddDropdown({
-    Name = "Docelowy Typ Obiektu",
+    Name = "Co ma kopać (Wybór Celu)",
     Options = {
-        "Wszystkie (ALL)",
-        "Vault (Skarbce)",
-        "Chest (Wielkie Skrzynie)",
-        "Small Chest (Małe Skrzynie)",
-        "Safe (Sejfy)",
-        "Crate (Skrzynki drewniane)",
-        "Present (Prezenty)",
-        "Diamonds (Diamenty)",
-        "Large Coins (Duże Monety)",
-        "Coins (Zwykłe Monety)",
-        "Tiny Coins (Małe Monety)"
+        "Wszystko (ALL)",
+        "Tylko Diamenty (Diamonds)",
+        "Tylko Skrzynie (Wszystkie skrzynie)",
+        "Tylko Wielkie Skrzynie (Big Chests)",
+        "Tylko Małe Skrzynie (Small Chests)",
+        "Tylko Skarbce (Vaults)",
+        "Tylko Sejfy (Safes)",
+        "Tylko Skrzynki (Crates)",
+        "Tylko Prezenty (Presents)",
+        "Tylko Duże Monety (Large Coins)",
+        "Tylko Zwykłe Monety (Coins)",
+        "Tylko Małe Monety (Tiny Coins)",
+        "Wybrane w przełącznikach poniżej (Custom)"
     },
-    CurrentOption = {"Wszystkie (ALL)"},
-    Default = "Wszystkie (ALL)",
+    CurrentOption = {"Wszystko (ALL)"},
+    Default = "Wszystko (ALL)",
     Flag = "General_FarmTargetType",
     Callback = function(val)
         local selected = (type(val) == "table" and val[1]) or val
@@ -1023,8 +1222,7 @@ FarmModule:AddDropdown({
         "ALL (Od Najlepszego do Najsłabszego)",
         "Najbliższe (Najmniejsza Odległość)",
         "Najwięcej HP (Największe / Bossy)",
-        "Najmniej HP (Szybkie Czyszczenie)",
-        "Tylko Wybrany Typ"
+        "Najmniej HP (Szybkie Czyszczenie)"
     },
     CurrentOption = {"ALL (Od Najlepszego do Najsłabszego)"},
     Default = "ALL (Od Najlepszego do Najsłabszego)",
@@ -1054,6 +1252,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Vault",
     Callback = function(state)
         State.FarmTypes["Vault"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1064,6 +1263,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Chest",
     Callback = function(state)
         State.FarmTypes["Chest"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1074,6 +1274,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_SmallChest",
     Callback = function(state)
         State.FarmTypes["Small Chest"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1084,6 +1285,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Safe",
     Callback = function(state)
         State.FarmTypes["Safe"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1094,6 +1296,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Crate",
     Callback = function(state)
         State.FarmTypes["Crate"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1104,6 +1307,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Present",
     Callback = function(state)
         State.FarmTypes["Present"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1114,6 +1318,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Diamonds",
     Callback = function(state)
         State.FarmTypes["Diamonds"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1124,6 +1329,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_LargeCoins",
     Callback = function(state)
         State.FarmTypes["Large Coins"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1134,6 +1340,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_Coins",
     Callback = function(state)
         State.FarmTypes["Coins"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1144,6 +1351,7 @@ FarmModule:AddToggle({
     Flag = "General_Farm_TinyCoins",
     Callback = function(state)
         State.FarmTypes["Tiny Coins"] = state
+        State.CurrentTargetCoin = nil
     end
 })
 
@@ -1183,7 +1391,7 @@ CollectModule:AddToggle({
 -- // ==================== MODUŁ 3: SPEED (SPEEDSCRIPT) ====================
 local SpeedModule = TabGeneral:CreateModule({
     Name = "Speed",
-    Description = "Zaawansowany system prędkości gracza z SpeedScript",
+    Description = "Zaawansowany, płynny system prędkości gracza z ochroną przed resetowaniem",
     Default = false,
     CurrentValue = false,
     DefaultKeybind = "Z",
@@ -1193,7 +1401,17 @@ local SpeedModule = TabGeneral:CreateModule({
         _G.SpeedEnabled = state
         if not state then
             pcall(function()
-                LocalPlayer.Character.Humanoid.WalkSpeed = 16
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = 16 end
+            end)
+        else
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum and State.PlayerSpeedMode == "Normal" then
+                    hum.WalkSpeed = State.PlayerSpeedValue or 50
+                end
             end)
         end
     end
@@ -1209,21 +1427,41 @@ SpeedModule:AddDropdown({
         local selected = (type(val) == "table" and val[1]) or val
         State.PlayerSpeedMode = selected
         _G.SpeedMode = selected
+        if selected ~= "Normal" then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = 16 end
+            end)
+        elseif State.PlayerSpeedEnabled then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = State.PlayerSpeedValue or 50 end
+            end)
+        end
     end
 })
 
 SpeedModule:AddSlider({
     Name = "Custom Speed",
-    Range = { 0, 300 },
-    CurrentValue = 16,
-    Min = 0,
+    Range = { 16, 300 },
+    CurrentValue = 50,
+    Min = 16,
     Max = 300,
-    Default = 16,
+    Default = 50,
     Suffix = " Studs",
     Flag = "General_SpeedVal",
     Callback = function(val)
         State.PlayerSpeedValue = val
         _G.SpeedValue = val
+        if State.PlayerSpeedEnabled and State.PlayerSpeedMode == "Normal" then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = val end
+            end)
+        end
     end
 })
 
