@@ -99,6 +99,10 @@ local function loadGameLibrary()
 end
 
 pcall(loadGameLibrary)
+pcall(function()
+    if Framework and Framework.Settings then Framework.Settings.CoinGrabDistance = math.huge end
+    if Library and Library.Settings then Library.Settings.CoinGrabDistance = math.huge end
+end)
 
 -- Bezpieczne pobranie Things i Map
 local function getThingsFolder()
@@ -158,6 +162,11 @@ local State = {
     -- 1. AutoFarm
     FarmActive = false,
     FarmRange = 600,
+    FarmInfiniteRange = true,                              -- Nielimitowany zasięg (brak ograniczenia do pozycji gracza)
+    FarmAnchorEnabled = false,                             -- Blokada pozycji farmu (farmienie wybranego punktu/strefy)
+    FarmAnchorPos = nil,                                  -- Zapisana pozycja Vector3 centrum farmu
+    FarmAnchorArea = nil,                                 -- Zapisana nazwa strefy farmu
+    FarmAntiRecall = true,                                -- Blokada powrotu petów do gracza (Stay At Target / No Leash)
     CurrentTargetCoin = nil,
 
     -- Wybór celu i priorytetu farmowania
@@ -337,15 +346,25 @@ local function isCoinAlive(coin)
     return true
 end
 
--- Precyzyjna weryfikacja obecności monety w kołowym promieniu wokół gracza (2D X-Z circle)
+-- Precyzyjna weryfikacja obecności monety w kołowym promieniu wokół gracza lub bazy farmu (2D X-Z circle)
 local function isCoinInRadius(coin, pPos, radius)
+    if State.FarmInfiniteRange then
+        return true, 0
+    end
+
     local cPos = getCoinPosition(coin)
     if not cPos then return false, math.huge end
 
-    local horizDist = (Vector3.new(pPos.X, 0, pPos.Z) - Vector3.new(cPos.X, 0, cPos.Z)).Magnitude
-    local vertDist = math.abs(pPos.Y - cPos.Y)
+    local checkPos = pPos
+    if State.FarmAnchorEnabled and State.FarmAnchorPos then
+        checkPos = State.FarmAnchorPos
+    end
 
-    if horizDist <= radius and vertDist < 300 then
+    local horizDist = (Vector3.new(checkPos.X, 0, checkPos.Z) - Vector3.new(cPos.X, 0, cPos.Z)).Magnitude
+    local vertDist = math.abs(checkPos.Y - cPos.Y)
+
+    local effectiveRadius = radius or State.FarmRange or 600
+    if horizDist <= effectiveRadius and vertDist < 600 then
         return true, horizDist
     end
     return false, horizDist
@@ -639,11 +658,11 @@ local function findBestCoin()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-    local pPos = hrp.Position
+    local pPos = (State.FarmAnchorEnabled and State.FarmAnchorPos) or hrp.Position
 
     local bestCoin = nil
     local bestScore = -math.huge
-    local currentMap = State.DetectedMap or "Spawn"
+    local currentMap = (State.FarmAnchorEnabled and State.FarmAnchorArea) or State.DetectedMap or "Spawn"
     local currentLower = string.lower(currentMap)
 
     local folders = getCoinsFolders()
@@ -785,9 +804,8 @@ local function hookPetSpeed()
 end
 pcall(hookPetSpeed)
 
--- Wzmocnienie siły fizycznej i responsywności petów w Workspace (Brak lagów za graczem)
+-- Wzmocnienie siły fizycznej i responsywności petów w Workspace (Brak lagów za graczem i blokada powrotu)
 local function updateWorkspacePetsPhysics()
-    if not State.PetSpeedEnabled then return end
     local things = getThingsFolder()
     local petsFolder = things and things:FindFirstChild("Pets")
     if not petsFolder then return end
@@ -795,18 +813,29 @@ local function updateWorkspacePetsPhysics()
     local mult = tonumber(State.PetSpeedValue) or 25
     local pForce = math.clamp(20000 * mult, 20000, 10000000)
 
+    local targetCoin = State.CurrentTargetCoin
+    local targetPos = (targetCoin and isCoinAlive(targetCoin) and getCoinPosition(targetCoin)) or nil
+
     for _, pet in ipairs(petsFolder:GetChildren()) do
         if isMyPet(pet) then
             for _, desc in ipairs(pet:GetDescendants()) do
                 if desc:IsA("BodyPosition") then
-                    desc.MaxForce = Vector3.new(1e8, 1e8, 1e8)
-                    desc.P = pForce
-                    if State.PetMaxForce or mult >= 15 then
-                        desc.D = 250
+                    if State.PetSpeedEnabled then
+                        desc.MaxForce = Vector3.new(1e8, 1e8, 1e8)
+                        desc.P = pForce
+                        if State.PetMaxForce or mult >= 15 then
+                            desc.D = 250
+                        end
+                    end
+                    -- Zabezpieczenie przed powrotem petów (Anti-Recall / Tether Lock na odległość)
+                    if targetPos and (State.FarmAntiRecall or State.FarmAnchorEnabled or State.FarmInfiniteRange) then
+                        desc.Position = targetPos + Vector3.new(math.random(-2, 2), 1, math.random(-2, 2))
                     end
                 elseif desc:IsA("AlignPosition") then
-                    desc.MaxForce = 1e8
-                    desc.Responsiveness = math.clamp(20 * (mult / 2), 20, 200)
+                    if State.PetSpeedEnabled then
+                        desc.MaxForce = 1e8
+                        desc.Responsiveness = math.clamp(20 * (mult / 2), 20, 200)
+                    end
                 end
             end
         end
@@ -1121,8 +1150,9 @@ task.spawn(function()
                 else
                     local char = LocalPlayer.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local inRadius = isCoinInRadius(current, hrp.Position, State.FarmRange)
+                    local refPos = (State.FarmAnchorEnabled and State.FarmAnchorPos) or (hrp and hrp.Position)
+                    if refPos and not State.FarmInfiniteRange then
+                        local inRadius = isCoinInRadius(current, refPos, State.FarmRange)
                         if not inRadius then
                             current = nil
                             State.CurrentTargetCoin = nil
@@ -1137,6 +1167,15 @@ task.spawn(function()
                     attackCoin(nextCoin)
                 end
             else
+                -- Ciągłe podtrzymywanie ataku petów na serwerze (Anti-Recall Network Pulse)
+                if State.FarmAntiRecall or State.FarmInfiniteRange or State.FarmAnchorEnabled then
+                    local coinId = current:GetAttribute("ID") or current.Name
+                    local eq = getEquippedPets()
+                    for _, uid in ipairs(eq) do
+                        fireRemote("Farm Coin", coinId, uid)
+                    end
+                end
+
                 retargetCounter = retargetCounter + 1
                 if retargetCounter >= 6 then
                     retargetCounter = 0
@@ -1144,7 +1183,7 @@ task.spawn(function()
                     if betterCoin and betterCoin ~= current and isCoinAlive(betterCoin) then
                         local char = LocalPlayer.Character
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local pPos = hrp and hrp.Position or Vector3.zero
+                        local pPos = (State.FarmAnchorEnabled and State.FarmAnchorPos) or (hrp and hrp.Position) or Vector3.zero
 
                         local _, curName, curHp, curMaxHp = getCoinInfo(current)
                         local _, bName, bHp, bMaxHp = getCoinInfo(betterCoin)
@@ -1281,6 +1320,9 @@ if Window and Window.ScreenGui then
         State.AutoLootbags = false
         State.PlayerSpeedEnabled = false
         State.PetSpeedEnabled = false
+        State.FarmAnchorEnabled = false
+        State.FarmAnchorPos = nil
+        State.FarmAnchorArea = nil
     end)
 end
 
@@ -1336,6 +1378,49 @@ FarmModule:AddSlider({
     Callback = function(val)
         State.FarmRange = val
         State.CurrentTargetCoin = nil
+    end
+})
+
+FarmModule:AddToggle({
+    Name = "Nielimitowany Zasięg (Infinite Range)",
+    Default = true,
+    CurrentValue = true,
+    Flag = "General_FarmInfiniteRange",
+    Callback = function(state)
+        State.FarmInfiniteRange = state
+        State.CurrentTargetCoin = nil
+    end
+})
+
+FarmModule:AddToggle({
+    Name = "Zablokuj Miejsce Farmu (Lock Anchor)",
+    Default = false,
+    CurrentValue = false,
+    Flag = "General_FarmAnchor",
+    Callback = function(state)
+        State.FarmAnchorEnabled = state
+        if state then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                State.FarmAnchorPos = hrp.Position
+                State.FarmAnchorArea = State.DetectedMap or detectCurrentMap()
+            end
+        else
+            State.FarmAnchorPos = nil
+            State.FarmAnchorArea = nil
+        end
+        State.CurrentTargetCoin = nil
+    end
+})
+
+FarmModule:AddToggle({
+    Name = "Zabezpieczenie przed Powrotem Petów (Anti-Recall)",
+    Default = true,
+    CurrentValue = true,
+    Flag = "General_FarmAntiRecall",
+    Callback = function(state)
+        State.FarmAntiRecall = state
     end
 })
 
