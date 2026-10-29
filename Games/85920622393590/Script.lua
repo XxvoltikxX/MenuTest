@@ -277,11 +277,30 @@ end
 -- // 2. LOGIKA AUTOFARM (INTELIGENTNA KLASYFIKACJA I PRECYZYJNY WYBÓR W KOLE PROMIENIA)
 -- // ==========================================================================
 
+-- Śledzenie połączeń do bezpiecznego sprzątania
+local ScriptConnections = {}
+
 -- Cache danych monet (Network / Upvalues)
 local CoinsCache = {}
 
--- Bezpieczne pobranie wszystkich folderów z monetami/obiektami (Coins i Breakables w __THINGS oraz Workspace)
+-- Bezpieczne pobranie wszystkich folderów z monetami/obiektami (z buforem TTL)
+local cachedCoinFolders = {}
+local lastCoinFoldersCheck = 0
+
 local function getCoinsFolders()
+    local now = tick()
+    if (now - lastCoinFoldersCheck < 5.0) and #cachedCoinFolders > 0 then
+        local allValid = true
+        for _, f in ipairs(cachedCoinFolders) do
+            if not f or not f.Parent then
+                allValid = false
+                break
+            end
+        end
+        if allValid then return cachedCoinFolders end
+    end
+    lastCoinFoldersCheck = now
+
     local folders = {}
     local things = getThingsFolder() or Workspace:FindFirstChild("__THINGS")
     if things then
@@ -294,6 +313,7 @@ local function getCoinsFolders()
     if wCoins and not table.find(folders, wCoins) then table.insert(folders, wCoins) end
     local wBreak = Workspace:FindFirstChild("Breakables")
     if wBreak and not table.find(folders, wBreak) then table.insert(folders, wBreak) end
+    cachedCoinFolders = folders
     return folders
 end
 
@@ -370,7 +390,11 @@ local function isCoinInRadius(coin, pPos, radius)
     return false, horizDist
 end
 
+-- Jednorazowe przeszukanie GC przy starcie (nigdy w pętli cyklicznej, aby nie zapychać RAM-u)
+local hasScannedUpvalues = false
 local function scanCoinsUpvalues()
+    if hasScannedUpvalues then return end
+    hasScannedUpvalues = true
     pcall(function()
         if typeof(getgc) ~= "function" then return end
         for _, fn in pairs(getgc(true)) do
@@ -390,7 +414,6 @@ local function scanCoinsUpvalues()
                                     if type(v) == "table" and (v.n or v.p or v.h) then
                                         for cid, data in pairs(uv) do
                                             CoinsCache[tostring(cid)] = data
-                                            CoinsCache[tonumber(cid)] = data
                                         end
                                         return
                                     end
@@ -404,28 +427,30 @@ local function scanCoinsUpvalues()
     end)
 end
 
--- Aktywne pobieranie listy monet przez Network
+-- Aktywne pobieranie listy monet przez Network (z automatycznym zwalnianiem pamięci nieistniejących obiektów)
 local lastCoinsFetch = 0
 local function fetchCoinsFromNetwork(force)
     local now = tick()
-    if not force and (now - lastCoinsFetch < 1.0) then return end
+    if not force and (now - lastCoinsFetch < 10.0) then return end
     lastCoinsFetch = now
 
     pcall(function()
         local allCoins = invokeRemote("Get Coins")
         if type(allCoins) == "table" then
+            local freshCache = {}
             for id, data in pairs(allCoins) do
-                CoinsCache[tostring(id)] = data
-                CoinsCache[tonumber(id)] = data
+                freshCache[tostring(id)] = data
             end
+            CoinsCache = freshCache
         end
     end)
-    scanCoinsUpvalues()
 end
 
--- Pobranie bazy na starcie skryptu
+-- Jednorazowe pobranie bazy na starcie skryptu
 task.spawn(function()
     fetchCoinsFromNetwork(true)
+    task.wait(1.0)
+    scanCoinsUpvalues()
 end)
 
 -- Głębokie rozpoznawanie kategorii obiektu bezpośrednio z instancji w Workspace
@@ -705,8 +730,17 @@ local function findBestCoin()
     return bestCoin
 end
 
--- Pomocnicza funkcja: pobranie UID wszystkich założonych petów gracza
-local function getEquippedPets()
+-- Pomocnicza funkcja: pobranie UID wszystkich założonych petów gracza (z buforem TTL)
+local cachedEquippedUids = {}
+local lastEquippedFetch = 0
+
+local function getEquippedPets(force)
+    local now = tick()
+    if not force and (now - lastEquippedFetch < 1.0) and #cachedEquippedUids > 0 then
+        return cachedEquippedUids
+    end
+    lastEquippedFetch = now
+
     local equippedUids = {}
     if Framework and Framework.PetCmds and Framework.PetCmds.GetEquipped then
         local eq = Framework.PetCmds.GetEquipped(LocalPlayer, true)
@@ -729,30 +763,32 @@ local function getEquippedPets()
         local petsFolder = things and things:FindFirstChild("Pets")
         if petsFolder then
             for _, p in ipairs(petsFolder:GetChildren()) do
-                if p:GetAttribute("Owner") == LocalPlayer.Name or p.Name:find(LocalPlayer.Name) then
+                if p:GetAttribute("Owner") == LocalPlayer.Name or p.Name:find(LocalPlayer.Name, 1, true) then
                     table.insert(equippedUids, p.Name)
                 end
             end
         end
     end
+    cachedEquippedUids = equippedUids
     return equippedUids
 end
 
 -- Weryfikacja czy dany pet w workspace należy do gracza
-local function isMyPet(pet)
+local function isMyPet(pet, optionalUids)
     if not pet then return false end
     local owner = pet:GetAttribute("Owner")
     if owner and tostring(owner) == LocalPlayer.Name then
         return true
     end
-    if pet.Name:find(LocalPlayer.Name) then
+    if pet.Name:find(LocalPlayer.Name, 1, true) then
         return true
     end
-    local myUids = getEquippedPets()
-    if table.find(myUids, pet.Name) or (pet:GetAttribute("UID") and table.find(myUids, pet:GetAttribute("UID"))) then
+    local myUids = optionalUids or getEquippedPets()
+    local uid = pet:GetAttribute("UID")
+    if table.find(myUids, pet.Name) or (uid and table.find(myUids, uid)) then
         return true
     end
-    for _, attr in ipairs({"Owner", "OwnerName", "Player", "UserId"}) do
+    for _, attr in ipairs({"OwnerName", "Player", "UserId"}) do
         local val = pet:GetAttribute(attr)
         if val == LocalPlayer.Name or val == LocalPlayer.UserId then
             return true
@@ -804,6 +840,8 @@ local function hookPetSpeed()
 end
 pcall(hookPetSpeed)
 
+local petMoverCache = setmetatable({}, { __mode = "k" })
+
 -- Wzmocnienie siły fizycznej i responsywności petów w Workspace (Brak lagów za graczem i blokada powrotu)
 local function updateWorkspacePetsPhysics()
     local things = getThingsFolder()
@@ -816,27 +854,37 @@ local function updateWorkspacePetsPhysics()
     local targetCoin = State.CurrentTargetCoin
     local targetPos = (targetCoin and isCoinAlive(targetCoin) and getCoinPosition(targetCoin)) or nil
 
+    local myUids = getEquippedPets()
+
     for _, pet in ipairs(petsFolder:GetChildren()) do
-        if isMyPet(pet) then
-            for _, desc in ipairs(pet:GetDescendants()) do
-                if desc:IsA("BodyPosition") then
-                    if State.PetSpeedEnabled then
-                        desc.MaxForce = Vector3.new(1e8, 1e8, 1e8)
-                        desc.P = pForce
-                        if State.PetMaxForce or mult >= 15 then
-                            desc.D = 250
-                        end
-                    end
-                    -- Zabezpieczenie przed powrotem petów (Anti-Recall / Tether Lock na odległość)
-                    if targetPos and (State.FarmAntiRecall or State.FarmAnchorEnabled or State.FarmInfiniteRange) then
-                        desc.Position = targetPos + Vector3.new(math.random(-2, 2), 1, math.random(-2, 2))
-                    end
-                elseif desc:IsA("AlignPosition") then
-                    if State.PetSpeedEnabled then
-                        desc.MaxForce = 1e8
-                        desc.Responsiveness = math.clamp(20 * (mult / 2), 20, 200)
+        if isMyPet(pet, myUids) then
+            local moverData = petMoverCache[pet]
+            if not moverData or not moverData.bp or not moverData.bp.Parent then
+                local bp = pet:FindFirstChildWhichIsA("BodyPosition", true)
+                local ap = pet:FindFirstChildWhichIsA("AlignPosition", true)
+                moverData = { bp = bp, ap = ap }
+                petMoverCache[pet] = moverData
+            end
+
+            local bp = moverData.bp
+            if bp and bp.Parent then
+                if State.PetSpeedEnabled then
+                    bp.MaxForce = Vector3.new(1e8, 1e8, 1e8)
+                    bp.P = pForce
+                    if State.PetMaxForce or mult >= 15 then
+                        bp.D = 250
                     end
                 end
+                -- Zabezpieczenie przed powrotem petów (Anti-Recall / Tether Lock na odległość)
+                if targetPos and (State.FarmAntiRecall or State.FarmAnchorEnabled or State.FarmInfiniteRange) then
+                    bp.Position = targetPos + Vector3.new(math.random(-2, 2), 1, math.random(-2, 2))
+                end
+            end
+
+            local ap = moverData.ap
+            if ap and ap.Parent and State.PetSpeedEnabled then
+                ap.MaxForce = 1e8
+                ap.Responsiveness = math.clamp(20 * (mult / 2), 20, 200)
             end
         end
     end
@@ -910,22 +958,22 @@ local function collectOrbsClean()
     if not hrp then return end
 
     local things = getThingsFolder()
-    if not things then return end
-    local orbsFolder = things:FindFirstChild("Orbs")
+    local orbsFolder = things and things:FindFirstChild("Orbs")
     if not orbsFolder then return end
+
+    local children = orbsFolder:GetChildren()
+    if #children == 0 then return end
 
     local claimedIds = {}
     local groundCFrame = hrp.CFrame * CFrame.new(0, 10, 0)
     local groundPos = groundCFrame.Position
 
-    for _, orb in ipairs(orbsFolder:GetChildren()) do
+    for _, orb in ipairs(children) do
         table.insert(claimedIds, orb.Name)
 
         if orb:IsA("BasePart") then
             orb.CanCollide = false
-            pcall(function() orb.CanTouch = true end)
             orb.CFrame = groundCFrame
-            pcall(function() orb.AssemblyLinearVelocity = Vector3.zero end)
             orb.Velocity = Vector3.zero
 
             local bp = orb:FindFirstChildOfClass("BodyPosition")
@@ -935,14 +983,6 @@ local function collectOrbsClean()
                 bp.P = 50000
             end
         elseif orb:IsA("Model") then
-            for _, part in ipairs(orb:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                    pcall(function() part.CanTouch = true end)
-                    pcall(function() part.AssemblyLinearVelocity = Vector3.zero end)
-                    part.Velocity = Vector3.zero
-                end
-            end
             if orb.PivotTo then
                 orb:PivotTo(groundCFrame)
             elseif orb.PrimaryPart then
@@ -962,21 +1002,22 @@ local function collectLootbagsClean()
     if not hrp then return end
 
     local things = getThingsFolder()
-    if not things then return end
-    local lootbagsFolder = things:FindFirstChild("Lootbags")
+    local lootbagsFolder = things and things:FindFirstChild("Lootbags")
     if not lootbagsFolder then return end
 
-    local groundCFrame = hrp.CFrame * CFrame.new(0, -2.5, 0)
+    local children = lootbagsFolder:GetChildren()
+    if #children == 0 then return end
 
-    for _, bag in ipairs(lootbagsFolder:GetChildren()) do
+    local groundCFrame = hrp.CFrame * CFrame.new(0, -2.5, 0)
+    local hasFireTouch = typeof(firetouchinterest) == "function"
+
+    for _, bag in ipairs(children) do
         if bag:IsA("BasePart") then
             bag.CanCollide = false
-            pcall(function() bag.CanTouch = true end)
             bag.CFrame = groundCFrame
-            pcall(function() bag.AssemblyLinearVelocity = Vector3.zero end)
             bag.Velocity = Vector3.zero
 
-            if typeof(firetouchinterest) == "function" then
+            if hasFireTouch then
                 pcall(function()
                     firetouchinterest(hrp, bag, 0)
                     firetouchinterest(hrp, bag, 1)
@@ -984,22 +1025,13 @@ local function collectLootbagsClean()
             end
         elseif bag:IsA("Model") then
             local mainPart = bag.PrimaryPart or bag:FindFirstChildWhichIsA("BasePart")
-            for _, part in ipairs(bag:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                    pcall(function() part.CanTouch = true end)
-                    pcall(function() part.AssemblyLinearVelocity = Vector3.zero end)
-                    part.Velocity = Vector3.zero
-                end
-            end
-
             if bag.PivotTo then
                 bag:PivotTo(groundCFrame)
-            elseif bag.PrimaryPart then
-                bag:SetPrimaryPartCFrame(groundCFrame)
+            elseif mainPart then
+                mainPart.CFrame = groundCFrame
             end
 
-            if mainPart and typeof(firetouchinterest) == "function" then
+            if mainPart and hasFireTouch then
                 pcall(function()
                     firetouchinterest(hrp, mainPart, 0)
                     firetouchinterest(hrp, mainPart, 1)
@@ -1133,6 +1165,8 @@ end)
 
 -- Pętla AutoFarm
 local retargetCounter = 0
+local lastFarmPulse = 0
+
 task.spawn(function()
     while ScriptRunning do
         if State.FarmActive then
@@ -1165,10 +1199,13 @@ task.spawn(function()
                 local nextCoin = findBestCoin()
                 if nextCoin and isCoinAlive(nextCoin) then
                     attackCoin(nextCoin)
+                    lastFarmPulse = tick()
                 end
             else
-                -- Ciągłe podtrzymywanie ataku petów na serwerze (Anti-Recall Network Pulse)
-                if State.FarmAntiRecall or State.FarmInfiniteRange or State.FarmAnchorEnabled then
+                -- Ograniczony keepalive pulse sieciowy (co 1.5s zamiast spamu co 0.15s)
+                local now = tick()
+                if (now - lastFarmPulse >= 1.5) and (State.FarmAntiRecall or State.FarmInfiniteRange or State.FarmAnchorEnabled) then
+                    lastFarmPulse = now
                     local coinId = current:GetAttribute("ID") or current.Name
                     local eq = getEquippedPets()
                     for _, uid in ipairs(eq) do
@@ -1195,6 +1232,7 @@ task.spawn(function()
 
                         if bScore > (curScore + 150000) then
                             attackCoin(betterCoin)
+                            lastFarmPulse = tick()
                         end
                     end
                 end
@@ -1209,55 +1247,58 @@ task.spawn(function()
 end)
 
 -- Reaktywny nasłuch na natychmiastowe respawny obiektów (ChildAdded)
+local boundCoinsFolders = {}
 local function bindCoinsRespawnListeners()
     for _, folder in ipairs(getCoinsFolders()) do
-        if not folder:GetAttribute("AutoFarmListenerBound") then
-            folder:SetAttribute("AutoFarmListenerBound", true)
-            folder.ChildAdded:Connect(function(child)
+        if not boundCoinsFolders[folder] then
+            boundCoinsFolders[folder] = true
+            local conn = folder.ChildAdded:Connect(function(child)
                 if State.FarmActive and not isCoinAlive(State.CurrentTargetCoin) then
                     task.wait(0.05)
                     local best = findBestCoin()
                     if best and isCoinAlive(best) then
                         attackCoin(best)
+                        lastFarmPulse = tick()
                     end
                 end
             end)
+            table.insert(ScriptConnections, conn)
         end
     end
 end
 bindCoinsRespawnListeners()
 
--- Pętla cyklicznego odświeżania bazy danych monet
+-- Pętla cyklicznego odświeżania bazy danych monet (co 10s zamiast 1.5s bez obciążania pamięci)
 task.spawn(function()
     while ScriptRunning do
         if State.FarmActive then
             bindCoinsRespawnListeners()
             fetchCoinsFromNetwork()
         end
-        task.wait(1.5)
+        task.wait(10.0)
     end
 end)
 
--- Pętla Auto Collect Orbs
+-- Pętla Auto Collect Orbs (zoptymalizowany interwał 0.25s)
 task.spawn(function()
     while ScriptRunning do
         if State.AutoOrbs then
             collectOrbsClean()
-            task.wait(0.1)
+            task.wait(0.25)
         else
-            task.wait(0.5)
+            task.wait(0.6)
         end
     end
 end)
 
--- Pętla Auto Collect LootBags
+-- Pętla Auto Collect LootBags (zoptymalizowany interwał 0.25s)
 task.spawn(function()
     while ScriptRunning do
         if State.AutoLootbags then
             collectLootbagsClean()
-            task.wait(0.1)
+            task.wait(0.25)
         else
-            task.wait(0.5)
+            task.wait(0.6)
         end
     end
 end)
@@ -1284,18 +1325,22 @@ task.spawn(function()
 end)
 
 -- Nasłuch na nowo zrespawnowane pety gracza w Workspace
-task.spawn(function()
+local petsChildAddedConn = nil
+local function bindPetsFolderListener()
+    if petsChildAddedConn then return end
     local things = getThingsFolder()
     local petsFolder = things and (things:FindFirstChild("Pets") or things:WaitForChild("Pets", 5))
     if petsFolder then
-        petsFolder.ChildAdded:Connect(function(child)
+        petsChildAddedConn = petsFolder.ChildAdded:Connect(function(child)
             if State.PetSpeedEnabled then
                 task.wait(0.1)
                 pcall(updateWorkspacePetsPhysics)
             end
         end)
+        table.insert(ScriptConnections, petsChildAddedConn)
     end
-end)
+end
+task.spawn(bindPetsFolderListener)
 
 -- // ==========================================================================
 -- // 6. INTERFEJS UŻYTKOWNIKA MENUTEST (JEDNA GŁÓWNA ZAKŁADKA "GENERAL")
@@ -1310,11 +1355,15 @@ local Window = MENU:CreateWindow({
     GameId = "85920622393590"
 })
 
--- Sprzątanie pętli po zniszczeniu okna
+-- Sprzątanie pętli i połączeń po zniszczeniu okna
 if Window and Window.ScreenGui then
     Window.ScreenGui.Destroying:Connect(function()
         ScriptRunning = false
         stopSpeedConnections()
+        for _, conn in ipairs(ScriptConnections) do
+            pcall(function() conn:Disconnect() end)
+        end
+        table.clear(ScriptConnections)
         State.FarmActive = false
         State.AutoOrbs = false
         State.AutoLootbags = false
@@ -1323,6 +1372,7 @@ if Window and Window.ScreenGui then
         State.FarmAnchorEnabled = false
         State.FarmAnchorPos = nil
         State.FarmAnchorArea = nil
+        State.CurrentTargetCoin = nil
     end)
 end
 
@@ -1363,6 +1413,9 @@ local FarmModule = TabGeneral:CreateModule({
     Flag = "General_AutoFarm",
     Callback = function(state)
         State.FarmActive = state
+        if not state then
+            State.CurrentTargetCoin = nil
+        end
     end
 })
 
@@ -2122,11 +2175,12 @@ local function setupPopupAutoDismiss()
         end
     end
 
-    pGui.DescendantAdded:Connect(function(descendant)
-        task.defer(function()
+    local popupConn = pGui.DescendantAdded:Connect(function(descendant)
+        if descendant:IsA("TextLabel") or descendant:IsA("TextButton") then
             pcall(checkAndDismiss, descendant)
-        end)
+        end
     end)
+    table.insert(ScriptConnections, popupConn)
 end
 
 pcall(setupPopupAutoDismiss)
