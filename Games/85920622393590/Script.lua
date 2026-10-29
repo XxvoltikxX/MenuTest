@@ -1,7 +1,7 @@
 -- // ==========================================================================
 -- // PET SIMULATOR X / 99 EVENT - AUTOMATION SUITE
 -- // Dedicated script for MenuTest UI Library (https://github.com/XxvoltikxX/MenuTest)
--- // Features: AutoFarm, Auto Collect (Orbs & LootBags), Speed (SpeedScript)
+-- // Features: AutoFarm, Auto Collect (Orbs & LootBags), Player Speed, Pet Speed (Fast Pets)
 -- // Game ID: 85920622393590
 -- // Tab: General
 -- // ==========================================================================
@@ -188,6 +188,12 @@ local State = {
     PlayerSpeedEnabled = false,
     PlayerSpeedMode = "Legit",
     PlayerSpeedValue = 50,
+
+    -- 4. Pet Speed (Szybkość Petów)
+    PetSpeedEnabled = false,
+    PetSpeedValue = 25,
+    PetInstantSnap = true,
+    PetMaxForce = true,
 
     -- Cache aktualnej mapy dla AutoFarmu
     DetectedMap = "Spawn",
@@ -713,6 +719,100 @@ local function getEquippedPets()
     return equippedUids
 end
 
+-- Weryfikacja czy dany pet w workspace należy do gracza
+local function isMyPet(pet)
+    if not pet then return false end
+    local owner = pet:GetAttribute("Owner")
+    if owner and tostring(owner) == LocalPlayer.Name then
+        return true
+    end
+    if pet.Name:find(LocalPlayer.Name) then
+        return true
+    end
+    local myUids = getEquippedPets()
+    if table.find(myUids, pet.Name) or (pet:GetAttribute("UID") and table.find(myUids, pet:GetAttribute("UID"))) then
+        return true
+    end
+    for _, attr in ipairs({"Owner", "OwnerName", "Player", "UserId"}) do
+        local val = pet:GetAttribute(attr)
+        if val == LocalPlayer.Name or val == LocalPlayer.UserId then
+            return true
+        end
+    end
+    return false
+end
+
+-- Hookowanie natywnej biblioteki Agility dla petów w Framework / Library (Pet Speed Engine)
+local function hookPetSpeed()
+    local targetLib = Framework or Library
+    if not targetLib then return end
+
+    local shared = targetLib.Shared
+    if not shared and targetLib.Directory and targetLib.Directory.Shared then
+        shared = targetLib.Directory.Shared
+    end
+
+    if shared and not shared._PetSpeedHooked then
+        shared._PetSpeedHooked = true
+
+        local origHasPower = shared.HasPower
+        shared.HasPower = function(pet, powerName, ...)
+            if State.PetSpeedEnabled and powerName == "Agility" then
+                return true, 3
+            end
+            if origHasPower then
+                return origHasPower(pet, powerName, ...)
+            end
+            return false
+        end
+
+        local origGetPowerDir = shared.GetPowerDir
+        shared.GetPowerDir = function(powerName, tier, ...)
+            if State.PetSpeedEnabled and powerName == "Agility" then
+                local mult = tonumber(State.PetSpeedValue) or 25
+                return {
+                    title = "Agility III",
+                    desc = "Pet moves ultra fast",
+                    value = mult
+                }
+            end
+            if origGetPowerDir then
+                return origGetPowerDir(powerName, tier, ...)
+            end
+            return { title = "Agility", desc = "", value = 1 }
+        end
+    end
+end
+pcall(hookPetSpeed)
+
+-- Wzmocnienie siły fizycznej i responsywności petów w Workspace (Brak lagów za graczem)
+local function updateWorkspacePetsPhysics()
+    if not State.PetSpeedEnabled then return end
+    local things = getThingsFolder()
+    local petsFolder = things and things:FindFirstChild("Pets")
+    if not petsFolder then return end
+
+    local mult = tonumber(State.PetSpeedValue) or 25
+    local pForce = math.clamp(20000 * mult, 20000, 10000000)
+
+    for _, pet in ipairs(petsFolder:GetChildren()) do
+        if isMyPet(pet) then
+            for _, desc in ipairs(pet:GetDescendants()) do
+                if desc:IsA("BodyPosition") then
+                    desc.MaxForce = Vector3.new(1e8, 1e8, 1e8)
+                    desc.P = pForce
+                    if State.PetMaxForce or mult >= 15 then
+                        desc.D = 250
+                    end
+                elseif desc:IsA("AlignPosition") then
+                    desc.MaxForce = 1e8
+                    desc.Responsiveness = math.clamp(20 * (mult / 2), 20, 200)
+                end
+            end
+        end
+    end
+end
+
 -- Asynchroniczne atakowanie monety petami
 local function attackCoin(coin)
     if not isCoinAlive(coin) then return end
@@ -721,6 +821,28 @@ local function attackCoin(coin)
     local coinId = coin:GetAttribute("ID") or coin.Name
 
     task.spawn(function()
+        -- 0. Natychmiastowy doskok petów do monety (Instant Target Snap)
+        if State.PetSpeedEnabled and State.PetInstantSnap then
+            local coinPos = getCoinPosition(coin)
+            if coinPos then
+                local things = getThingsFolder()
+                local petsFolder = things and things:FindFirstChild("Pets")
+                if petsFolder then
+                    for _, pet in ipairs(petsFolder:GetChildren()) do
+                        if isMyPet(pet) then
+                            local bp = pet:FindFirstChildWhichIsA("BodyPosition", true)
+                            local offset = Vector3.new(math.random(-3, 3), 1, math.random(-3, 3))
+                            if bp then
+                                bp.Position = coinPos + offset
+                            elseif pet.PivotTo then
+                                pet:PivotTo(CFrame.new(coinPos + offset))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
         -- 1. Game Native Signal
         if Framework and Framework.Signal and Framework.Signal.Fire then
             pcall(function()
@@ -1109,6 +1231,33 @@ task.spawn(function()
     end
 end)
 
+-- Pętla aktualizacji fizyki i szybkości petów (Pet Speed Engine Loop)
+task.spawn(function()
+    while ScriptRunning do
+        if State.PetSpeedEnabled then
+            pcall(hookPetSpeed)
+            pcall(updateWorkspacePetsPhysics)
+            task.wait(0.2)
+        else
+            task.wait(0.6)
+        end
+    end
+end)
+
+-- Nasłuch na nowo zrespawnowane pety gracza w Workspace
+task.spawn(function()
+    local things = getThingsFolder()
+    local petsFolder = things and (things:FindFirstChild("Pets") or things:WaitForChild("Pets", 5))
+    if petsFolder then
+        petsFolder.ChildAdded:Connect(function(child)
+            if State.PetSpeedEnabled then
+                task.wait(0.1)
+                pcall(updateWorkspacePetsPhysics)
+            end
+        end)
+    end
+end)
+
 -- // ==========================================================================
 -- // 6. INTERFEJS UŻYTKOWNIKA MENUTEST (JEDNA GŁÓWNA ZAKŁADKA "GENERAL")
 -- // ==========================================================================
@@ -1131,6 +1280,7 @@ if Window and Window.ScreenGui then
         State.AutoOrbs = false
         State.AutoLootbags = false
         State.PlayerSpeedEnabled = false
+        State.PetSpeedEnabled = false
     end)
 end
 
@@ -1461,6 +1611,64 @@ SpeedModule:AddSlider({
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if hum then hum.WalkSpeed = val end
             end)
+        end
+    end
+})
+
+-- // ==================== MODUŁ 4: PET SPEED (SZYBKOŚĆ PRZEMIESZCZANIA PETÓW) ====================
+local PetSpeedModule = TabGeneral:CreateModule({
+    Name = "Pet Speed",
+    Description = "Zwiększa szybkość przemieszczania i ataku petów (Fast Pets)",
+    Default = false,
+    CurrentValue = false,
+    DefaultKeybind = "X",
+    Flag = "General_PetSpeed",
+    Callback = function(state)
+        State.PetSpeedEnabled = state
+        if state then
+            pcall(hookPetSpeed)
+            pcall(updateWorkspacePetsPhysics)
+        end
+    end
+})
+
+PetSpeedModule:AddSlider({
+    Name = "Mnożnik Prędkości (Speed Multiplier)",
+    Range = { 1, 100 },
+    CurrentValue = 25,
+    Min = 1,
+    Max = 100,
+    Default = 25,
+    Suffix = "x",
+    Flag = "General_PetSpeedVal",
+    Callback = function(val)
+        State.PetSpeedValue = val
+        if State.PetSpeedEnabled then
+            pcall(hookPetSpeed)
+            pcall(updateWorkspacePetsPhysics)
+        end
+    end
+})
+
+PetSpeedModule:AddToggle({
+    Name = "Natychmiastowy Doskok do Celu (Instant Snap)",
+    Default = true,
+    CurrentValue = true,
+    Flag = "General_PetInstantSnap",
+    Callback = function(state)
+        State.PetInstantSnap = state
+    end
+})
+
+PetSpeedModule:AddToggle({
+    Name = "Wzmocniona Fizyka Petów (Max Force)",
+    Default = true,
+    CurrentValue = true,
+    Flag = "General_PetMaxForce",
+    Callback = function(state)
+        State.PetMaxForce = state
+        if State.PetSpeedEnabled then
+            pcall(updateWorkspacePetsPhysics)
         end
     end
 })
