@@ -39,7 +39,12 @@ local function safeExecute(relativePath, remoteUrl)
                 if ok and data and #data > 0 then
                     local chunk, err = loadstring(data)
                     if chunk then
-                        return true, chunk()
+                        local runOk, runErr = pcall(chunk)
+                        if runOk then
+                            return true, runOk
+                        else
+                            warn("[Loader] Błąd wykonania lokalnego pliku " .. path .. ": " .. tostring(runErr))
+                        end
                     else
                         warn("[Loader] Błąd kompilacji lokalnego pliku " .. path .. ": " .. tostring(err))
                     end
@@ -48,23 +53,35 @@ local function safeExecute(relativePath, remoteUrl)
         end
     end
 
-    -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN
-    local cacheBuster = (remoteUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
-    local ok, res = pcall(function()
-        return game:HttpGet(remoteUrl .. cacheBuster)
-    end)
-    if ok and res and #res > 0 then
-        res = res:gsub("^\239\187\191", "")
-        local chunk, err = loadstring(res)
-        if chunk then
-            return true, chunk()
-        else
-            warn("[Loader] Błąd kompilacji skryptu z URL: " .. tostring(err))
+    -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN (próba obu gałęzi raw)
+    local urlList = {
+        remoteUrl,
+        remoteUrl:gsub("/refs/heads/main/", "/main/"),
+        "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/main/" .. relativePath
+    }
+
+    for _, targetUrl in ipairs(urlList) do
+        local cacheBuster = (targetUrl:find("%?") and "&" or "?") .. "_nocache=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
+        local ok, res = pcall(function()
+            return game:HttpGet(targetUrl .. cacheBuster)
+        end)
+        if ok and res and #res > 0 and not res:find("404: Not Found") and not res:find("400: Invalid Request") then
+            res = res:gsub("^\239\187\191", "")
+            local chunk, err = loadstring(res)
+            if chunk then
+                local runOk, runErr = pcall(chunk)
+                if runOk then
+                    return true, runOk
+                else
+                    warn("[Loader] Błąd wykonania skryptu z URL: " .. tostring(runErr))
+                end
+            else
+                warn("[Loader] Błąd kompilacji skryptu z URL: " .. tostring(err))
+            end
         end
-    else
-        warn("[Loader] Nie udało się pobrać skryptu z URL: " .. tostring(remoteUrl))
     end
 
+    warn("[Loader] Nie udało się pobrać/uruchomić skryptu: " .. tostring(relativePath))
     return false, nil
 end
 
@@ -74,12 +91,14 @@ end
 -- // Loader automatycznie załaduje: Games/<ID_GRY>/Script.lua
 -- // ==========================================================================
 local Games = {
-    [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
-    ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
-    [85920622393590] = "Pet Simulator X Event",
-    ["85920622393590"] = "Pet Simulator X Event",
-    [8737899170] = "Pet Simulator 99 (Garden Event)",
-    ["8737899170"] = "Pet Simulator 99 (Garden Event)",
+    [109949693269081] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
+    ["109949693269081"] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
+    [85920622393590] = { name = "Pet Simulator X Event", folder = "85920622393590" },
+    ["85920622393590"] = { name = "Pet Simulator X Event", folder = "85920622393590" },
+    [8737899170] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
+    ["8737899170"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
+    [3317771874] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
+    ["3317771874"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
 }
 
 -- // ==========================================================================
@@ -89,12 +108,18 @@ local placeId = game.PlaceId
 local gameId  = game.GameId
 
 local function findGameMatch(id)
-    if not id then return nil, nil end
+    if not id then return nil, nil, nil end
     local numId = tonumber(id)
     local strId = tostring(id)
-    if numId and Games[numId] then return numId, Games[numId] end
-    if strId and Games[strId] then return numId or strId, Games[strId] end
-    return nil, nil
+    local entry = (numId and Games[numId]) or (strId and Games[strId])
+    if entry then
+        if type(entry) == "table" then
+            return entry.folder or tostring(id), entry.name or "Game", numId or strId
+        else
+            return tostring(entry), tostring(entry), numId or strId
+        end
+    end
+    return nil, nil, nil
 end
 
 -- Możliwość ręcznego wymuszenia Universal Suite w dowolnej grze
@@ -105,26 +130,26 @@ if forceUniversal then
     return
 end
 
-local matchedId, matchedName = findGameMatch(placeId)
-if not matchedId then
-    matchedId, matchedName = findGameMatch(gameId)
+local targetFolder, targetName, rawId = findGameMatch(placeId)
+if not targetFolder then
+    targetFolder, targetName, rawId = findGameMatch(gameId)
 end
 
-print("Loading...")
+print("[Loader] Inicjalizacja... PlaceId: " .. tostring(placeId) .. " | GameId: " .. tostring(gameId))
 
-if matchedId then
-    print("[Loader] Wykryto gre: " .. tostring(matchedName) .. " (" .. tostring(matchedId) .. ")")
-    local relPath = "Games/" .. tostring(matchedId) .. "/Script.lua"
+if targetFolder then
+    print("[Loader] Wykryto dedykowany skrypt: " .. tostring(targetName) .. " (Folder: " .. tostring(targetFolder) .. ")")
+    local relPath = "Games/" .. tostring(targetFolder) .. "/Script.lua"
     local fullUrl = baseUrl .. relPath
-    local success, _ = safeExecute(relPath, fullUrl)
+    local success = safeExecute(relPath, fullUrl)
 
     if not success then
-        print("[Loader] Ladowanie awaryjne Universal Suite...")
+        warn("[Loader] Blad ladowania dedykowanego skryptu " .. tostring(relPath) .. ", uruchamiam Universal...")
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
-    print("[Loader] Brak dedykowanego skryptu, uruchamiam Universal Suite...")
-    local success, _ = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
+    print("[Loader] Brak dedykowanego skryptu dla ID: " .. tostring(placeId) .. ", uruchamiam Universal Suite...")
+    local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
         warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic Universal Suite!")
     end

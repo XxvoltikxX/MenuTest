@@ -662,117 +662,212 @@ local function collectLootbagsClean()
 end
 
 -- // ==========================================================================
--- // 6. LOGIKA OGRODU (GARDEN AUTOMATION: ZBIORY, PODLEWANIE, SADZENIE)
+-- // 6. LOGIKA OGRODU (PET SIMULATOR 99: FLOWER GARDEN AUTOMATION)
+-- // Oparte na strukturze instancji: workspace.__THINGS.__INSTANCE_CONTAINER.Active.FlowerGarden
+-- // Remote wywołań: ReplicatedStorage.Network.Instancing_InvokeCustomFromClient
 -- // ==========================================================================
-local function getGardenPlots()
-    local plots = {}
-    local gFolder = getGardenFolder()
-    if not gFolder then return plots end
 
-    for _, child in ipairs(gFolder:GetChildren()) do
-        if child.Name:lower():find("plot") or child:GetAttribute("PlotIndex") or child:FindFirstChild("Sign") or child:FindFirstChild("Soil") or child:FindFirstChild("Plant") then
-            table.insert(plots, child)
-        end
-    end
-
-    -- Jeśli w gFolder są podfoldery typu Plots
-    local subPlots = gFolder:FindFirstChild("Plots") or gFolder:FindFirstChild("Grid")
-    if subPlots then
-        for _, child in ipairs(subPlots:GetChildren()) do
-            if not table.find(plots, child) then
-                table.insert(plots, child)
+local function getFlowerGardenContainer()
+    local things = getThingsFolder() or Workspace:FindFirstChild("__THINGS")
+    if things then
+        local container = things:FindFirstChild("__INSTANCE_CONTAINER")
+        if container then
+            local active = container:FindFirstChild("Active")
+            if active and active:FindFirstChild("FlowerGarden") then
+                return active.FlowerGarden
             end
         end
-    end
-
-    return plots
-end
-
--- Auto Harvest (Zbiory dojrzałych roślin)
-local function runGardenHarvest()
-    local plots = getGardenPlots()
-    for _, plot in ipairs(plots) do
-        local plotId = plot:GetAttribute("PlotIndex") or plot:GetAttribute("Index") or plot.Name
-
-        -- 1. Wykrycie ProximityPrompt zbioru
-        for _, desc in ipairs(plot:GetDescendants()) do
-            if desc:IsA("ProximityPrompt") then
-                local actText = (desc.ActionText or ""):lower()
-                local objText = (desc.ObjectText or ""):lower()
-                if actText:find("harvest") or actText:find("claim") or actText:find("pick") or objText:find("ready") then
-                    pcall(function()
-                        if typeof(fireproximityprompt) == "function" then
-                            fireproximityprompt(desc)
-                        end
-                    end)
-                end
-            end
+        local inst = things:FindFirstChild("Instances")
+        if inst and inst:FindFirstChild("FlowerGarden") then
+            return inst.FlowerGarden
         end
-
-        -- 2. Wywołanie zdalne Garden Harvest / Claim
-        fireRemote("Garden: Claim", plotId)
-        fireRemote("Garden: Harvest", plotId)
-        invokeRemote("Garden: Claim", plotId)
-        invokeRemote("Garden: Harvest", plotId)
     end
+    return nil
 end
 
--- Auto Water (Podlewanie suchych grządek)
-local function runGardenWater()
-    local plots = getGardenPlots()
-    for _, plot in ipairs(plots) do
-        local plotId = plot:GetAttribute("PlotIndex") or plot:GetAttribute("Index") or plot.Name
-
-        -- 1. ProximityPrompt podlewania
-        for _, desc in ipairs(plot:GetDescendants()) do
-            if desc:IsA("ProximityPrompt") then
-                local actText = (desc.ActionText or ""):lower()
-                if actText:find("water") or actText:find("podlej") then
-                    pcall(function()
-                        if typeof(fireproximityprompt) == "function" then
-                            fireproximityprompt(desc)
-                        end
-                    end)
-                end
-            end
-        end
-
-        -- 2. Zdalne podlewanie
-        fireRemote("Garden: Water", plotId)
-        invokeRemote("Garden: Water", plotId)
+local function getGardenPlantsFolder()
+    local fg = getFlowerGardenContainer()
+    if fg and fg:FindFirstChild("Plants") then
+        return fg.Plants
     end
+    return nil
 end
 
--- Auto Plant (Sadzenie wybranych nasion)
-local function runGardenPlant()
-    local plots = getGardenPlots()
-    local seed = State.GardenSelectedSeed
-    if seed == "Wszystkie (ALL)" or seed:find("ALL") then
-        seed = "Diamond Seed"
+local function getGardenRemote()
+    if Network and Network:FindFirstChild("Instancing_InvokeCustomFromClient") then
+        return Network.Instancing_InvokeCustomFromClient
+    end
+    local rs = game:GetService("ReplicatedStorage")
+    if rs:FindFirstChild("Network") and rs.Network:FindFirstChild("Instancing_InvokeCustomFromClient") then
+        return rs.Network.Instancing_InvokeCustomFromClient
+    end
+    return nil
+end
+
+local function getGardenFireRemote()
+    if Network and Network:FindFirstChild("Instancing_FireCustomFromClient") then
+        return Network.Instancing_FireCustomFromClient
+    end
+    local rs = game:GetService("ReplicatedStorage")
+    if rs:FindFirstChild("Network") and rs.Network:FindFirstChild("Instancing_FireCustomFromClient") then
+        return rs.Network.Instancing_FireCustomFromClient
+    end
+    return nil
+end
+
+-- Sadzenie nasiona w donicy (slot 1-10)
+local function plantGardenSeed(slotIndex, seedName)
+    local seedKey = seedName or "Coin"
+    if seedKey == "Wszystkie (ALL)" or seedKey:find("ALL") then seedKey = "Diamond" end
+    -- Usunięcie słowa "Seed" jeśli jest w nazwie
+    seedKey = seedKey:gsub("%s*Seed%s*", ""):gsub("^%s*(.-)%s*$", "%1")
+    if seedKey == "" then seedKey = "Coin" end
+
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function()
+            invRemote:InvokeServer("FlowerGarden", "PlantSeed", slotIndex, seedKey)
+        end)
     end
 
-    for _, plot in ipairs(plots) do
-        local isPlanted = plot:GetAttribute("Planted") or plot:FindFirstChild("Plant") or plot:FindFirstChild("Sprout")
-        if not isPlanted then
-            local plotId = plot:GetAttribute("PlotIndex") or plot:GetAttribute("Index") or plot.Name
+    local fireRem = getGardenFireRemote()
+    if fireRem then
+        pcall(function()
+            fireRem:FireServer("FlowerGarden", "PlantSeed", slotIndex, seedKey)
+        end)
+    end
 
-            -- 1. ProximityPrompt sadzenia
-            for _, desc in ipairs(plot:GetDescendants()) do
-                if desc:IsA("ProximityPrompt") then
-                    local actText = (desc.ActionText or ""):lower()
-                    if actText:find("plant") or actText:find("posadz") then
-                        pcall(function()
-                            if typeof(fireproximityprompt) == "function" then
-                                fireproximityprompt(desc)
-                            end
-                        end)
+    -- Trigger ProximityPrompt jeśli jest w donicy
+    local plantsFolder = getGardenPlantsFolder()
+    local plantModel = plantsFolder and plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
+    if plantModel then
+        for _, desc in ipairs(plantModel:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") and ((desc.ActionText or ""):lower():find("plant") or (desc.ObjectText or ""):lower():find("plant")) then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
                     end
-                end
+                end)
             end
+        end
+    end
+end
 
-            -- 2. Zdalne sadzenie
-            fireRemote("Garden: Plant", plotId, seed)
-            invokeRemote("Garden: Plant", plotId, seed)
+-- Zbiór dojrzałej rośliny (slot 1-10)
+local function harvestGardenPlant(slotIndex)
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "ClaimPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "HarvestPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "Claim", slotIndex) end)
+    end
+
+    local fireRem = getGardenFireRemote()
+    if fireRem then
+        pcall(function() fireRem:FireServer("FlowerGarden", "ClaimPlant", slotIndex) end)
+        pcall(function() fireRem:FireServer("FlowerGarden", "HarvestPlant", slotIndex) end)
+    end
+
+    local plantsFolder = getGardenPlantsFolder()
+    local plantModel = plantsFolder and plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
+    if plantModel then
+        for _, desc in ipairs(plantModel:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Podlewanie donicy (slot 1-10)
+local function waterGardenPlant(slotIndex)
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "WaterPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "Water", slotIndex) end)
+    end
+
+    local fireRem = getGardenFireRemote()
+    if fireRem then
+        pcall(function() fireRem:FireServer("FlowerGarden", "WaterPlant", slotIndex) end)
+    end
+
+    local plantsFolder = getGardenPlantsFolder()
+    local plantModel = plantsFolder and plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
+    if plantModel then
+        for _, desc in ipairs(plantModel:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") and ((desc.ActionText or ""):lower():find("water") or (desc.ObjectText or ""):lower():find("water")) then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Auto Harvest wszystkich 10 donic
+local function runGardenHarvest()
+    for i = 1, 10 do
+        harvestGardenPlant(i)
+    end
+end
+
+-- Auto Water wszystkich 10 donic
+local function runGardenWater()
+    for i = 1, 10 do
+        waterGardenPlant(i)
+    end
+end
+
+-- Auto Plant wolnych donic
+local function runGardenPlant()
+    local seed = State.GardenSelectedSeed or "Coin"
+    for i = 1, 10 do
+        plantGardenSeed(i, seed)
+    end
+end
+
+-- Otwieranie skrzyni FlowerGarden (InstanceChest: 3)
+local function claimGardenChest()
+    local fg = getFlowerGardenContainer()
+    local chest = fg and fg:FindFirstChild("INTERACT") and fg.INTERACT:FindFirstChild("Chests") and fg.INTERACT.Chests:FindFirstChild("InstanceChest: 3")
+    if chest then
+        for _, desc in ipairs(chest:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Użycie inkubatora roślin (InstaPlantIncubator)
+local function useGardenIncubator()
+    local fg = getFlowerGardenContainer()
+    local incubator = fg and fg:FindFirstChild("Interactable") and fg.Interactable:FindFirstChild("InstaPlantIncubator")
+    if incubator then
+        local invRemote = getGardenRemote()
+        if invRemote then
+            pcall(function() invRemote:InvokeServer("FlowerGarden", "UseIncubator") end)
+            pcall(function() invRemote:InvokeServer("FlowerGarden", "Incubator") end)
+        end
+        for _, desc in ipairs(incubator:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
+                    end
+                end)
+            end
         end
     end
 end
@@ -1534,22 +1629,46 @@ PlantModule:AddButton({
 -- MODUŁ: TELEPORTY I NARZĘDZIA OGRODU
 local GardenUtilsModule = TabGarden:CreateModule({
     Name = "Teleporty i Narzędzia Ogrodu",
-    Description = "Szybkie teleporty oraz funkcje pomocnicze w strefie ogrodu",
+    Description = "Szybkie teleporty, obsługa inkubatora i otwieranie skrzyń FlowerGarden",
     Default = false,
     CurrentValue = false,
     Flag = "Garden_UtilsGroup"
 })
 
 GardenUtilsModule:AddButton({
-    Name = "Teleportuj do Grządek (Garden Plots)",
+    Name = "Teleportuj do Donic (FlowerGarden)",
     Callback = function()
-        local plots = getGardenPlots()
+        local plants = getGardenPlantsFolder()
+        local p1 = plants and (plants:FindFirstChild("Plant1") or plants:FindFirstChild("Plant2"))
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp and #plots > 0 then
-            local targetPlot = plots[1]
-            local pos = getCoinPosition(targetPlot)
-            if pos then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0)) end
+        if hrp and p1 then
+            local pos = getCoinPosition(p1)
+            if pos then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 2)) end
+        end
+    end
+})
+
+GardenUtilsModule:AddButton({
+    Name = "Otwórz Skrzynię Ogrodu (Claim Chest)",
+    Callback = function() pcall(claimGardenChest) end
+})
+
+GardenUtilsModule:AddButton({
+    Name = "Użyj Inkubatora (Use Incubator)",
+    Callback = function() pcall(useGardenIncubator) end
+})
+
+GardenUtilsModule:AddButton({
+    Name = "Teleport do Inkubatora (Incubator TP)",
+    Callback = function()
+        local fg = getFlowerGardenContainer()
+        local inc = fg and fg:FindFirstChild("Interactable") and fg.Interactable:FindFirstChild("InstaPlantIncubator")
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp and inc then
+            local pos = getCoinPosition(inc)
+            if pos then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 2)) end
         end
     end
 })
@@ -1557,13 +1676,13 @@ GardenUtilsModule:AddButton({
 GardenUtilsModule:AddButton({
     Name = "Teleportuj do Sklepu Ogrodu (Merchant)",
     Callback = function()
-        local gFolder = getGardenFolder()
-        local merchant = gFolder and (gFolder:FindFirstChild("Merchant") or gFolder:FindFirstChild("Shop") or gFolder:FindFirstChild("GardenMerchant"))
+        local fg = getFlowerGardenContainer()
+        local merchant = fg and (fg:FindFirstChild("Merchant") or fg:FindFirstChild("Shop") or fg:FindFirstChild("GardenMerchant"))
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp and merchant then
             local pos = getCoinPosition(merchant)
-            if pos then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0)) end
+            if pos then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 2)) end
         end
     end
 })
