@@ -1252,6 +1252,17 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    while ScriptRunning do
+        if State.GardenInstaPlant then
+            pcall(runInstaPlantAll)
+            task.wait(tonumber(State.GardenInstaPlantDelay) or 0.5)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
 -- // ==========================================================================
 -- // 9. INTERFEJS UŻYTKOWNIKA MENUTEST (TABS: GENERAL & GARDEN)
 -- // ==========================================================================
@@ -1280,6 +1291,7 @@ if Window and Window.ScreenGui then
         State.GardenAutoHarvest = false
         State.GardenAutoWater = false
         State.GardenAutoPlant = false
+        State.GardenInstaPlant = false
         State.FarmAnchorEnabled = false
         State.FarmAnchorPos = nil
         State.CurrentTargetCoin = nil
@@ -1713,6 +1725,65 @@ PlantModule:AddSlider({
 PlantModule:AddButton({
     Name = "Obsadź Grządki Teraz (Plant Now)",
     Callback = function() pcall(runGardenPlant) end
+})
+
+-- MODUŁ: INSTA PLANT (KONEWKA)
+local InstaPlantModule = TabGarden:CreateModule({
+    Name = "Insta Plant (Szybkie Sadzenie & Konewka)",
+    Description = "Błyskawiczne sadzenie nasion i natychmiastowe podlewanie konewką wszystkich grządek",
+    Default = true,
+    CurrentValue = true,
+    Flag = "Garden_InstaPlantGroup"
+})
+
+InstaPlantModule:AddToggle({
+    Name = "Włącz Insta Plant (Konewka)",
+    Description = "Ciągły cykl natychmiastowego sadzenia i podlewania konewką",
+    Default = false,
+    CurrentValue = false,
+    Flag = "Garden_InstaPlantToggle",
+    Callback = function(state) State.GardenInstaPlant = state end
+})
+
+InstaPlantModule:AddDropdown({
+    Name = "Nasiono do Insta Plant",
+    Description = "Typ nasiona używany do natychmiastowego sadzenia",
+    Options = {
+        "Diamond Seed",
+        "Coin Seed",
+        "Potion Seed",
+        "Enchant Seed"
+    },
+    Default = "Diamond Seed",
+    CurrentValue = "Diamond Seed",
+    Flag = "Garden_InstaSeed",
+    Callback = function(val) State.GardenSelectedSeed = val end
+})
+
+InstaPlantModule:AddSlider({
+    Name = "Opóźnienie Cyklu (Sekundy)",
+    Range = { 0.1, 3.0 },
+    CurrentValue = 0.5,
+    Min = 0.1,
+    Max = 3.0,
+    Default = 0.5,
+    Suffix = "s",
+    Flag = "Garden_InstaPlantDelay",
+    Callback = function(val) State.GardenInstaPlantDelay = val end
+})
+
+InstaPlantModule:AddToggle({
+    Name = "Auto Trzymaj Konewkę (Equip Can)",
+    Description = "Automatycznie wyjmuje konewkę z plecaka do ręki gracza",
+    Default = true,
+    CurrentValue = true,
+    Flag = "Garden_AutoEquipCanToggle",
+    Callback = function(state) State.GardenAutoEquipCan = state end
+})
+
+InstaPlantModule:AddButton({
+    Name = "Insta Plant Teraz (Wszystkie 10 Donic)",
+    Callback = function() pcall(runInstaPlantAll) end
 })
 
 -- MODUŁ: TELEPORTY I NARZĘDZIA OGRODU
