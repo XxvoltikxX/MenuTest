@@ -563,7 +563,12 @@ local function createLoadingIndicator(title, isMobile, config)
             return false, nil
         end
 
-        -- 2. Pet Simulator X Event
+        -- 2. Pet Simulator X Event / Pet Simulator 99 Garden Event
+        if cfgGameId == "8737899170" or placeId == "8737899170" or gameId == "8737899170"
+           or cfgTitle:lower():find("garden") or cfgName:lower():find("garden") then
+            return true, "Pet Simulator 99 (Garden Event)"
+        end
+
         if cfgGameId == "85920622393590" or placeId == "85920622393590" or gameId == "85920622393590"
            or cfgTitle:lower():find("pet simulator") or cfgName:lower():find("pethub") then
             return true, "PetSimulatorX (Event)"
@@ -579,6 +584,7 @@ local function createLoadingIndicator(title, isMobile, config)
         local KnownGames = {
             ["85920622393590"] = "PetSimulatorX (Event)",
             ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
+            ["8737899170"] = "Pet Simulator 99 (Garden Event)",
         }
         if KnownGames[placeId] then return true, KnownGames[placeId] end
         if KnownGames[gameId] then return true, KnownGames[gameId] end
