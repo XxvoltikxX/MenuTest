@@ -113,8 +113,11 @@ local State = {
     GardenAutoWater = false,
     GardenWaterDelay = 2.0,
     GardenAutoPlant = false,
-    GardenSelectedSeed = "Wszystkie (ALL)",
+    GardenSelectedSeed = "Diamond",
     GardenPlantDelay = 1.5,
+    GardenInstaPlant = false,
+    GardenInstaPlantDelay = 0.5,
+    GardenAutoEquipCan = true,
     GardenAutoClaimMerchant = false,
     GardenAutoBuySeeds = false,
 }
@@ -830,6 +833,92 @@ local function runGardenPlant()
     local seed = State.GardenSelectedSeed or "Coin"
     for i = 1, 10 do
         plantGardenSeed(i, seed)
+    end
+end
+
+-- Automatyczne wyposażenie konewki do ręki (z plecaka)
+local function equipWateringCan()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not char or not hum then return nil end
+
+    for _, tool in ipairs(char:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:lower():find("water") or tool.Name:lower():find("can") or tool.Name:lower():find("insta")) then
+            return tool
+        end
+    end
+
+    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack") or LocalPlayer:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.Name:lower():find("water") or tool.Name:lower():find("can") or tool.Name:lower():find("insta")) then
+                pcall(function() hum:EquipTool(tool) end)
+                return tool
+            end
+        end
+    end
+    return nil
+end
+
+-- Błyskawiczny cykl Insta-Plant (Sadzenie + Natychmiastowe podlanie konewką dla wybranego slotu)
+local function runInstaPlantSlot(slotIndex, seedName)
+    local seed = seedName or State.GardenSelectedSeed or "Diamond"
+
+    if State.GardenAutoEquipCan then
+        pcall(equipWateringCan)
+    end
+
+    -- 1. Posadź nasiono
+    plantGardenSeed(slotIndex, seed)
+
+    -- 2. Natychmiastowe podlanie konewką (multi-vector)
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "WaterPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "Water", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "InstaPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseWateringCan", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseCan", slotIndex) end)
+    end
+
+    local fireRem = getGardenFireRemote()
+    if fireRem then
+        pcall(function() fireRem:FireServer("FlowerGarden", "WaterPlant", slotIndex) end)
+        pcall(function() fireRem:FireServer("FlowerGarden", "Water", slotIndex) end)
+        pcall(function() fireRem:FireServer("FlowerGarden", "InstaPlant", slotIndex) end)
+    end
+
+    -- 3. Aktywacja trzymanej konewki
+    local char = LocalPlayer.Character
+    if char then
+        for _, tool in ipairs(char:GetChildren()) do
+            if tool:IsA("Tool") and (tool.Name:lower():find("water") or tool.Name:lower():find("can") or tool.Name:lower():find("insta")) then
+                if tool.Activate then pcall(function() tool:Activate() end) end
+            end
+        end
+    end
+
+    -- 4. Trigger ProximityPrompt w donicy
+    local plantsFolder = getGardenPlantsFolder()
+    local plantModel = plantsFolder and plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
+    if plantModel then
+        for _, desc in ipairs(plantModel:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(desc)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Błyskawiczny cykl Insta-Plant na wszystkich 10 donicach naraz
+local function runInstaPlantAll()
+    local seed = State.GardenSelectedSeed or "Diamond"
+    for i = 1, 10 do
+        runInstaPlantSlot(i, seed)
     end
 end
 
