@@ -836,6 +836,130 @@ local function runGardenPlant()
     end
 end
 
+-- Uniwersalna funkcja kliknięcia w obiekt 3D (Network.Click z Raycastem)
+local function clickWorldPosition(targetPos, optionalInstance)
+    if not targetPos then return false end
+
+    local cam = Workspace.CurrentCamera
+    local origin = (cam and cam.CFrame and cam.CFrame.Position)
+    if not origin then
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        origin = hrp and (hrp.Position + Vector3.new(0, 2.5, 0)) or (targetPos + Vector3.new(0, 10, 0))
+    end
+
+    local diff = (targetPos - origin)
+    local dirUnit = diff.Magnitude > 0.001 and diff.Unit or Vector3.new(0, -1, 0)
+    local clickRay = Ray.new(origin, dirUnit)
+
+    -- 1. Poprzez Library.Network.Fire("Click", ray, targetPos)
+    if Library and Library.Network and typeof(Library.Network.Fire) == "function" then
+        pcall(function() Library.Network.Fire("Click", clickRay, targetPos) end)
+    end
+
+    -- 2. Poprzez ReplicatedStorage.Network.Click
+    local clickEvent = (Network and Network:FindFirstChild("Click"))
+        or (ReplicatedStorage:FindFirstChild("Network") and ReplicatedStorage.Network:FindFirstChild("Click"))
+    if clickEvent and clickEvent:IsA("RemoteEvent") then
+        pcall(function() clickEvent:FireServer(clickRay, targetPos) end)
+    end
+
+    -- 3. Aktywacja ProximityPrompt jeśli obiekt go posiada
+    if optionalInstance and typeof(optionalInstance) == "Instance" then
+        for _, prompt in ipairs(optionalInstance:GetDescendants()) do
+            if prompt:IsA("ProximityPrompt") then
+                pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(prompt)
+                    end
+                end)
+            end
+        end
+    end
+
+    return true
+end
+
+-- Lokalizacja i pobranie części kapsuły inkubatora (InstaPlantIncubator)
+local function getIncubatorUnion()
+    local fg = getFlowerGardenContainer()
+    if fg then
+        local interactable = fg:FindFirstChild("Interactable") or fg:FindFirstChild("INTERACT")
+        local inc = interactable and interactable:FindFirstChild("InstaPlantIncubator")
+        if inc then
+            local union = inc:FindFirstChild("Union")
+            if union and union:IsA("BasePart") then return union end
+            local capsule = inc:FindFirstChild("capsule")
+            if capsule and capsule:IsA("BasePart") then return capsule end
+            local part = inc:FindFirstChildWhichIsA("BasePart")
+            if part then return part end
+            if inc:IsA("BasePart") then return inc end
+        end
+        for _, desc in ipairs(fg:GetDescendants()) do
+            if desc.Name == "InstaPlantIncubator" then
+                local u = desc:FindFirstChild("Union") or desc:FindFirstChild("capsule") or desc:FindFirstChildWhichIsA("BasePart")
+                if u then return u end
+            end
+        end
+    end
+    return nil
+end
+
+local function getIncubatorPosition()
+    local union = getIncubatorUnion()
+    if union then
+        return union.Position, union
+    end
+    -- Dokładna pozycja z Cobalt logu (workspace.__THINGS.__INSTANCE_CONTAINER.Active.FlowerGarden.Interactable.InstaPlantIncubator.Union)
+    return Vector3.new(-477.71975708007812, 111.51129913330078, -1403.053955078125), nil
+end
+
+-- Pobranie wody z kapsuły inkubatora (InstaPlant Capsule)
+local function collectWaterFromIncubator()
+    local pos, inst = getIncubatorPosition()
+    clickWorldPosition(pos, inst)
+
+    if inst and inst.Parent then
+        local capsule = inst.Parent:FindFirstChild("capsule")
+        if capsule and capsule ~= inst and capsule:IsA("BasePart") then
+            clickWorldPosition(capsule.Position, capsule)
+        end
+    end
+
+    -- Dedykowane wywołania Remote dla FlowerGarden
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseIncubator") end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "CollectWater") end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "Incubator") end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "ClaimWater") end)
+    end
+    local fireRem = getGardenFireRemote()
+    if fireRem then
+        pcall(function() fireRem:FireServer("FlowerGarden", "UseIncubator") end)
+        pcall(function() fireRem:FireServer("FlowerGarden", "CollectWater") end)
+    end
+end
+
+-- Lokalizacja donicy / kwiatka dla danego slotu (1-10)
+local function getPlantObject(slotIndex)
+    local plantsFolder = getGardenPlantsFolder()
+    if not plantsFolder then return nil end
+    return plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
+end
+
+local function getPlantPosition(slotIndex)
+    local plant = getPlantObject(slotIndex)
+    if plant then
+        if plant:IsA("BasePart") then return plant.Position, plant end
+        if plant.PrimaryPart then return plant.PrimaryPart.Position, plant end
+        local bp = plant:FindFirstChildWhichIsA("BasePart")
+        if bp then return bp.Position, plant end
+        if plant.GetPivot then return plant:GetPivot().Position, plant end
+    end
+    return nil, nil
+end
+
 -- Automatyczne wyposażenie konewki do ręki (z plecaka)
 local function equipWateringCan()
     local char = LocalPlayer.Character
@@ -860,35 +984,35 @@ local function equipWateringCan()
     return nil
 end
 
--- Błyskawiczny cykl Insta-Plant (Sadzenie + Natychmiastowe podlanie konewką dla wybranego slotu)
+-- Błyskawiczny cykl Insta-Plant:
+-- 1. Zbiera wodę z kapsuły (Click na InstaPlantIncubator.Union)
+-- 2. Sadzi nasiono jeśli pusta donica
+-- 3. Aplikuje pobraną wodę bezpośrednio do donicy/kwiatka (Click + Remote + Konewka)
 local function runInstaPlantSlot(slotIndex, seedName)
     local seed = seedName or State.GardenSelectedSeed or "Diamond"
 
+    -- Krok 1: Pobranie wody z kapsuły inkubatora
+    collectWaterFromIncubator()
+    task.wait(0.04)
+
+    -- Krok 2: Wyposażenie konewki
     if State.GardenAutoEquipCan then
         pcall(equipWateringCan)
     end
 
-    -- 1. Posadź nasiono
+    -- Krok 3: Posadzenie nasiona w donicy
     plantGardenSeed(slotIndex, seed)
 
-    -- 2. Natychmiastowe podlanie konewką (multi-vector)
-    local invRemote = getGardenRemote()
-    if invRemote then
-        pcall(function() invRemote:InvokeServer("FlowerGarden", "WaterPlant", slotIndex) end)
-        pcall(function() invRemote:InvokeServer("FlowerGarden", "Water", slotIndex) end)
-        pcall(function() invRemote:InvokeServer("FlowerGarden", "InstaPlant", slotIndex) end)
-        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseWateringCan", slotIndex) end)
-        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseCan", slotIndex) end)
+    -- Krok 4: Aplikacja wody do donicy / kwiatka (Click w obiekt rośliny)
+    local plantPos, plantInst = getPlantPosition(slotIndex)
+    if plantPos then
+        clickWorldPosition(plantPos, plantInst)
     end
 
-    local fireRem = getGardenFireRemote()
-    if fireRem then
-        pcall(function() fireRem:FireServer("FlowerGarden", "WaterPlant", slotIndex) end)
-        pcall(function() fireRem:FireServer("FlowerGarden", "Water", slotIndex) end)
-        pcall(function() fireRem:FireServer("FlowerGarden", "InstaPlant", slotIndex) end)
-    end
+    -- Krok 5: Wywołanie podlania przez remotes FlowerGarden
+    waterGardenPlant(slotIndex)
 
-    -- 3. Aktywacja trzymanej konewki
+    -- Krok 6: Aktywacja konewki
     local char = LocalPlayer.Character
     if char then
         for _, tool in ipairs(char:GetChildren()) do
@@ -897,28 +1021,20 @@ local function runInstaPlantSlot(slotIndex, seedName)
             end
         end
     end
-
-    -- 4. Trigger ProximityPrompt w donicy
-    local plantsFolder = getGardenPlantsFolder()
-    local plantModel = plantsFolder and plantsFolder:FindFirstChild("Plant" .. tostring(slotIndex))
-    if plantModel then
-        for _, desc in ipairs(plantModel:GetDescendants()) do
-            if desc:IsA("ProximityPrompt") then
-                pcall(function()
-                    if typeof(fireproximityprompt) == "function" then
-                        fireproximityprompt(desc)
-                    end
-                end)
-            end
-        end
-    end
 end
 
 -- Błyskawiczny cykl Insta-Plant na wszystkich 10 donicach naraz
 local function runInstaPlantAll()
     local seed = State.GardenSelectedSeed or "Diamond"
+
+    -- Krok wstępny: pobierz wodę z kapsuły
+    collectWaterFromIncubator()
+    task.wait(0.05)
+
     for i = 1, 10 do
+        if not ScriptRunning or not State.GardenInstaPlant then break end
         runInstaPlantSlot(i, seed)
+        task.wait(0.04)
     end
 end
 
@@ -941,24 +1057,7 @@ end
 
 -- Użycie inkubatora roślin (InstaPlantIncubator)
 local function useGardenIncubator()
-    local fg = getFlowerGardenContainer()
-    local incubator = fg and fg:FindFirstChild("Interactable") and fg.Interactable:FindFirstChild("InstaPlantIncubator")
-    if incubator then
-        local invRemote = getGardenRemote()
-        if invRemote then
-            pcall(function() invRemote:InvokeServer("FlowerGarden", "UseIncubator") end)
-            pcall(function() invRemote:InvokeServer("FlowerGarden", "Incubator") end)
-        end
-        for _, desc in ipairs(incubator:GetDescendants()) do
-            if desc:IsA("ProximityPrompt") then
-                pcall(function()
-                    if typeof(fireproximityprompt) == "function" then
-                        fireproximityprompt(desc)
-                    end
-                end)
-            end
-        end
-    end
+    collectWaterFromIncubator()
 end
 
 -- // ==========================================================================
@@ -1784,6 +1883,27 @@ InstaPlantModule:AddToggle({
 InstaPlantModule:AddButton({
     Name = "Insta Plant Teraz (Wszystkie 10 Donic)",
     Callback = function() pcall(runInstaPlantAll) end
+})
+
+InstaPlantModule:AddButton({
+    Name = "Pobierz Wodę z Kapsuły (Click Capsule)",
+    Callback = function() pcall(collectWaterFromIncubator) end
+})
+
+InstaPlantModule:AddButton({
+    Name = "Stań przy Kapsule & Donicach (Optimal Spot)",
+    Callback = function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local incPos = getIncubatorPosition()
+            if incPos then
+                hrp.CFrame = CFrame.new(incPos + Vector3.new(-4, 3, 2))
+            else
+                hrp.CFrame = CFrame.new(-480, 114, -1403)
+            end
+        end
+    end
 })
 
 -- MODUŁ: TELEPORTY I NARZĘDZIA OGRODU
