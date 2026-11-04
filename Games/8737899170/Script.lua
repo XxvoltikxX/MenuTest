@@ -133,11 +133,15 @@ _G.SpeedMode = _G.SpeedMode or "Legit"
 local Library = nil
 local Framework = nil
 local Network = nil
+local ClientNetwork = nil
 
 local function loadPS99Library()
     pcall(function()
         if ReplicatedStorage:FindFirstChild("Library") then
             Library = require(ReplicatedStorage.Library)
+            if ReplicatedStorage.Library:FindFirstChild("Client") and ReplicatedStorage.Library.Client:FindFirstChild("Network") then
+                ClientNetwork = require(ReplicatedStorage.Library.Client.Network)
+            end
         end
     end)
     pcall(function()
@@ -152,7 +156,15 @@ local function loadPS99Library()
                 if ok and type(res) == "table" and (res.Network or res.Directory) then
                     Library = res
                     Framework = res
+                    if type(res.Network) == "table" then
+                        ClientNetwork = ClientNetwork or res.Network
+                    end
                     break
+                end
+            elseif mod.Name == "Network" and mod.Parent and mod.Parent.Name == "Client" then
+                local ok, res = pcall(require, mod)
+                if ok and type(res) == "table" and typeof(res.Fire) == "function" then
+                    ClientNetwork = res
                 end
             end
         end
@@ -837,34 +849,43 @@ local function runGardenPlant()
 end
 
 -- Uniwersalna funkcja kliknięcia w obiekt 3D (Network.Click z Raycastem)
-local function clickWorldPosition(targetPos, optionalInstance)
+local function clickWorldPosition(targetPos, optionalRay, optionalInstance)
     if not targetPos then return false end
 
-    local cam = Workspace.CurrentCamera
-    local origin = (cam and cam.CFrame and cam.CFrame.Position)
-    if not origin then
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        origin = hrp and (hrp.Position + Vector3.new(0, 2.5, 0)) or (targetPos + Vector3.new(0, 10, 0))
+    local clickRay = optionalRay
+    if not clickRay then
+        local cam = Workspace.CurrentCamera
+        local origin = (cam and cam.CFrame and cam.CFrame.Position)
+        if not origin then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            origin = hrp and (hrp.Position + Vector3.new(0, 2.5, 0)) or (targetPos + Vector3.new(0, 10, 0))
+        end
+        local diff = (targetPos - origin)
+        local dirUnit = diff.Magnitude > 0.001 and diff.Unit or Vector3.new(0, -1, 0)
+        clickRay = Ray.new(origin, dirUnit)
     end
 
-    local diff = (targetPos - origin)
-    local dirUnit = diff.Magnitude > 0.001 and diff.Unit or Vector3.new(0, -1, 0)
-    local clickRay = Ray.new(origin, dirUnit)
+    -- 1. Poprzez ClientNetwork z ReplicatedStorage.Library.Client.Network (dokładnie jak w grze)
+    if ClientNetwork and typeof(ClientNetwork.Fire) == "function" then
+        pcall(function() ClientNetwork.Fire("Click", clickRay, targetPos) end)
+    end
 
-    -- 1. Poprzez Library.Network.Fire("Click", ray, targetPos)
+    -- 2. Poprzez ReplicatedStorage.Network.Click RemoteEvent
+    pcall(function()
+        local clickEvent = (Network and Network:FindFirstChild("Click"))
+            or (ReplicatedStorage:FindFirstChild("Network") and ReplicatedStorage.Network:FindFirstChild("Click"))
+        if clickEvent and clickEvent:IsA("RemoteEvent") then
+            clickEvent:FireServer(clickRay, targetPos)
+        end
+    end)
+
+    -- 3. Poprzez Library.Network.Fire
     if Library and Library.Network and typeof(Library.Network.Fire) == "function" then
         pcall(function() Library.Network.Fire("Click", clickRay, targetPos) end)
     end
 
-    -- 2. Poprzez ReplicatedStorage.Network.Click
-    local clickEvent = (Network and Network:FindFirstChild("Click"))
-        or (ReplicatedStorage:FindFirstChild("Network") and ReplicatedStorage.Network:FindFirstChild("Click"))
-    if clickEvent and clickEvent:IsA("RemoteEvent") then
-        pcall(function() clickEvent:FireServer(clickRay, targetPos) end)
-    end
-
-    -- 3. Aktywacja ProximityPrompt jeśli obiekt go posiada
+    -- 4. Aktywacja ProximityPrompt jeśli obiekt go posiada
     if optionalInstance and typeof(optionalInstance) == "Instance" then
         for _, prompt in ipairs(optionalInstance:GetDescendants()) do
             if prompt:IsA("ProximityPrompt") then
@@ -887,17 +908,18 @@ local function getIncubatorUnion()
         local interactable = fg:FindFirstChild("Interactable") or fg:FindFirstChild("INTERACT")
         local inc = interactable and interactable:FindFirstChild("InstaPlantIncubator")
         if inc then
-            local union = inc:FindFirstChild("Union")
-            if union and union:IsA("BasePart") then return union end
             local capsule = inc:FindFirstChild("capsule")
             if capsule and capsule:IsA("BasePart") then return capsule end
+            local union = inc:FindFirstChild("Union")
+            if union and union:IsA("BasePart") then return union end
             local part = inc:FindFirstChildWhichIsA("BasePart")
             if part then return part end
             if inc:IsA("BasePart") then return inc end
         end
         for _, desc in ipairs(fg:GetDescendants()) do
+            if desc.Name == "capsule" and desc:IsA("BasePart") then return desc end
             if desc.Name == "InstaPlantIncubator" then
-                local u = desc:FindFirstChild("Union") or desc:FindFirstChild("capsule") or desc:FindFirstChildWhichIsA("BasePart")
+                local u = desc:FindFirstChild("capsule") or desc:FindFirstChild("Union") or desc:FindFirstChildWhichIsA("BasePart")
                 if u then return u end
             end
         end
@@ -910,23 +932,42 @@ local function getIncubatorPosition()
     if union then
         return union.Position, union
     end
-    -- Dokładna pozycja z Cobalt logu (workspace.__THINGS.__INSTANCE_CONTAINER.Active.FlowerGarden.Interactable.InstaPlantIncubator.Union)
-    return Vector3.new(-477.71975708007812, 111.51129913330078, -1403.053955078125), nil
+    -- Dokładna pozycja z najnowszego Cobalt logu od AN0N
+    return Vector3.new(-437.83212280273438, 109.46415710449219, -1421.351318359375), nil
 end
 
 -- Pobranie wody z kapsuły inkubatora (InstaPlant Capsule)
 local function collectWaterFromIncubator()
-    local pos, inst = getIncubatorPosition()
-    clickWorldPosition(pos, inst)
+    -- 1. Dokładny pakiet z Cobalt logu dostarczonego przez AN0N (z kapsuły)
+    local cobaltPos = Vector3.new(-437.83212280273438, 109.46415710449219, -1421.351318359375)
+    local cobaltRay = Ray.new(
+        Vector3.new(-455.88748168945312, 128.20892333984375, -1396.1763916015625),
+        Vector3.new(0.4934602677822113, -0.57543015480041504, -0.65220928192138672)
+    )
+    clickWorldPosition(cobaltPos, cobaltRay)
+    clickWorldPosition(cobaltPos, nil)
 
-    if inst and inst.Parent then
-        local capsule = inst.Parent:FindFirstChild("capsule")
-        if capsule and capsule ~= inst and capsule:IsA("BasePart") then
-            clickWorldPosition(capsule.Position, capsule)
+    -- 2. Kliknięcie obiektu kapsuły w Workspace
+    local incObj = getIncubatorUnion()
+    if incObj then
+        clickWorldPosition(incObj.Position, nil, incObj)
+        if incObj.Parent then
+            local cap = incObj.Parent:FindFirstChild("capsule")
+            if cap and cap ~= incObj and cap:IsA("BasePart") then
+                clickWorldPosition(cap.Position, nil, cap)
+            end
+            local uni = incObj.Parent:FindFirstChild("Union")
+            if uni and uni ~= incObj and uni:IsA("BasePart") then
+                clickWorldPosition(uni.Position, nil, uni)
+            end
         end
     end
 
-    -- Dedykowane wywołania Remote dla FlowerGarden
+    -- 3. Zapasowy punkt maszyny (-477.72)
+    local altPos = Vector3.new(-477.71975708007812, 111.51129913330078, -1403.053955078125)
+    clickWorldPosition(altPos, nil)
+
+    -- 4. Dedykowane wywołania Remote dla FlowerGarden
     local invRemote = getGardenRemote()
     if invRemote then
         pcall(function() invRemote:InvokeServer("FlowerGarden", "UseIncubator") end)
@@ -985,34 +1026,42 @@ local function equipWateringCan()
 end
 
 -- Błyskawiczny cykl Insta-Plant:
--- 1. Zbiera wodę z kapsuły (Click na InstaPlantIncubator.Union)
--- 2. Sadzi nasiono jeśli pusta donica
--- 3. Aplikuje pobraną wodę bezpośrednio do donicy/kwiatka (Click + Remote + Konewka)
+-- 1. Sadzi wybrane nasiono do donicy
+-- 2. Pobiera wodę z kapsuły (Click na InstaPlantIncubator.capsule)
+-- 3. Aplikuje pobraną wodę bezpośrednio do TEJ posadzonej sadzonki (Click + Remote + Konewka)
 local function runInstaPlantSlot(slotIndex, seedName)
     local seed = seedName or State.GardenSelectedSeed or "Diamond"
 
-    -- Krok 1: Pobranie wody z kapsuły inkubatora
+    -- Krok 1: Posadzenie nasiona w donicy
+    plantGardenSeed(slotIndex, seed)
+
+    -- Krok 2: Pobranie wody z kapsuły inkubatora
     collectWaterFromIncubator()
     task.wait(0.04)
 
-    -- Krok 2: Wyposażenie konewki
+    -- Krok 3: Wyposażenie konewki / narzędzia
     if State.GardenAutoEquipCan then
         pcall(equipWateringCan)
     end
 
-    -- Krok 3: Posadzenie nasiona w donicy
-    plantGardenSeed(slotIndex, seed)
-
-    -- Krok 4: Aplikacja wody do donicy / kwiatka (Click w obiekt rośliny)
+    -- Krok 4: Aplikacja pobranej wody do TEJ konkretnej sadzonki/kwiatka
     local plantPos, plantInst = getPlantPosition(slotIndex)
     if plantPos then
-        clickWorldPosition(plantPos, plantInst)
+        clickWorldPosition(plantPos, nil, plantInst)
     end
 
     -- Krok 5: Wywołanie podlania przez remotes FlowerGarden
     waterGardenPlant(slotIndex)
 
-    -- Krok 6: Aktywacja konewki
+    -- Krok 6: Dodatkowe wywołania InstaPlant / UseWateringCan
+    local invRemote = getGardenRemote()
+    if invRemote then
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "InstaPlant", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseWateringCan", slotIndex) end)
+        pcall(function() invRemote:InvokeServer("FlowerGarden", "UseCan", slotIndex) end)
+    end
+
+    -- Krok 7: Aktywacja konewki
     local char = LocalPlayer.Character
     if char then
         for _, tool in ipairs(char:GetChildren()) do
@@ -1023,16 +1072,16 @@ local function runInstaPlantSlot(slotIndex, seedName)
     end
 end
 
--- Błyskawiczny cykl Insta-Plant na wszystkich 10 donicach naraz
+-- Błyskawiczny cykl Insta-Plant na wszystkich 10 sadzonkach
 local function runInstaPlantAll()
     local seed = State.GardenSelectedSeed or "Diamond"
 
-    -- Krok wstępny: pobierz wodę z kapsuły
+    -- Krok wstępny: upewnij się, że woda jest pobrana z kapsuły
     collectWaterFromIncubator()
-    task.wait(0.05)
+    task.wait(0.04)
 
     for i = 1, 10 do
-        if not ScriptRunning or not State.GardenInstaPlant then break end
+        if not ScriptRunning then break end
         runInstaPlantSlot(i, seed)
         task.wait(0.04)
     end
@@ -1898,9 +1947,9 @@ InstaPlantModule:AddButton({
         if hrp then
             local incPos = getIncubatorPosition()
             if incPos then
-                hrp.CFrame = CFrame.new(incPos + Vector3.new(-4, 3, 2))
+                hrp.CFrame = CFrame.new(incPos + Vector3.new(-3, 2, 2))
             else
-                hrp.CFrame = CFrame.new(-480, 114, -1403)
+                hrp.CFrame = CFrame.new(-442, 112, -1418)
             end
         end
     end
