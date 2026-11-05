@@ -2,9 +2,9 @@
 -- // PET SIMULATOR 99 (FLOWER GARDEN EVENT) - AUTOMATION & ESP SUITE
 -- // Dedicated script for MenuTest UI Library (https://github.com/XxvoltikxX/MenuTest)
 -- // PlaceId: 8737899170 / 3317771874
--- // Features: Auto Plant, Auto Insta-Grow (Can/Capsule Water), Auto Water,
--- //           Auto Claim, Water Capsule Auto-Click, Slot ESP with Highlights,
--- //           Plot Quick Selection, Garden Teleports & Anti-AFK
+-- // Features: Ultra-fast Auto Plant, Auto Insta-Grow (Can/Capsule Water),
+-- //           Auto Water, Auto Claim, Turbo Mode, Fully Configurable Action &
+-- //           Loop Delays, Slot ESP with Highlights, Quick Select, Teleports & Anti-AFK
 -- // ==========================================================================
 
 -- // ==========================================================================
@@ -94,6 +94,7 @@ end)
 local Config = {
     -- Auto Farm
     AutoFarmEnabled = false,
+    FastMode = false,
     AutoPlant = true,
     AutoInstaGrow = true,
     AutoCapsuleClick = true,
@@ -101,8 +102,8 @@ local Config = {
     AutoClaim = true,
     SeedType = "Diamond",
     CustomSeed = "",
-    ActionDelay = 0.25,
-    LoopDelay = 1.0,
+    ActionDelay = 0.10,
+    LoopDelay = 0.50,
     FarmSlots = {
         ["1"] = true, ["2"] = true, ["3"] = true, ["4"] = true, ["5"] = true,
         ["6"] = false, ["7"] = false, ["8"] = false, ["9"] = false, ["10"] = false,
@@ -136,7 +137,19 @@ local ScriptConnections = {}
 -- // ==========================================================================
 -- // 4. FUNKCJE POMOCNICZE I DETEKCJA ELEMENTÓW OGRODU
 -- // ==========================================================================
+local cachedPlantsFolder = nil
+local lastPlantsCheck = 0
+
 local function getPlantsFolder()
+    local now = os.clock()
+    if cachedPlantsFolder and cachedPlantsFolder.Parent then
+        return cachedPlantsFolder
+    end
+    if now - lastPlantsCheck < 1 then
+        return cachedPlantsFolder
+    end
+    lastPlantsCheck = now
+
     local things = Workspace:FindFirstChild("__THINGS")
     if not things then return nil end
     local inst = things:FindFirstChild("__INSTANCE_CONTAINER")
@@ -145,7 +158,12 @@ local function getPlantsFolder()
     if not active then return nil end
     local garden = active:FindFirstChild("FlowerGarden")
     if not garden then return nil end
-    return garden:FindFirstChild("Plants")
+    local plants = garden:FindFirstChild("Plants")
+    if plants then
+        cachedPlantsFolder = plants
+        return plants
+    end
+    return nil
 end
 
 local function getPlotInstance(slotNum)
@@ -169,19 +187,21 @@ local function getPlotBasePart(plot)
 end
 
 local function checkPlotStatus(plot)
-    if not plot then return "Brak", nil end
-    local isStage4 = plot:FindFirstChild("Stage4", true)
-    local isStage3 = plot:FindFirstChild("Stage3", true)
-    local isStage2 = plot:FindFirstChild("Stage2", true)
-    local isStage1 = plot:FindFirstChild("Stage1", true)
+    if not plot then return "Nieznaleziona", Color3.fromRGB(150, 150, 150) end
 
-    if isStage4 or isStage3 then
-        return "Gotowa", (isStage4 and "Stage4" or "Stage3")
-    elseif isStage2 or isStage1 then
-        return "Rośnie", (isStage2 and "Stage2" or "Stage1")
-    else
-        return "Pusta", nil
+    if plot:FindFirstChild("Stage3") or plot:FindFirstChild("Stage4") then
+        return "Gotowa do Zbioru!", Color3.fromRGB(50, 255, 100)
+    elseif plot:FindFirstChild("Stage1") or plot:FindFirstChild("Stage2") then
+        return "Rośnie...", Color3.fromRGB(255, 200, 50)
     end
+
+    for _, child in ipairs(plot:GetChildren()) do
+        if child.Name:find("Stage") or child.Name:find("Mesh") or child.Name:find("Seed") then
+            return "Rośnie / Zasadzone", Color3.fromRGB(255, 180, 50)
+        end
+    end
+
+    return "Pusta (Gotowa)", Color3.fromRGB(80, 200, 255)
 end
 
 -- Pobieranie wody / kliknięcie na kapsułę (InstaPlant Incubator)
@@ -216,113 +236,110 @@ local function clickCapsule()
     Config.Stats.WaterCollected = Config.Stats.WaterCollected + 1
 end
 
--- Akcje na pojedynczej działce
-local function harvestSlot(slotNum)
-    if not FireCustom then return false end
-    local ok = pcall(function()
-        FireCustom:FireServer("FlowerGarden", "ClaimPlant", tonumber(slotNum))
-    end)
-    if ok then
-        Config.Stats.Harvested = Config.Stats.Harvested + 1
+local function getActiveSeedName()
+    if Config.CustomSeed and Config.CustomSeed:gsub("%s+", "") ~= "" then
+        return Config.CustomSeed:gsub("%s+", "")
     end
-    return ok
+    return Config.SeedType or "Diamond"
 end
 
-local function plantSlot(slotNum)
-    if not InvokeCustom then return false end
-    local seed = Config.SeedType
-    if seed == "Własne" and #Config.CustomSeed > 0 then
-        seed = Config.CustomSeed
-    end
-    local ok, res = pcall(function()
-        return InvokeCustom:InvokeServer("FlowerGarden", "PlantSeed", tonumber(slotNum), seed)
-    end)
-    if ok then
-        Config.Stats.Planted = Config.Stats.Planted + 1
-    end
-    return ok, res
-end
-
-local function instaGrowSlot(slotNum)
-    if not InvokeCustom then return false end
-    if Config.AutoCapsuleClick then
-        clickCapsule()
-        task.wait(0.08)
-    end
-    local ok, res = pcall(function()
-        return InvokeCustom:InvokeServer("FlowerGarden", "InstaGrowSeed", tonumber(slotNum))
-    end)
-    if ok then
-        Config.Stats.Grown = Config.Stats.Grown + 1
-    end
-    return ok, res
-end
-
-local function waterSlot(slotNum)
-    if not InvokeCustom then return false end
-    local ok, res = pcall(function()
-        return InvokeCustom:InvokeServer("FlowerGarden", "WaterSeed", tonumber(slotNum))
-    end)
-    return ok, res
-end
-
--- // ==========================================================================
--- // 5. GŁÓWNA PĘTLA AUTOFARM
--- // ==========================================================================
-local isFarmingCycle = false
-local function runFarmCycle()
-    if isFarmingCycle or not Config.AutoFarmEnabled then return end
-    isFarmingCycle = true
-
-    for slot = 1, 20 do
-        if not Config.AutoFarmEnabled or not _G.PS99GardenRunning then break end
-        local slotKey = tostring(slot)
-        if Config.FarmSlots[slotKey] then
-            local plot = getPlotInstance(slot)
-            local status, stage = checkPlotStatus(plot)
-
-            -- Krok 1: Zbiór gotowych plonów
-            if Config.AutoClaim and (status == "Gotowa" or stage == "Stage3" or stage == "Stage4") then
-                harvestSlot(slot)
-                task.wait(Config.ActionDelay)
-                status, stage = checkPlotStatus(plot)
-            end
-
-            -- Krok 2: Sadzenie nowego nasiona jeśli działka pusta
-            if Config.AutoPlant and (status == "Pusta" or not stage) then
-                plantSlot(slot)
-                task.wait(Config.ActionDelay)
-                status, stage = checkPlotStatus(plot)
-            end
-
-            -- Krok 3: Insta-Grow z użyciem wody z kapsuły
-            if Config.AutoInstaGrow and (status == "Rośnie" or status == "Pusta" or stage == "Stage1" or stage == "Stage2") then
-                instaGrowSlot(slot)
-                task.wait(Config.ActionDelay)
-                status, stage = checkPlotStatus(plot)
-
-                -- Zbiór natychmiastowy jeśli roślina od razu urosła do Stage3/4
-                if Config.AutoClaim and (status == "Gotowa" or stage == "Stage3" or stage == "Stage4") then
-                    harvestSlot(slot)
-                    task.wait(Config.ActionDelay)
-                end
-            -- Krok 3b: Zwykłe podlewanie konewką jeśli wyłączono InstaGrow
-            elseif Config.AutoWater and (status == "Rośnie" or stage == "Stage1" or stage == "Stage2") then
-                waterSlot(slot)
-                task.wait(Config.ActionDelay)
+local function getSortedFarmSlots()
+    local slots = {}
+    for slotStr, enabled in pairs(Config.FarmSlots) do
+        if enabled then
+            local num = tonumber(slotStr)
+            if num then
+                table.insert(slots, num)
             end
         end
     end
-
-    isFarmingCycle = false
+    table.sort(slots)
+    return slots
 end
 
+-- // ==========================================================================
+-- // 5. AKCJE FARMOWANIA NA DZIAŁKACH (ZGODNE Z ORYGINAŁEM)
+-- // ==========================================================================
+local function executeSlotActions(slotNum, seed)
+    -- 1. Auto Plant (Sadzenie)
+    if Config.AutoPlant and InvokeCustom then
+        pcall(function()
+            InvokeCustom:InvokeServer("FlowerGarden", "PlantSeed", slotNum, seed)
+            Config.Stats.Planted = Config.Stats.Planted + 1
+        end)
+        if not Config.FastMode and Config.ActionDelay > 0 then
+            task.wait(Config.ActionDelay)
+        end
+    end
+
+    -- 2. Auto Insta Grow (Pobranie wody z kapsuły + podlanie przyspieszające)
+    if Config.AutoInstaGrow and InvokeCustom then
+        if Config.AutoCapsuleClick then
+            clickCapsule()
+        end
+        pcall(function()
+            InvokeCustom:InvokeServer("FlowerGarden", "InstaGrowSeed", slotNum)
+            Config.Stats.Grown = Config.Stats.Grown + 1
+        end)
+        if not Config.FastMode and Config.ActionDelay > 0 then
+            task.wait(Config.ActionDelay)
+        end
+    end
+
+    -- 2b. Auto Water (Zwykłe podlewanie konewką)
+    if Config.AutoWater and InvokeCustom then
+        pcall(function()
+            InvokeCustom:InvokeServer("FlowerGarden", "WaterSeed", slotNum)
+        end)
+        if not Config.FastMode and Config.ActionDelay > 0 then
+            task.wait(Config.ActionDelay)
+        end
+    end
+
+    -- 3. Auto Claim (Zbiór plonów)
+    if Config.AutoClaim and FireCustom then
+        pcall(function()
+            FireCustom:FireServer("FlowerGarden", "ClaimPlant", slotNum)
+            Config.Stats.Harvested = Config.Stats.Harvested + 1
+        end)
+        if not Config.FastMode and Config.ActionDelay > 0 then
+            task.wait(Config.ActionDelay)
+        end
+    end
+end
+
+-- Główna pętla Auto Farm
 task.spawn(function()
     while _G.PS99GardenRunning do
         if Config.AutoFarmEnabled then
-            pcall(runFarmCycle)
+            local slotsToFarm = getSortedFarmSlots()
+            local seed = getActiveSeedName()
+
+            if Config.FastMode then
+                -- TRYB TURBO: Błyskawiczne równoległe wywołanie wszystkich wybranych slotów
+                if Config.AutoInstaGrow and Config.AutoCapsuleClick then
+                    clickCapsule()
+                end
+                for _, slotNum in ipairs(slotsToFarm) do
+                    if not Config.AutoFarmEnabled then break end
+                    task.spawn(function()
+                        executeSlotActions(slotNum, seed)
+                    end)
+                end
+            else
+                -- TRYB STANDARDOWY: Sekwencyjny z precyzyjnym czasem ActionDelay
+                for _, slotNum in ipairs(slotsToFarm) do
+                    if not Config.AutoFarmEnabled then break end
+                    executeSlotActions(slotNum, seed)
+                end
+            end
         end
-        task.wait(Config.LoopDelay)
+
+        if Config.LoopDelay > 0 then
+            task.wait(Config.LoopDelay)
+        else
+            task.wait()
+        end
     end
 end)
 
@@ -335,156 +352,151 @@ ESPFolder.Parent = (typeof(gethui) == "function" and gethui()) or CoreGui
 
 local ESPObjects = {}
 
-local function createESPForPlot(slotNum, plot)
-    local part = getPlotBasePart(plot)
-    if not part then return nil end
+local function createPlotESP(slotNum)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "PlotESP_" .. tostring(slotNum)
+    billboard.Size = UDim2.new(0, 140, 0, 46)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 600
+    billboard.Enabled = false
+    billboard.Parent = ESPFolder
 
-    local bbg = Instance.new("BillboardGui")
-    bbg.Name = "PlotESP_" .. tostring(slotNum)
-    bbg.Size = UDim2.new(0, 140, 0, 46)
-    bbg.AlwaysOnTop = true
-    bbg.MaxDistance = 600
-    bbg.Adornee = part
-    bbg.Parent = ESPFolder
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
+    frame.BackgroundTransparency = 0.3
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
 
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
-    bg.BackgroundTransparency = 0.3
-    bg.BorderSizePixel = 0
-    bg.Parent = bbg
-    Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", bg)
-    stroke.Thickness = 1
-    stroke.Color = Color3.fromRGB(80, 95, 145)
+    local uiCorner = Instance.new("UICorner", frame)
+    uiCorner.CornerRadius = UDim.new(0, 8)
 
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 18)
-    title.Position = UDim2.new(0, 0, 0, 2)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 12
-    title.TextColor3 = Color3.fromRGB(240, 245, 255)
-    title.Text = "🌱 Działka " .. tostring(slotNum)
-    title.Parent = bg
+    local uiStroke = Instance.new("UIStroke", frame)
+    uiStroke.Thickness = 1.2
+    uiStroke.Color = Color3.fromRGB(80, 95, 145)
 
-    local statusLbl = Instance.new("TextLabel")
-    statusLbl.Size = UDim2.new(1, 0, 0, 22)
-    statusLbl.Position = UDim2.new(0, 0, 0, 20)
-    statusLbl.BackgroundTransparency = 1
-    statusLbl.Font = Enum.Font.GothamMedium
-    statusLbl.TextSize = 10
-    statusLbl.TextColor3 = Color3.fromRGB(180, 190, 210)
-    statusLbl.Text = "Sprawdzanie..."
-    statusLbl.Parent = bg
+    local titleLabel = Instance.new("TextLabel", frame)
+    titleLabel.Size = UDim2.new(1, 0, 0, 18)
+    titleLabel.Position = UDim2.new(0, 0, 0, 2)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 12
+    titleLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
+    titleLabel.Text = "🌱 Działka " .. tostring(slotNum)
 
-    local hl = Instance.new("Highlight")
-    hl.Name = "PlotHL_" .. tostring(slotNum)
-    hl.Adornee = plot
-    hl.FillTransparency = 0.7
-    hl.OutlineTransparency = 0.3
-    hl.FillColor = Color3.fromRGB(99, 102, 241)
-    hl.OutlineColor = Color3.fromRGB(129, 140, 248)
-    hl.Parent = ESPFolder
+    local statusLabel = Instance.new("TextLabel", frame)
+    statusLabel.Size = UDim2.new(1, 0, 0, 22)
+    statusLabel.Position = UDim2.new(0, 0, 0, 20)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Font = Enum.Font.GothamMedium
+    statusLabel.TextSize = 10
+    statusLabel.TextColor3 = Color3.fromRGB(180, 190, 210)
+    statusLabel.Text = "Sprawdzanie..."
 
-    return {
-        Billboard = bbg,
-        StatusLabel = statusLbl,
-        TitleLabel = title,
-        Highlight = hl,
-        Plot = plot,
-        Part = part,
-        Slot = slotNum
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlotHL_" .. tostring(slotNum)
+    highlight.FillColor = Color3.fromRGB(99, 102, 241)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0.2
+    highlight.Enabled = false
+    highlight.Parent = nil
+
+    ESPObjects[slotNum] = {
+        Billboard = billboard,
+        Highlight = highlight,
+        Frame = frame,
+        Stroke = uiStroke,
+        TitleLabel = titleLabel,
+        StatusLabel = statusLabel
     }
 end
 
+for i = 1, 20 do
+    createPlotESP(i)
+end
+
 local function cleanupESP()
-    for _, obj in pairs(ESPObjects) do
-        if obj.Billboard then pcall(function() obj.Billboard:Destroy() end) end
-        if obj.Highlight then pcall(function() obj.Highlight:Destroy() end) end
+    for _, esp in pairs(ESPObjects) do
+        if esp.Billboard then
+            esp.Billboard.Enabled = false
+            esp.Billboard.Adornee = nil
+        end
+        if esp.Highlight then
+            esp.Highlight.Enabled = false
+            esp.Highlight.Adornee = nil
+            esp.Highlight.Parent = nil
+        end
     end
-    ESPObjects = {}
 end
 
 local function updateESP()
     if not Config.ESPEnabled or not _G.PS99GardenRunning then
-        if #ESPObjects > 0 or ESPFolder:FindFirstChildWhichIsA("Instance") then
-            cleanupESP()
-        end
+        cleanupESP()
         return
     end
 
-    local myPos = nil
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        myPos = LocalPlayer.Character.HumanoidRootPart.Position
-    end
+    local myChar = LocalPlayer.Character
+    local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar.PrimaryPart)
+    local myPos = myRoot and myRoot.Position
 
-    for slot = 1, 20 do
-        local slotKey = tostring(slot)
-        local isFarming = Config.FarmSlots[slotKey]
-        local shouldShow = true
-
-        if Config.ESPMode == "Tylko Farmiące" and not isFarming then
-            shouldShow = false
-        end
-
-        local obj = ESPObjects[slot]
-
-        if not shouldShow then
-            if obj then
-                if obj.Billboard then obj.Billboard.Enabled = false end
-                if obj.Highlight then obj.Highlight.Enabled = false end
+    for slotNum = 1, 20 do
+        local esp = ESPObjects[slotNum]
+        if esp then
+            local slotStr = tostring(slotNum)
+            local shouldShow = true
+            if Config.ESPMode == "Tylko Farmiące" then
+                shouldShow = (Config.FarmSlots[slotStr] == true)
             end
-        else
-            local plot = getPlotInstance(slot)
-            if plot then
-                if not obj or obj.Plot ~= plot then
-                    if obj then
-                        if obj.Billboard then pcall(function() obj.Billboard:Destroy() end) end
-                        if obj.Highlight then pcall(function() obj.Highlight:Destroy() end) end
-                    end
-                    obj = createESPForPlot(slot, plot)
-                    ESPObjects[slot] = obj
-                end
 
-                if obj then
-                    local status, stage = checkPlotStatus(plot)
+            if shouldShow then
+                local plot = getPlotInstance(slotNum)
+                local part = getPlotBasePart(plot)
+
+                if plot and part then
+                    esp.Billboard.Adornee = part
+                    esp.Billboard.Enabled = true
+
+                    local statusText, statusColor = checkPlotStatus(plot)
                     local distText = ""
-                    if Config.ESPShowDistance and myPos and obj.Part then
-                        local d = math.floor((obj.Part.Position - myPos).Magnitude)
+                    if Config.ESPShowDistance and myPos then
+                        local d = math.floor((part.Position - myPos).Magnitude)
                         distText = " [" .. tostring(d) .. "m]"
                     end
 
-                    local statusText = ""
-                    local col = Color3.fromRGB(160, 170, 190)
-                    if status == "Gotowa" then
-                        statusText = "Gotowa (" .. tostring(stage) .. ") 🌟"
-                        col = Color3.fromRGB(46, 204, 113)
-                    elseif status == "Rośnie" then
-                        statusText = "Rośnie (" .. tostring(stage or "") .. ") ⏳"
-                        col = Color3.fromRGB(241, 196, 15)
-                    else
-                        statusText = "Pusta (Gotowa do siania)"
-                        col = Color3.fromRGB(129, 140, 248)
-                    end
-
-                    obj.Billboard.Enabled = true
                     if Config.ESPShowStatus then
-                        obj.StatusLabel.Text = statusText .. distText
-                        obj.StatusLabel.TextColor3 = col
-                        obj.StatusLabel.Visible = true
+                        esp.StatusLabel.Text = statusText .. distText
+                        esp.StatusLabel.TextColor3 = statusColor
+                        esp.Stroke.Color = statusColor
+                        esp.StatusLabel.Visible = true
                     else
-                        obj.StatusLabel.Visible = false
+                        esp.StatusLabel.Visible = false
                     end
 
-                    if Config.ESPShowHighlight and obj.Highlight then
-                        obj.Highlight.Enabled = true
-                        obj.Highlight.FillColor = col
-                        obj.Highlight.OutlineColor = col
-                    elseif obj.Highlight then
-                        obj.Highlight.Enabled = false
+                    if Config.ESPShowHighlight then
+                        esp.Highlight.Adornee = plot
+                        esp.Highlight.FillColor = statusColor
+                        esp.Highlight.OutlineColor = statusColor
+                        esp.Highlight.Parent = ESPFolder
+                        esp.Highlight.Enabled = true
+                    else
+                        esp.Highlight.Enabled = false
+                        esp.Highlight.Adornee = nil
+                        esp.Highlight.Parent = nil
                     end
+                else
+                    esp.Billboard.Enabled = false
+                    esp.Billboard.Adornee = nil
+                    esp.Highlight.Enabled = false
+                    esp.Highlight.Adornee = nil
+                    esp.Highlight.Parent = nil
                 end
+            else
+                esp.Billboard.Enabled = false
+                esp.Billboard.Adornee = nil
+                esp.Highlight.Enabled = false
+                esp.Highlight.Adornee = nil
+                esp.Highlight.Parent = nil
             end
         end
     end
@@ -545,6 +557,14 @@ local ModFarm = TabGarden:CreateModule({
     end
 })
 
+ModFarm:AddToggle({
+    Name = "⚡ Tryb Turbo (Maksymalne Przyspieszenie)",
+    Default = Config.FastMode,
+    Callback = function(val)
+        Config.FastMode = val
+    end
+})
+
 ModFarm:AddDropdown({
     Name = "Rodzaj Nasiona",
     Options = {"Diamond", "Coin", "Gift", "Potion", "Enchant", "Własne"},
@@ -563,7 +583,7 @@ ModFarm:AddInput({
 })
 
 ModFarm:AddToggle({
-    Name = "1. Auto Sadzenie (Auto Plant)",
+    Name = "Krok 1: Auto Sadzenie (Auto Plant)",
     Default = Config.AutoPlant,
     Callback = function(val)
         Config.AutoPlant = val
@@ -571,7 +591,7 @@ ModFarm:AddToggle({
 })
 
 ModFarm:AddToggle({
-    Name = "2. Auto Insta-Grow (Konewka / Kapsuła)",
+    Name = "Krok 2: Auto Insta-Grow (Konewka / Kapsuła)",
     Default = Config.AutoInstaGrow,
     Callback = function(val)
         Config.AutoInstaGrow = val
@@ -579,7 +599,7 @@ ModFarm:AddToggle({
 })
 
 ModFarm:AddToggle({
-    Name = "2b. Auto Zbieranie Wody z Kapsuły",
+    Name = "Krok 2b: Auto Zbieranie Wody z Kapsuły",
     Default = Config.AutoCapsuleClick,
     Callback = function(val)
         Config.AutoCapsuleClick = val
@@ -587,7 +607,7 @@ ModFarm:AddToggle({
 })
 
 ModFarm:AddToggle({
-    Name = "2c. Zwykłe Podlewanie (Auto Water)",
+    Name = "Krok 2c: Zwykłe Podlewanie (Auto Water)",
     Default = Config.AutoWater,
     Callback = function(val)
         Config.AutoWater = val
@@ -595,7 +615,7 @@ ModFarm:AddToggle({
 })
 
 ModFarm:AddToggle({
-    Name = "3. Auto Zbieranie Plonów (Auto Claim)",
+    Name = "Krok 3: Auto Zbieranie Plonów (Auto Claim)",
     Default = Config.AutoClaim,
     Callback = function(val)
         Config.AutoClaim = val
@@ -604,25 +624,35 @@ ModFarm:AddToggle({
 
 ModFarm:AddSlider({
     Name = "Opóźnienie Akcji",
-    Min = 0.05,
-    Max = 1.5,
-    Step = 0.05,
-    Suffix = " s",
+    Range = {0, 1.0},
+    Min = 0,
+    Max = 1.0,
+    Step = 0.01,
+    Increment = 0.01,
+    Precise = true,
+    Decimals = 2,
+    Suffix = "s",
     Default = Config.ActionDelay,
+    CurrentValue = Config.ActionDelay,
     Callback = function(val)
-        Config.ActionDelay = val
+        Config.ActionDelay = tonumber(string.format("%.2f", val)) or val
     end
 })
 
 ModFarm:AddSlider({
-    Name = "Opóźnienie Pętli",
-    Min = 0.2,
+    Name = "Pauza Między Pętlami",
+    Range = {0, 5.0},
+    Min = 0,
     Max = 5.0,
-    Step = 0.1,
-    Suffix = " s",
+    Step = 0.05,
+    Increment = 0.05,
+    Precise = true,
+    Decimals = 2,
+    Suffix = "s",
     Default = Config.LoopDelay,
+    CurrentValue = Config.LoopDelay,
     Callback = function(val)
-        Config.LoopDelay = val
+        Config.LoopDelay = tonumber(string.format("%.2f", val)) or val
     end
 })
 
@@ -642,42 +672,55 @@ ModManual:AddButton({
 })
 
 ModManual:AddButton({
-    Name = "Zasadź Wszystkie Aktywne Działki",
+    Name = "Zasadź Zaznaczone Działki",
     Callback = function()
+        local slots = getSortedFarmSlots()
+        local seed = getActiveSeedName()
         task.spawn(function()
-            for s = 1, 20 do
-                if Config.FarmSlots[tostring(s)] then
-                    plantSlot(s)
-                    task.wait(Config.ActionDelay)
+            for _, s in ipairs(slots) do
+                if InvokeCustom then
+                    pcall(function()
+                        InvokeCustom:InvokeServer("FlowerGarden", "PlantSeed", s, seed)
+                        Config.Stats.Planted = Config.Stats.Planted + 1
+                    end)
                 end
+                if Config.ActionDelay > 0 then task.wait(Config.ActionDelay) end
             end
         end)
     end
 })
 
 ModManual:AddButton({
-    Name = "Użyj Insta-Grow na Aktywnych",
+    Name = "Użyj Insta-Grow na Zaznaczonych",
     Callback = function()
+        local slots = getSortedFarmSlots()
         task.spawn(function()
-            for s = 1, 20 do
-                if Config.FarmSlots[tostring(s)] then
-                    instaGrowSlot(s)
-                    task.wait(Config.ActionDelay)
+            for _, s in ipairs(slots) do
+                if Config.AutoCapsuleClick then clickCapsule() end
+                if InvokeCustom then
+                    pcall(function()
+                        InvokeCustom:InvokeServer("FlowerGarden", "InstaGrowSeed", s)
+                        Config.Stats.Grown = Config.Stats.Grown + 1
+                    end)
                 end
+                if Config.ActionDelay > 0 then task.wait(Config.ActionDelay) end
             end
         end)
     end
 })
 
 ModManual:AddButton({
-    Name = "Podlej Aktywne Działki",
+    Name = "Podlej Zaznaczone Działki",
     Callback = function()
+        local slots = getSortedFarmSlots()
         task.spawn(function()
-            for s = 1, 20 do
-                if Config.FarmSlots[tostring(s)] then
-                    waterSlot(s)
-                    task.wait(Config.ActionDelay)
+            for _, s in ipairs(slots) do
+                if InvokeCustom then
+                    pcall(function()
+                        InvokeCustom:InvokeServer("FlowerGarden", "WaterSeed", s)
+                    end)
                 end
+                if Config.ActionDelay > 0 then task.wait(Config.ActionDelay) end
             end
         end)
     end
@@ -686,10 +729,16 @@ ModManual:AddButton({
 ModManual:AddButton({
     Name = "Zbierz Wszystkie Dojrzałe Plony",
     Callback = function()
+        local slots = getSortedFarmSlots()
         task.spawn(function()
-            for s = 1, 20 do
-                harvestSlot(s)
-                task.wait(0.05)
+            for _, s in ipairs(slots) do
+                if FireCustom then
+                    pcall(function()
+                        FireCustom:FireServer("FlowerGarden", "ClaimPlant", s)
+                        Config.Stats.Harvested = Config.Stats.Harvested + 1
+                    end)
+                end
+                if Config.ActionDelay > 0 then task.wait(Config.ActionDelay) end
             end
         end)
     end
@@ -750,6 +799,30 @@ ModQuickSelect:AddButton({
             Config.FarmSlots[tostring(i)] = state
             if SlotToggleAPIs[i] and SlotToggleAPIs[i].Set then
                 SlotToggleAPIs[i]:Set(state)
+            end
+        end
+    end
+})
+
+ModQuickSelect:AddInput({
+    Name = "Wpisz Numery Działek (np. 1, 2, 5, 8)",
+    PlaceholderText = "Wpisz numery po przecinku...",
+    Callback = function(text)
+        if text and text:gsub("%s+", "") ~= "" then
+            for i = 1, 20 do
+                Config.FarmSlots[tostring(i)] = false
+                if SlotToggleAPIs[i] and SlotToggleAPIs[i].Set then
+                    SlotToggleAPIs[i]:Set(false)
+                end
+            end
+            for numStr in text:gmatch("%d+") do
+                local n = tonumber(numStr)
+                if n and n >= 1 and n <= 20 then
+                    Config.FarmSlots[tostring(n)] = true
+                    if SlotToggleAPIs[n] and SlotToggleAPIs[n].Set then
+                        SlotToggleAPIs[n]:Set(true)
+                    end
+                end
             end
         end
     end
