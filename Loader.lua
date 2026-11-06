@@ -138,16 +138,29 @@ local gameId  = game.GameId
 
 local function findGameMatch(id)
     if not id then return nil, nil, nil end
-    local numId = tonumber(id)
-    local strId = tostring(id)
-    local entry = (numId and Games[numId]) or (strId and Games[strId])
-    if entry then
-        if type(entry) == "table" then
-            return entry.folder or tostring(id), entry.name or "Game", numId or strId
-        else
-            return tostring(entry), tostring(entry), numId or strId
+    local strId = tostring(id):gsub("%s+", "")
+    local numId = tonumber(strId)
+
+    if numId and Games[numId] then
+        local entry = Games[numId]
+        return entry.folder or tostring(numId), entry.name or "Game", numId
+    end
+    if Games[strId] then
+        local entry = Games[strId]
+        return entry.folder or strId, entry.name or "Game", strId
+    end
+
+    for k, v in pairs(Games) do
+        local kStr = tostring(k):gsub("%s+", "")
+        if kStr == strId or (numId and tonumber(kStr) == numId) then
+            if type(v) == "table" then
+                return v.folder or kStr, v.name or "Game", k
+            else
+                return tostring(v), tostring(v), k
+            end
         end
     end
+
     return nil, nil, nil
 end
 
@@ -162,7 +175,7 @@ end
 -- Ścisła detekcja wyłącznie po konkretnym PlaceId (eliminuje konflikt pod-miejsc i Universe ID)
 local targetFolder, targetName, rawId = findGameMatch(placeId)
 
-print("[Loader] Inicjalizacja... PlaceId: " .. tostring(placeId) .. " | GameId: " .. tostring(gameId))
+print("[Loader] Inicjalizacja (v2.1-Halloween)... PlaceId: " .. tostring(placeId) .. " | GameId: " .. tostring(gameId))
 
 if targetFolder then
     print("[Loader] Wykryto dedykowany skrypt: " .. tostring(targetName) .. " (Folder: " .. tostring(targetFolder) .. ")")
@@ -175,7 +188,11 @@ if targetFolder then
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
-    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. ", uruchamiam Universal Suite...")
+    local registeredList = {}
+    for k, _ in pairs(Games) do
+        if type(k) == "string" then table.insert(registeredList, k) end
+    end
+    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. " (Lista gier: " .. table.concat(registeredList, ", ") .. "). Uruchamiam Universal Suite...")
     local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
         warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic Universal Suite!")
