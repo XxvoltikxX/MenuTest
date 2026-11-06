@@ -10,6 +10,8 @@ local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 if typeof(getgenv) == "function" then
     if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
     if getgenv()._VoltikTycoonScriptCleanup then pcall(getgenv()._VoltikTycoonScriptCleanup); getgenv()._VoltikTycoonScriptCleanup = nil end
+    if getgenv()._PS99GardenCleanup then pcall(getgenv()._PS99GardenCleanup); getgenv()._PS99GardenCleanup = nil end
+    if getgenv()._VoltikPS99Cleanup then pcall(getgenv()._VoltikPS99Cleanup); getgenv()._VoltikPS99Cleanup = nil end
     getgenv()._VoltikMenuModuleCache = nil
     getgenv()._VoltikMenuCache = nil
     getgenv()._VoltikToggleElement = nil
@@ -17,6 +19,8 @@ if typeof(getgenv) == "function" then
     getgenv()._VoltikIconsData = nil
     getgenv()._VoltikLibrary = nil
 end
+if _G.PS99GardenCleanup then pcall(_G.PS99GardenCleanup); _G.PS99GardenCleanup = nil end
+if _G._VoltikPS99Cleanup then pcall(_G._VoltikPS99Cleanup); _G._VoltikPS99Cleanup = nil end
 _G._VoltikMenuModuleCache = nil
 _G._VoltikMenuCache = nil
 _G._VoltikToggleElement = nil
@@ -95,10 +99,10 @@ local Games = {
     ["109949693269081"] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
     [85920622393590] = { name = "Pet Simulator X Event", folder = "85920622393590" },
     ["85920622393590"] = { name = "Pet Simulator X Event", folder = "85920622393590" },
-    [8737899170] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
-    ["8737899170"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
-    [3317771874] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
-    ["3317771874"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
+    [8737899170] = { name = "Pet Simulator 99", folder = "8737899170" },
+    ["8737899170"] = { name = "Pet Simulator 99", folder = "8737899170" },
+    [3317771874] = { name = "Pet Simulator 99", folder = "8737899170" },
+    ["3317771874"] = { name = "Pet Simulator 99", folder = "8737899170" },
 }
 
 -- // ==========================================================================
