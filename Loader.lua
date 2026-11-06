@@ -12,6 +12,7 @@ if typeof(getgenv) == "function" then
     if getgenv()._VoltikTycoonScriptCleanup then pcall(getgenv()._VoltikTycoonScriptCleanup); getgenv()._VoltikTycoonScriptCleanup = nil end
     if getgenv()._PS99GardenCleanup then pcall(getgenv()._PS99GardenCleanup); getgenv()._PS99GardenCleanup = nil end
     if getgenv()._VoltikPS99Cleanup then pcall(getgenv()._VoltikPS99Cleanup); getgenv()._VoltikPS99Cleanup = nil end
+    if getgenv()._VoltikMenuTestGui then pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end); getgenv()._VoltikMenuTestGui = nil end
     getgenv()._VoltikMenuModuleCache = nil
     getgenv()._VoltikMenuCache = nil
     getgenv()._VoltikToggleElement = nil
@@ -27,6 +28,28 @@ _G._VoltikToggleElement = nil
 _G._VoltikIconsModule = nil
 _G._VoltikIconsData = nil
 _G._VoltikLibrary = nil
+
+-- Twarde czyszczenie wszelkich poprzednich GUI w CoreGui i PlayerGui (eliminuje nakładanie się zakładek)
+pcall(function()
+    local CoreGui = game:GetService("CoreGui")
+    local Players = game:GetService("Players")
+    local lp = Players.LocalPlayer
+    local pg = lp and lp:FindFirstChild("PlayerGui")
+    local locations = { CoreGui, pg }
+    for _, loc in ipairs(locations) do
+        if loc then
+            for _, child in ipairs(loc:GetChildren()) do
+                if child:IsA("ScreenGui") then
+                    if child.Name:find("VoltikMenu") or child.Name:find("PetHub") or child.Name:find("Universal")
+                       or child:GetAttribute("VoltikMenuInstance") or child:GetAttribute("MenuTest_Voltik")
+                       or child:GetAttribute("MenuOwner") == "XxvoltikxX" then
+                        pcall(function() child:Destroy() end)
+                    end
+                end
+            end
+        end
+    end
+end)
 
 -- Funkcja bezpiecznego pobierania/ładowania kodu
 local function safeExecute(relativePath, remoteUrl)
@@ -99,10 +122,8 @@ local Games = {
     ["109949693269081"] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
     [85920622393590] = { name = "Pet Simulator X Event", folder = "85920622393590" },
     ["85920622393590"] = { name = "Pet Simulator X Event", folder = "85920622393590" },
-    [8737899170] = { name = "Pet Simulator 99", folder = "8737899170" },
-    ["8737899170"] = { name = "Pet Simulator 99", folder = "8737899170" },
-    [3317771874] = { name = "Pet Simulator 99", folder = "8737899170" },
-    ["3317771874"] = { name = "Pet Simulator 99", folder = "8737899170" },
+    [8737899170] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
+    ["8737899170"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
 }
 
 -- // ==========================================================================
@@ -134,10 +155,8 @@ if forceUniversal then
     return
 end
 
+-- Ścisła detekcja wyłącznie po konkretnym PlaceId (eliminuje konflikt pod-miejsc i Universe ID)
 local targetFolder, targetName, rawId = findGameMatch(placeId)
-if not targetFolder then
-    targetFolder, targetName, rawId = findGameMatch(gameId)
-end
 
 print("[Loader] Inicjalizacja... PlaceId: " .. tostring(placeId) .. " | GameId: " .. tostring(gameId))
 
@@ -152,7 +171,7 @@ if targetFolder then
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
-    print("[Loader] Brak dedykowanego skryptu dla ID: " .. tostring(placeId) .. ", uruchamiam Universal Suite...")
+    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. ", uruchamiam Universal Suite...")
     local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
         warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic Universal Suite!")

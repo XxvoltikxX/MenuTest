@@ -563,32 +563,26 @@ local function createLoadingIndicator(title, isMobile, config)
             return false, nil
         end
 
-        -- 2. Pet Simulator 99 / Pet Simulator X
-        if cfgGameId == "8737899170" or placeId == "8737899170" or gameId == "3317771874" or cfgGameId == "3317771874"
-           or cfgTitle:lower():find("pet simulator 99") or cfgName:lower():find("pet simulator 99") then
-            return true, "Pet Simulator 99"
-        end
-
-        if cfgGameId == "85920622393590" or placeId == "85920622393590" or gameId == "85920622393590"
-           or cfgTitle:lower():find("pet simulator x") then
-            return true, "PetSimulatorX (Event)"
-        end
-
-        -- 3. Tycoon, but one dropper
-        if cfgGameId == "109949693269081" or placeId == "109949693269081" or gameId == "109949693269081"
-           or cfgTitle:lower():find("tycoon") then
+        -- 2. Dedykowane gry dopasowywane po konkretnym ID (PlaceId/GameId w configu) lub tytule
+        if cfgGameId == "109949693269081" or placeId == "109949693269081" or cfgTitle:lower():find("tycoon") then
             return true, "[UPD 3.1] Tycoon, but one dropper"
         end
 
-        -- 4. Tabela gier
+        if cfgGameId == "85920622393590" or placeId == "85920622393590" or cfgTitle:lower():find("pet simulator x") then
+            return true, "PetSimulatorX (Event)"
+        end
+
+        if cfgGameId == "8737899170" or placeId == "8737899170" or cfgTitle:lower():find("garden") then
+            return true, "Pet Simulator 99 (Garden Event)"
+        end
+
+        -- 3. Tabela znanych gier (ściśle po PlaceId oraz cfgGameId)
         local KnownGames = {
             ["85920622393590"] = "PetSimulatorX (Event)",
             ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
-            ["8737899170"] = "Pet Simulator 99",
-            ["3317771874"] = "Pet Simulator 99",
+            ["8737899170"] = "Pet Simulator 99 (Garden Event)",
         }
         if KnownGames[placeId] then return true, KnownGames[placeId] end
-        if KnownGames[gameId] then return true, KnownGames[gameId] end
         if KnownGames[cfgGameId] then return true, KnownGames[cfgGameId] end
 
         -- 5. Jeśli tytuł jest konkretny i inny niż domyślny
