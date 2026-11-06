@@ -576,11 +576,16 @@ local function createLoadingIndicator(title, isMobile, config)
             return true, "Pet Simulator 99 (Garden Event)"
         end
 
+        if cfgGameId == "16498369169" or placeId == "16498369169" or cfgTitle:lower():find("hallowen") or cfgTitle:lower():find("halloween") then
+            return true, "Pet sim 99 event hallowen"
+        end
+
         -- 3. Tabela znanych gier (ściśle po PlaceId oraz cfgGameId)
         local KnownGames = {
             ["85920622393590"] = "PetSimulatorX (Event)",
             ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
             ["8737899170"] = "Pet Simulator 99 (Garden Event)",
+            ["16498369169"] = "Pet sim 99 event hallowen",
         }
         if KnownGames[placeId] then return true, KnownGames[placeId] end
         if KnownGames[cfgGameId] then return true, KnownGames[cfgGameId] end
