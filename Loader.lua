@@ -82,12 +82,12 @@ local function safeExecute(relativePath, remoteUrl)
         end
     end
 
-    -- 2. Pobieranie z GitHub / jsDelivr HttpGet z ominięciem cache CDN
+    -- 2. Pobieranie z GitHub HttpGet z ominięciem cache CDN (zawsze świeży raw GitHub)
     local urlList = {
-        "https://cdn.jsdelivr.net/gh/XxvoltikxX/MenuTest@main/" .. relativePath,
         remoteUrl,
+        "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/main/" .. relativePath,
         remoteUrl:gsub("/refs/heads/main/", "/main/"),
-        "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/main/" .. relativePath
+        "https://cdn.jsdelivr.net/gh/XxvoltikxX/MenuTest@main/" .. relativePath
     }
 
     for _, targetUrl in ipairs(urlList) do
