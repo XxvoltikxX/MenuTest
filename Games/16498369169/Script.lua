@@ -174,10 +174,12 @@ local State = {
     OrbitRange = 1000,
     OrbitInterval = 0.1,
 
-    -- 4. Player Speed
+    -- 4. Player Speed & Jump
     PlayerSpeedEnabled = false,
     PlayerSpeedMode = "Legit",
     PlayerSpeedValue = 50,
+    InfiniteJumpEnabled = false,
+    JumpSpeedValue = 75,
 }
 
 -- // ==========================================================================
@@ -681,7 +683,10 @@ local function stopSpeedConnections()
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 16 end
+        if hum then
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
+        end
     end)
 end
 
@@ -689,7 +694,6 @@ local function initSpeedConnections()
     if not speedHeartbeatConn then
         speedHeartbeatConn = RunService.Heartbeat:Connect(function()
             if not ScriptRunning then return end
-            if not State.PlayerSpeedEnabled then return end
 
             local char = LocalPlayer.Character
             if not char then return end
@@ -697,24 +701,40 @@ local function initSpeedConnections()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hrp or not hum then return end
 
-            local targetSpeed = tonumber(State.PlayerSpeedValue or 50) or 50
-            local mode = State.PlayerSpeedMode or "Legit"
-
-            if mode == "Normal" then
-                if hum.WalkSpeed ~= targetSpeed then
-                    hum.WalkSpeed = targetSpeed
-                end
-            elseif mode == "Legit" or mode == "HVH" then
-                local moving, moveDir = getMoveDirection()
-                if mode == "HVH" and (UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum:GetState() == Enum.HumanoidStateType.Freefall) then
-                    hum.Jump = true
-                end
-
-                if moving then
-                    local currentY = hrp.AssemblyLinearVelocity and hrp.AssemblyLinearVelocity.Y or hrp.Velocity.Y
-                    local newVel = Vector3.new(moveDir.X * targetSpeed, currentY, moveDir.Z * targetSpeed)
+            -- 1. Infinite Jump / Ciągły wyskok do góry przy trzymaniu Spacji
+            if State.InfiniteJumpEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                local upSpeed = tonumber(State.JumpSpeedValue or 75) or 75
+                local curY = hrp.AssemblyLinearVelocity and hrp.AssemblyLinearVelocity.Y or hrp.Velocity.Y
+                if curY < upSpeed * 0.85 then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                    local curVel = hrp.AssemblyLinearVelocity or hrp.Velocity
+                    local newVel = Vector3.new(curVel.X, upSpeed, curVel.Z)
                     pcall(function() hrp.AssemblyLinearVelocity = newVel end)
                     pcall(function() hrp.Velocity = newVel end)
+                end
+            end
+
+            -- 2. Prędkość Chodzenia (Player Speed)
+            if State.PlayerSpeedEnabled then
+                local targetSpeed = tonumber(State.PlayerSpeedValue or 50) or 50
+                local mode = State.PlayerSpeedMode or "Legit"
+
+                if mode == "Normal" then
+                    if hum.WalkSpeed ~= targetSpeed then
+                        hum.WalkSpeed = targetSpeed
+                    end
+                elseif mode == "Legit" or mode == "HVH" then
+                    local moving, moveDir = getMoveDirection()
+                    if mode == "HVH" and (UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum:GetState() == Enum.HumanoidStateType.Freefall) then
+                        hum.Jump = true
+                    end
+
+                    if moving then
+                        local currentY = hrp.AssemblyLinearVelocity and hrp.AssemblyLinearVelocity.Y or hrp.Velocity.Y
+                        local newVel = Vector3.new(moveDir.X * targetSpeed, currentY, moveDir.Z * targetSpeed)
+                        pcall(function() hrp.AssemblyLinearVelocity = newVel end)
+                        pcall(function() hrp.Velocity = newVel end)
+                    end
                 end
             end
         end)
@@ -747,12 +767,35 @@ end
 
 initSpeedConnections()
 
+-- Nasłuchiwacz JumpRequest dla natychmiastowego Infinite Jump w powietrzu
+local jumpRequestConn = UserInputService.JumpRequest:Connect(function()
+    if not ScriptRunning then return end
+    if State.InfiniteJumpEnabled then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            local upSpeed = tonumber(State.JumpSpeedValue or 75) or 75
+            local curVel = hrp.AssemblyLinearVelocity or hrp.Velocity
+            local newVel = Vector3.new(curVel.X, upSpeed, curVel.Z)
+            pcall(function() hrp.AssemblyLinearVelocity = newVel end)
+            pcall(function() hrp.Velocity = newVel end)
+        end
+    end
+end)
+table.insert(ScriptConnections, jumpRequestConn)
+
 LocalPlayer.CharacterAdded:Connect(function(newChar)
-    if State.PlayerSpeedEnabled then
-        task.wait(0.2)
-        local hum = newChar:WaitForChild("Humanoid", 3)
-        if hum and (State.PlayerSpeedMode == "Normal") then
+    task.wait(0.2)
+    local hum = newChar:WaitForChild("Humanoid", 3)
+    if hum then
+        if State.PlayerSpeedEnabled and (State.PlayerSpeedMode == "Normal") then
             hum.WalkSpeed = State.PlayerSpeedValue or 50
+        end
+        if State.InfiniteJumpEnabled then
+            hum.UseJumpPower = true
+            hum.JumpPower = tonumber(State.JumpSpeedValue or 75) or 75
         end
     end
 end)
@@ -869,7 +912,16 @@ local function doCleanup()
     State.OrbitCollectEnabled = false
     State.PlayerSpeedEnabled = false
     State.PetSpeedEnabled = false
+    State.InfiniteJumpEnabled = false
     State.CurrentTarget = nil
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
+        end
+    end)
 end
 
 if typeof(getgenv) == "function" then
@@ -1126,6 +1178,52 @@ SpeedModule:AddSlider({
                 local char = LocalPlayer.Character
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if hum then hum.WalkSpeed = val end
+            end)
+        end
+    end
+})
+
+SpeedModule:AddToggle({
+    Name = "Infinite Jump (Skakanie w Powietrzu / do Góry)",
+    Default = false,
+    CurrentValue = false,
+    Flag = "Halloween_InfiniteJump",
+    Callback = function(val)
+        State.InfiniteJumpEnabled = val
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                if val then
+                    hum.UseJumpPower = true
+                    hum.JumpPower = tonumber(State.JumpSpeedValue or 75) or 75
+                else
+                    hum.JumpPower = 50
+                end
+            end
+        end)
+    end
+})
+
+SpeedModule:AddSlider({
+    Name = "Jump Speed (Siła Wyskoku do Góry)",
+    Range = { 30, 350 },
+    CurrentValue = 75,
+    Min = 30,
+    Max = 350,
+    Default = 75,
+    Suffix = " Studs/s",
+    Flag = "Halloween_JumpSpeedVal",
+    Callback = function(val)
+        State.JumpSpeedValue = val
+        if State.InfiniteJumpEnabled then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.UseJumpPower = true
+                    hum.JumpPower = val
+                end
             end)
         end
     end
