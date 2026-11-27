@@ -170,7 +170,7 @@ print(Window:GetMenuKeybind()) -- "K"
 - **Visuals**: ESP, Tracers, Nametag, Head ESP (kolory + rozmiar).
 - **Combat**:
   - **Aimbot** — bind aktywacji, tryb `Toggle` / `Hold`, cel `Head` / `Body`,
-    suwaki **Czułość** i **Intensywność** (tempo i siła obrotu kamery — płynniej i trudniej do wykrycia),
+    suwaki **Czułość** i **Intensywność** (tempo i siła ruchu myszy — płynniej i trudniej do wykrycia),
     opcjonalny **Jitter** (mikro-drgania imitujące rękę).
   - **FOV** — promień obszaru wyszukiwania celu (40–600 px), kolor i podgląd okręgu.
 - **Movement**: WalkSpeed z trybami `Velocity` / `CFrame` i suwakiem prędkości.
