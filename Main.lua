@@ -1,5 +1,11 @@
 local MenuLib = {}
 
+-- Cisza w produkcji: komunikaty nie zostawiają sygnatur w LogService.
+local DEV = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+local function warn(...)
+    if DEV then print(...) end
+end
+
 -- // SERWISY
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -8,20 +14,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-
-local ProtectedLocation = nil
-pcall(function() ProtectedLocation = CoreGui end)
-if not ProtectedLocation then
-    ProtectedLocation = PlayerGui
-end
-
--- Automatyczne czyszczenie poprzedniej sesji menu i skryptów (podpisane pod Voltik)
-if typeof(getgenv) == "function" then
-    if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
-    if getgenv()._VoltikMenuTestGui then pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end); getgenv()._VoltikMenuTestGui = nil end
-end
-if _G._VoltikMenuCleanup then pcall(_G._VoltikMenuCleanup); _G._VoltikMenuCleanup = nil end
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
 local gamesBaseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Games/"
@@ -110,6 +102,16 @@ local function safeLoadUrl(url, fallbackValue)
     return result
 end
 
+-- // STEALTH — ukrywanie GUI (gethui / CoreGui, losowe nazwy, ochrona)
+local Stealth = safeLoadUrl(baseUrl .. "Stealth.lua", nil)
+if type(Stealth) ~= "table" then Stealth = nil end
+MenuLib.Stealth = Stealth
+
+-- // PROTECT KICK — blokada wyrzucania z gry (kategoria w panelu wyboru gier)
+local ProtectKick = safeLoadUrl(baseUrl .. "ProtectKick.lua", nil)
+if type(ProtectKick) ~= "table" then ProtectKick = nil end
+MenuLib.ProtectKick = ProtectKick
+
 -- Bezpieczna (no-op) wersja konstruktora elementu używana jako fallback
 local function dummyElement()
     return {}
@@ -184,18 +186,17 @@ end
 -- // EKRAN INICJALIZACJI: PŁYNNA ANIMACJA LUMINAQHUB (VISIONOS GLASS EMBLEM)
 -- // ============================================================
 local function createLoadingIndicator(title, isMobile, config)
-    local screenParent
-    pcall(function() screenParent = CoreGui end)
-    if not screenParent then screenParent = PlayerGui end
-
-    local loaderGui = Instance.new("ScreenGui")
-    loaderGui.Name = "LuminaqHUB_LoaderSplash"
-    loaderGui:SetAttribute("MenuLoaderIndicator", true)
-    loaderGui.ResetOnSpawn = false
+    local loaderGui
+    if Stealth then
+        loaderGui = Stealth.NewScreenGui({ DisplayOrder = 999999, IgnoreGuiInset = true })
+    else
+        loaderGui = Instance.new("ScreenGui")
+        loaderGui.Name = tostring(math.random(1000000, 9999999))
+        loaderGui.ResetOnSpawn = false
+        pcall(function() loaderGui.Parent = CoreGui end)
+    end
     loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     loaderGui.DisplayOrder = 999999
-    pcall(function() loaderGui.IgnoreGuiInset = true end)
-    pcall(function() loaderGui.Parent = screenParent end)
 
     -- Ciemne tło winiety kinowej (Cinematic Glass Backdrop)
     local Backdrop = Instance.new("Frame")
@@ -209,7 +210,7 @@ local function createLoadingIndicator(title, isMobile, config)
 
     -- Główna karta Splash LuminaqHUB (Nowoczesne szkło VisionOS)
     local Splash = Instance.new("Frame")
-    Splash.Name = "LuminaqHUB_Splash"
+    Splash.Name = "Splash"
     Splash.Size = UDim2.new(0, 360, 0, 215)
     Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
     Splash.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -717,9 +718,17 @@ function MenuLib:CreateWindow(options)
     local Config = options or {}
     local rawName = tostring(Config.Name or "Menu")
     local Name   = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
-    local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "LuminaqHUB")
+    local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "0")
     local startTime = os.clock()
     local isMobile = isMobileDevice(Config)
+
+    -- Usuń poprzednie okno (bez skanowania PlayerGui/CoreGui i bez sygnatur).
+    local store = Stealth and Stealth.Store and Stealth.Store() or nil
+    if store then
+        if type(store.windowCleanup) == "function" then pcall(store.windowCleanup) end
+        if store.windowGui then pcall(function() store.windowGui:Destroy() end) end
+        store.windowCleanup, store.windowGui = nil, nil
+    end
 
     -- Uruchomienie wskaźnika procesu ładowania z przekazaniem konfiguracji gry
     local loader = createLoadingIndicator(Name, isMobile, Config)
@@ -735,10 +744,9 @@ function MenuLib:CreateWindow(options)
         CustomCleanups = {}
     end
 
-    if typeof(getgenv) == "function" then
-        getgenv()._VoltikMenuCleanup = Cleanup
+    if store then
+        store.windowCleanup = Cleanup
     end
-    _G._VoltikMenuCleanup = Cleanup
 
     -- Szybkie współbieżne pobieranie brakujących plików w pamięci
     local preloadList = {
@@ -805,40 +813,7 @@ function MenuLib:CreateWindow(options)
     end
     loader:Update(0.9, "Inicjalizacja UI...")
 
-    -- USUWANIE STAREGO MENU I ODŁĄCZANIE POPRZEDNICH ZDARZEŃ (TYLKO DLA MENU VOLTIK)
-    local myOwnerTag = "XxvoltikxX"
-    local menuId = (Config and Config.MenuId) or "Voltik_MenuTest"
-    if typeof(getgenv) == "function" and getgenv()._VoltikMenuCleanup then
-        pcall(getgenv()._VoltikMenuCleanup)
-        getgenv()._VoltikMenuCleanup = nil
-    end
-    if _G._VoltikMenuCleanup then
-        pcall(_G._VoltikMenuCleanup)
-        _G._VoltikMenuCleanup = nil
-    end
-
-    local searchContainers = {}
-    if ProtectedLocation then table.insert(searchContainers, ProtectedLocation) end
-    pcall(function() table.insert(searchContainers, CoreGui) end)
-    pcall(function() table.insert(searchContainers, PlayerGui) end)
-
-    for _, container in ipairs(searchContainers) do
-        if container then
-            for _, child in ipairs(container:GetChildren()) do
-                if child:IsA("ScreenGui") and child ~= loaderGui and not child:GetAttribute("MenuLoaderIndicator") then
-                    local isVoltikDuplicate = (child:GetAttribute("MenuOwner") == myOwnerTag)
-                        or (child:GetAttribute("VoltikMenuInstance") == true)
-                        or (child:GetAttribute("MenuTest_Voltik") == true)
-                        or (menuId and menuId ~= "MenuInstance" and child:GetAttribute(menuId) == true)
-                        or (typeof(getgenv) == "function" and child == getgenv()._VoltikMenuTestGui)
-
-                    if isVoltikDuplicate then
-                        pcall(function() child:Destroy() end)
-                    end
-                end
-            end
-        end
-    end
+    -- Poprzednie okno zostało już usunięte przez magazyn sesji (bez skanowania GUI).
 
     -- FOLDERY I MOTYWY
     local mainFolder        = Name
@@ -934,19 +909,24 @@ function MenuLib:CreateWindow(options)
         Tittle         = Config.Tittle   or "",
         TittlePos      = Config.TittlePos or "Left",
         Theme          = themeColors,
-        MenuId         = menuId,
+        MenuId         = tostring(Config.MenuId or "0"),
         GameId         = GameId,
         GenerateID     = function() return MenuLib:GenerateID() end,
         MenuConfig     = menuConfig,
         SaveMenuConfig = saveMenuConfig,
         TestMobile     = Config.TestMobile or Config.Mobile or isMobile,
         IsMobile       = isMobile,
+        Stealth        = Stealth,
     })
 
-    -- Upewnij się, że ScreenGui jest bezpiecznie podpięty do ProtectedLocation
-    if not UI.ScreenGui.Parent or UI.ScreenGui.Parent ~= ProtectedLocation then
-        pcall(function() UI.ScreenGui.Parent = ProtectedLocation end)
+    -- ScreenGui jest już podpięty do ukrytego kontenera (gethui/CoreGui).
+    if Stealth then
+        local hidden = Stealth.GetHiddenParent()
+        if hidden and UI.ScreenGui.Parent ~= hidden then
+            pcall(function() UI.ScreenGui.Parent = hidden end)
+        end
     end
+    if store then store.windowGui = UI.ScreenGui end
     UI.ScreenGui.Destroying:Connect(Cleanup)
 
     -- LOGIKA TOGGLE MENU I KEYBINDU
@@ -1337,27 +1317,19 @@ end
 -- // ============================================================
 function MenuLib:CreateExplorer(options)
     local Config = options or {}
-    local rawName = tostring(Config.Name or "LuminaqHUB")
+    local rawName = tostring(Config.Name or "Menu")
     local Name = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
     local startTime = os.clock()
     local isMobile = isMobileDevice(Config)
 
     local loader = createLoadingIndicator(Name, isMobile, Config)
 
-    -- Usuń poprzednią sesję explorera oraz stare okno
-    if typeof(getgenv) == "function" then
-        if getgenv()._LuminaqExplorerCleanup then
-            pcall(getgenv()._LuminaqExplorerCleanup)
-            getgenv()._LuminaqExplorerCleanup = nil
-        end
-        if getgenv()._VoltikMenuCleanup then
-            pcall(getgenv()._VoltikMenuCleanup)
-            getgenv()._VoltikMenuCleanup = nil
-        end
-    end
-    if _G._VoltikMenuCleanup then
-        pcall(_G._VoltikMenuCleanup)
-        _G._VoltikMenuCleanup = nil
+    -- Usuń poprzednią sesję explorera (magazyn sesji, bez skanowania GUI).
+    local store = Stealth and Stealth.Store and Stealth.Store() or nil
+    if store then
+        if type(store.explorerCleanup) == "function" then pcall(store.explorerCleanup) end
+        if store.explorerGui then pcall(function() store.explorerGui:Destroy() end) end
+        store.explorerCleanup, store.explorerGui = nil, nil
     end
 
     loader:Update(0.35, "Pobieranie silnika...")
@@ -1373,6 +1345,25 @@ function MenuLib:CreateExplorer(options)
         return nil
     end
 
+    -- // KATEGORIA "PROTECT KICK" — domyślnie przełącznik Strike Force.
+    -- // Wpis można nadpisać własną listą przez Config.Protections.
+    local Protections = Config.Protections
+    if Protections == nil and ProtectKick then
+        Protections = {
+            {
+                Id          = "StrikeForce",
+                Name        = "Strike Force",
+                Description = "Blokuje Kick w grze Strike Force",
+                OnToggle    = function(state)
+                    if state then
+                        return ProtectKick.Enable()
+                    end
+                    return ProtectKick.Disable()
+                end,
+            },
+        }
+    end
+
     local createOk, ExplorerAPI = pcall(function()
         return ExplorerModule:Create({
             Name            = Name,
@@ -1381,6 +1372,8 @@ function MenuLib:CreateExplorer(options)
             Icons           = IconsModule,
             ToggleUIKeybind = Config.ToggleUIKeybind or "K",
             OnCleanup       = Config.OnCleanup,
+            Stealth         = Stealth,
+            Protections     = Protections,
         })
     end)
 
@@ -1392,10 +1385,9 @@ function MenuLib:CreateExplorer(options)
         return nil
     end
 
-    if typeof(getgenv) == "function" then
-        getgenv()._VoltikMenuCleanup = ExplorerAPI.Cleanup
+    if store then
+        store.explorerCleanup = ExplorerAPI.Cleanup
     end
-    _G._VoltikMenuCleanup = ExplorerAPI.Cleanup
 
     pcall(function()
         loader:Done(string.format("%.2fs", os.clock() - startTime), Config.ToggleUIKeybind or "K", function()

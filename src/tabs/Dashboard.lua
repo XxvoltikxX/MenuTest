@@ -583,13 +583,23 @@ function Dashboard:Render(UI, order, passedIcons)
 
     local espActive = false
     local espFolder = nil
+    -- Losowe nazwy: bez sygnatur widocznych dla skanerów gry.
+    local ESP_FOLDER_NAME = "f" .. tostring(math.random(100000, 999999))
+    local ESP_HIGHLIGHT_NAME = "h" .. tostring(math.random(100000, 999999))
     createQuickToggle("Player ESP", "eye", "H", function(state)
         espActive = state
         if state then
             if not espFolder then
                 espFolder = Instance.new("Folder")
-                espFolder.Name = "MenuTest_ESP_Folder"
-                pcall(function() espFolder.Parent = game:GetService("CoreGui") end)
+                espFolder.Name = ESP_FOLDER_NAME
+                local hiddenParent
+                pcall(function()
+                    if type(gethui) == "function" then hiddenParent = gethui() end
+                end)
+                if not hiddenParent then
+                    pcall(function() hiddenParent = game:GetService("CoreGui") end)
+                end
+                if hiddenParent then espFolder.Parent = hiddenParent end
                 if not espFolder.Parent then espFolder.Parent = workspace end
             end
             local function addBox(player)
@@ -598,9 +608,9 @@ function Dashboard:Render(UI, order, passedIcons)
                     while espActive and player and player.Parent do
                         local char = player.Character
                         local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        if hrp and not hrp:FindFirstChild("MenuTest_Highlight") then
+                        if hrp and not hrp:FindFirstChild(ESP_HIGHLIGHT_NAME) then
                             local hl = Instance.new("Highlight")
-                            hl.Name = "MenuTest_Highlight"
+                            hl.Name = ESP_HIGHLIGHT_NAME
                             hl.FillColor = Color3.fromRGB(99, 102, 241)
                             hl.FillTransparency = 0.5
                             hl.OutlineColor = Color3.fromRGB(255, 255, 255)
@@ -619,7 +629,7 @@ function Dashboard:Render(UI, order, passedIcons)
             for _, p in ipairs(Players:GetPlayers()) do
                 local c = p.Character
                 if c then
-                    local hl = c:FindFirstChild("MenuTest_Highlight", true)
+                    local hl = c:FindFirstChild(ESP_HIGHLIGHT_NAME, true)
                     if hl then hl:Destroy() end
                 end
             end

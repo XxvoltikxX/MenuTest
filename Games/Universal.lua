@@ -33,6 +33,15 @@ local LocalPlayer = Players.LocalPlayer
 -- // ==========================================================================
 local Games = {
     {
+        Id          = "StrikeForce",
+        Name        = "Strike Force",
+        Description = "Pierwsza gra — menu Universal + Protect Kick (blokada wyrzucania z gry)",
+        Icon        = "shield",
+        Folder      = "Universal",
+        Tags        = { "fps", "protect", "bypass" },
+        Author      = "XxvoltikxX",
+    },
+    {
         Id          = "Universal",
         Name        = "Universal",
         Description = "ESP, Tracers, Nametag, Head ESP, Aimbot, FOV, WalkSpeed i ustawienia",

@@ -1,5 +1,11 @@
 local Window = {}
 
+-- Cisza w produkcji: komunikaty nie zostawiają sygnatur w LogService.
+local DEV = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+local function warn(...)
+    if DEV then print(...) end
+end
+
 -- Serwisy
 local UserInputService = game:GetService("UserInputService")
 local RunService       = game:GetService("RunService")
@@ -311,7 +317,7 @@ function Window:Create(config)
     UI.SelectedTab = nil
     UI.MenuConfig     = config.MenuConfig
     UI.SaveMenuConfig = config.SaveMenuConfig
-    UI.GameId         = tostring(config.GameId or "LuminaqHUB")
+    UI.GameId         = tostring(config.GameId or "0")
 
     -- // THEME MANAGER
     local ThemeManager = { Elements = {}, CurrentTheme = config.Theme or {}, _callbacks = {} }
@@ -403,64 +409,29 @@ function Window:Create(config)
     UI.IsMobile = isMobile
     UI.IsTouch = isTouch or isMobile
 
-    local ProtectedLocation
-    pcall(function() ProtectedLocation = CoreGui end)
-    if not ProtectedLocation then
-        ProtectedLocation = Players.LocalPlayer:WaitForChild("PlayerGui")
+    local Stealth = config.Stealth
+
+    -- ScreenGui w ukrytym kontenerze (gethui/CoreGui) z losową nazwą.
+    local ScreenGui
+    if Stealth and type(Stealth.NewScreenGui) == "function" then
+        ScreenGui = Stealth.NewScreenGui({ DisplayOrder = 10 })
+    else
+        ScreenGui = Instance.new("ScreenGui")
+        ScreenGui.Name = tostring(math.random(1000000, 9999999))
+        ScreenGui.ResetOnSpawn = false
+        pcall(function() ScreenGui.Parent = CoreGui end)
     end
-
-    -- Usunięcie istniejącego ScreenGui przed stworzeniem nowego (wyłącznie instancji Menu Voltik)
-    if typeof(getgenv) == "function" and getgenv()._VoltikMenuTestGui then
-        pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end)
-        getgenv()._VoltikMenuTestGui = nil
-    end
-
-    local searchContainers = {}
-    pcall(function() table.insert(searchContainers, CoreGui) end)
-    pcall(function()
-        local lp = Players.LocalPlayer
-        if lp and lp:FindFirstChild("PlayerGui") then
-            table.insert(searchContainers, lp.PlayerGui)
-        end
-    end)
-
-    local myOwnerTag = "XxvoltikxX"
-    local myMenuId = (config and config.MenuId) or "Voltik_MenuTest"
-
-    for _, container in ipairs(searchContainers) do
-        if container then
-            for _, child in ipairs(container:GetChildren()) do
-                if child:IsA("ScreenGui") and not child:GetAttribute("MenuLoaderIndicator") then
-                    -- Wykrywamy wyłącznie dublikaty należące do naszego menu Voltik (nie niszczymy innych menu ani menu znajomych)
-                    local isVoltikDuplicate = (child:GetAttribute("MenuOwner") == myOwnerTag)
-                        or (child:GetAttribute("VoltikMenuInstance") == true)
-                        or (child:GetAttribute("MenuTest_Voltik") == true)
-                        or (myMenuId and myMenuId ~= "MenuInstance" and child:GetAttribute(myMenuId) == true)
-                        or (typeof(getgenv) == "function" and child == getgenv()._VoltikMenuTestGui)
-
-                    if isVoltikDuplicate then
-                        pcall(function() child:Destroy() end)
-                    end
-                end
-            end
-        end
-    end
-
-    -- ScreenGui z unikalnym podpisem i zabezpieczeniem przed skanerami dublikacji innych baz menu
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "LuminaqHUB_" .. (config.GenerateID and config.GenerateID() or tostring(math.random(100000, 999999)))
-    ScreenGui:SetAttribute("MenuOwner", myOwnerTag)
-    ScreenGui:SetAttribute("VoltikMenuInstance", true)
-    ScreenGui:SetAttribute("MenuTest_Voltik", true)
-    ScreenGui:SetAttribute(myMenuId, true)
-    ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.DisplayOrder = 10
-    ScreenGui.Parent = ProtectedLocation
     UI.ScreenGui = ScreenGui
 
-    if typeof(getgenv) == "function" then
-        getgenv()._VoltikMenuTestGui = ScreenGui
+    local store = Stealth and Stealth.Store and Stealth.Store() or nil
+    if store then
+        if type(store.windowCleanup) == "function" then pcall(store.windowCleanup) end
+        if store.windowGui and store.windowGui ~= ScreenGui then
+            pcall(function() store.windowGui:Destroy() end)
+        end
+        store.windowGui = ScreenGui
     end
 
     -- Dynamiczny rozmiar początkowy dopasowany do ekranu (860x560 - cyber-command hub)
@@ -478,8 +449,7 @@ function Window:Create(config)
 
     -- MainFrame (Apple VisionOS Liquid Glass Shell - podpisany pod Voltik)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "VoltikMainFrame"
-    MainFrame:SetAttribute("MenuOwner", myOwnerTag)
+    MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, defaultW, 0, defaultH)
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)

@@ -163,7 +163,10 @@ Window:SetMenuKeybind("K")
 print(Window:GetMenuKeybind()) -- "K"
 ```
 
-### Pierwsza gra — Universal
+### Gry: Strike Force (pierwsza) i Universal
+
+**Strike Force** to pierwsza karta w panelu — korzysta z tego samego skryptu co Universal
+(`Folder = "Universal"`) i jest objęta przełącznikiem **Protect Kick**.
 
 `Games/Universal/Script.lua` to kompletny przykład menu gry:
 
@@ -175,6 +178,59 @@ print(Window:GetMenuKeybind()) -- "K"
   - **FOV** — promień obszaru wyszukiwania celu (40–600 px), kolor i podgląd okręgu.
 - **Movement**: WalkSpeed z trybami `Velocity` / `CFrame` i suwakiem prędkości.
 - **Settings**: bind menu, tryb tła (`Pictures` / `GIF`), wygląd, przezroczystość.
+
+### Ukrywanie GUI (Stealth)
+
+`src/Stealth.lua` ogranicza wykrywanie menu po stronie klienta:
+
+- **`gethui()`** (jeśli executor go udostępnia) → `CoreGui`; **nigdy `PlayerGui`**, gdzie gra najczęściej skanuje GUI.
+- **`protect_gui` / `syn.protect_gui`** — dodatkowa ochrona, jeśli dostępna.
+- **Losowe nazwy** `ScreenGui` — bez sygnatur `Luminaq`, `ESP`, `Universal`.
+- **Losowa nazwa** `RunService:BindToRenderStep` (zamiast `LuminaqAim`).
+- **Wspólny magazyn sesji** `getgenv()._0x5a17` zamiast jawnych kluczy `_Voltik*`.
+- **Cisza w produkcji** — `print`/`warn` są wyłączone, chyba że ustawisz `getgenv()._MenuTestDevMode = true`.
+
+W skrypcie gry możesz użyć tego samego mechanizmu:
+
+```lua
+local Stealth = MENU.Stealth
+local overlay = Stealth.NewScreenGui({ DisplayOrder = 5, IgnoreGuiInset = true })
+```
+
+To **nie ukryje** faktu użycia executora (`HttpGet`, `loadstring`, `gethui`, `mousemoverel`) ani zachowania serwerowego (WalkSpeed, statystyki, aimbot). Jeśli gra już oznaczyła sesję, zmiana nazw GUI nie cofnie flagi — pomóc może tylko nowa sesja i mniej agresywne funkcje.
+
+### Protect Kick
+
+W panelu wyboru gier znajduje się kategoria **Protect Kick** z przełącznikami gier.
+Domyślnie zawiera **Strike Force** — pierwszą grę na liście.
+
+- `src/ProtectKick.lua` blokuje `Player:Kick` oraz `player.Kick` wywoływane po stronie klienta
+  (hook `__namecall` + `__index` przez `hookmetamethod`).
+- Przełącznik włącza i wyłącza ochronę w locie; stan jest pamiętany w sesji
+  (`getgenv()._0x5a17.protections`).
+- Jeśli executor nie udostępnia `hookmetamethod`, przełącznik pokaże błąd zamiast
+  udawać, że ochrona działa.
+
+> Kick wysłany bezpośrednio z serwera **nie da się zablokować po stronie klienta**.
+> Protect Kick chroni tylko przed kickiem wywołanym przez skrypty klienta.
+
+Własną kategorię ochron możesz przekazać do `CreateExplorer`:
+
+```lua
+MENU:CreateExplorer({
+    -- ...
+    Protections = {
+        {
+            Id = "StrikeForce",
+            Name = "Strike Force",
+            OnToggle = function(state)
+                if state then return MENU.ProtectKick.Enable() end
+                return MENU.ProtectKick.Disable()
+            end,
+        },
+    },
+})
+```
 
 ---
 
@@ -193,10 +249,12 @@ Nieznana nazwa ikony nie zatrzyma menu — po prostu pozostawi pusty obrazek.
 ```
 Main.lua                 -- biblioteka, CreateWindow + CreateExplorer
 Loader.lua               -- zawsze uruchamia panel wyboru gry
-Games/Universal.lua      -- rejestr gier + ciche AntiAFK / AntiFling
-Games/Universal/Script.lua -- pierwsza gra: ESP / Aimbot / FOV / WalkSpeed
+Games/Universal.lua      -- rejestr gier (Strike Force + Universal) + ciche AntiAFK / AntiFling
+Games/Universal/Script.lua -- menu gry: ESP / Aimbot / FOV / WalkSpeed
 Games/<ID>/Script.lua    -- skrypt wybranej gry
 src/Explorer.lua         -- panel "Welcome to LuminaqHub" + wyszukiwarka gier
+src/Stealth.lua          -- ukrywanie GUI (gethui / CoreGui, losowe nazwy, ochrona)
+src/ProtectKick.lua      -- blokada Kick (kategoria Protect Kick w panelu)
 src/Window.lua           -- starszy silnik okna (CreateWindow + tło GIF/Pictures)
 src/Icons.lua            -- ikony Lucide
 src/elements/            -- kontrolki (Slider, Toggle, Dropdown, ...)

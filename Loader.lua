@@ -7,45 +7,63 @@
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"
 
--- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych (podpisane pod Voltik)
-if typeof(getgenv) == "function" then
-    if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
-    if getgenv()._VoltikMenuTestGui then pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end); getgenv()._VoltikMenuTestGui = nil end
-    getgenv()._VoltikMenuModuleCache = nil
-    getgenv()._VoltikMenuCache = nil
-    getgenv()._VoltikToggleElement = nil
-    getgenv()._VoltikIconsModule = nil
-    getgenv()._VoltikIconsData = nil
-    getgenv()._VoltikLibrary = nil
+-- Cisza w produkcji: komunikaty nie zostawiają sygnatur w LogService.
+local DEV = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+local function warn(...)
+    if DEV then print(...) end
 end
+
+-- Wspólny magazyn sesji (ten sam klucz co w src/Stealth.lua).
+local STORE_KEY = "_0x5a17"
+local function getStore()
+    if type(getgenv) ~= "function" then return nil end
+    local env = getgenv()
+    local store = env[STORE_KEY]
+    if type(store) ~= "table" then
+        store = {}
+        env[STORE_KEY] = store
+    end
+    return store
+end
+
+-- Czyszczenie poprzedniej sesji bez skanowania nazw GUI.
+local store = getStore()
+if store then
+    if type(store.windowCleanup) == "function" then pcall(store.windowCleanup) end
+    if type(store.explorerCleanup) == "function" then pcall(store.explorerCleanup) end
+    for _, key in ipairs({ "windowGui", "explorerGui", "loaderGui" }) do
+        local gui = store[key]
+        if gui then pcall(function() gui:Destroy() end) end
+        store[key] = nil
+    end
+    store.windowCleanup, store.explorerCleanup = nil, nil
+end
+
+-- Migracja starych kluczy z poprzednich wersji (już ich nie używamy).
+if typeof(getgenv) == "function" then
+    local env = getgenv()
+    for _, key in ipairs({ "_VoltikMenuCleanup", "_LuminaqExplorerCleanup" }) do
+        local fn = env[key]
+        if type(fn) == "function" then pcall(fn) end
+        env[key] = nil
+    end
+    local oldGui = env._VoltikMenuTestGui
+    if oldGui then pcall(function() oldGui:Destroy() end) end
+    env._VoltikMenuTestGui = nil
+    env._VoltikMenuModuleCache = nil
+    env._VoltikMenuCache = nil
+    env._VoltikToggleElement = nil
+    env._VoltikIconsModule = nil
+    env._VoltikIconsData = nil
+    env._VoltikLibrary = nil
+end
+_G._VoltikMenuCleanup = nil
 _G._VoltikMenuModuleCache = nil
 _G._VoltikMenuCache = nil
 _G._VoltikToggleElement = nil
 _G._VoltikIconsModule = nil
 _G._VoltikIconsData = nil
 _G._VoltikLibrary = nil
-
--- Twarde czyszczenie wszelkich poprzednich GUI w CoreGui i PlayerGui (eliminuje nakładanie się zakładek)
-pcall(function()
-    local CoreGui = game:GetService("CoreGui")
-    local Players = game:GetService("Players")
-    local lp = Players.LocalPlayer
-    local pg = lp and lp:FindFirstChild("PlayerGui")
-    local locations = { CoreGui, pg }
-    for _, loc in ipairs(locations) do
-        if loc then
-            for _, child in ipairs(loc:GetChildren()) do
-                if child:IsA("ScreenGui") then
-                    if child.Name:find("VoltikMenu") or child.Name:find("PetHub") or child.Name:find("Universal") or child.Name:find("Luminaq")
-                       or child:GetAttribute("VoltikMenuInstance") or child:GetAttribute("MenuTest_Voltik")
-                       or child:GetAttribute("MenuOwner") == "XxvoltikxX" then
-                        pcall(function() child:Destroy() end)
-                    end
-                end
-            end
-        end
-    end
-end)
 
 -- Funkcja bezpiecznego pobierania/ładowania kodu
 local function safeExecute(relativePath, remoteUrl)
@@ -112,7 +130,7 @@ end
 -- // ==========================================================================
 -- // START — PANEL WYBORU GRY
 -- // ==========================================================================
-print("[Loader] Inicjalizacja... Uruchamiam LuminaqHUB (panel wyboru gry)...")
+if DEV then print("[Loader] Inicjalizacja...") end
 
 local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
 if not success then

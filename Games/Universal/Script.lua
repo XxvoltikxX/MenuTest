@@ -12,6 +12,14 @@ local mainUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 
 local MENU = loadstring(game:HttpGet(mainUrl):gsub("^\239\187\191", ""))()
 
+-- Cisza w produkcji: bez sygnatur w LogService.
+local DEV = (typeof(getgenv) == "function" and getgenv()._MenuTestDevMode == true)
+local function warn(...)
+    if DEV then print(...) end
+end
+
+local Stealth = MENU and MENU.Stealth or nil
+
 -- // Serwisy
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
@@ -116,21 +124,21 @@ end
 -- // ==========================================================================
 -- // NAKŁADKA ESP (ScreenGui + Frames — bez Drawing API)
 -- // ==========================================================================
-local overlayGui = Instance.new("ScreenGui")
-overlayGui.Name = "Universal_ESP"
+local overlayGui
+if Stealth and type(Stealth.NewScreenGui) == "function" then
+    overlayGui = Stealth.NewScreenGui({ DisplayOrder = 5, IgnoreGuiInset = true })
+else
+    overlayGui = Instance.new("ScreenGui")
+    overlayGui.Name = tostring(math.random(1000000, 9999999))
+    overlayGui.ResetOnSpawn = false
+    overlayGui.IgnoreGuiInset = true
+    overlayGui.DisplayOrder = 5
+    pcall(function() overlayGui.Parent = game:GetService("CoreGui") end)
+end
 overlayGui.ResetOnSpawn = false
 overlayGui.IgnoreGuiInset = true
 overlayGui.DisplayOrder = 5
 overlayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-local parentedOk = pcall(function()
-    overlayGui.Parent = game:GetService("CoreGui")
-end)
-if not parentedOk or not overlayGui.Parent then
-    pcall(function()
-        overlayGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    end)
-end
 
 local visualCache = {}
 
@@ -825,8 +833,12 @@ local aimReleaseConnection = UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+-- Losowa nazwa kroku renderowania — bez sygnatury "LuminaqAim".
+local AIM_STEP_NAME = (Stealth and type(Stealth.StepName) == "function" and Stealth.StepName())
+    or ("r" .. tostring(math.random(100000, 999999)))
+
 -- Aimbot porusza myszą w RenderStepie (po kamerze, ale bez jej blokowania).
-RunService:BindToRenderStep("LuminaqAim", Enum.RenderPriority.Camera.Value + 1, updateAimbot)
+RunService:BindToRenderStep(AIM_STEP_NAME, Enum.RenderPriority.Camera.Value + 1, updateAimbot)
 
 local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
     destroyPlayerVisuals(player)
@@ -845,7 +857,7 @@ local function cleanupAll()
     pcall(function() speedConnection:Disconnect() end)
     pcall(function() bindConnection:Disconnect() end)
     pcall(function() aimReleaseConnection:Disconnect() end)
-    pcall(function() RunService:UnbindFromRenderStep("LuminaqAim") end)
+    pcall(function() RunService:UnbindFromRenderStep(AIM_STEP_NAME) end)
     pcall(function() playerRemovingConnection:Disconnect() end)
 
     for player in pairs(visualCache) do
@@ -861,11 +873,3 @@ local function cleanupAll()
 end
 
 Window:OnCleanup(cleanupAll)
-
--- Dodatkowe zabezpieczenie: sprzątanie także przy zniszczeniu GUI okna
-pcall(function()
-    local gui = getgenv and getgenv()._VoltikMenuTestGui
-    if gui then
-        gui.Destroying:Connect(cleanupAll)
-    end
-end)

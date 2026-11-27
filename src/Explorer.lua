@@ -115,6 +115,8 @@ end
 -- // ==========================================================================
 function Explorer:Create(options)
     options = options or {}
+    local Stealth = options.Stealth
+    local Protections = options.Protections or {}
     local Palette = Palettes.dark
     local Theme = { mode = "dark", items = {} }
     local Connections = {}
@@ -187,25 +189,24 @@ function Explorer:Create(options)
     local baseUrl = tostring(options.BaseUrl or "")
 
     -- // ======================================================================
-    -- // SCREEN GUI
+    -- // SCREEN GUI (ukryty kontener + losowa nazwa)
     -- // ======================================================================
-    local guiParent = nil
-    pcall(function() guiParent = game:GetService("CoreGui") end)
-    if not guiParent then
-        guiParent = LocalPlayer:WaitForChild("PlayerGui")
+    local gui
+    if Stealth and type(Stealth.NewScreenGui) == "function" then
+        gui = Stealth.NewScreenGui({ DisplayOrder = 999, IgnoreGuiInset = true })
+    else
+        gui = new("ScreenGui", {
+            Name = tostring(math.random(1000000, 9999999)),
+            ResetOnSpawn = false,
+            IgnoreGuiInset = true,
+            DisplayOrder = 999,
+        })
+        pcall(function() gui.Parent = game:GetService("CoreGui") end)
     end
-
-    local gui = new("ScreenGui", {
-        Name = "LuminaqHUB_Explorer",
-        ResetOnSpawn = false,
-        IgnoreGuiInset = true,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        DisplayOrder = 999,
-    })
-    local parented = pcall(function() gui.Parent = guiParent end)
-    if not parented or not gui.Parent then
-        pcall(function() gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
-    end
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.DisplayOrder = 999
 
     local cleaned = false
     local function cleanup()
@@ -215,20 +216,18 @@ function Explorer:Create(options)
             pcall(function() c:Disconnect() end)
         end
         table.clear(Connections)
-        if typeof(getgenv) == "function" and getgenv()._LuminaqExplorerCleanup == cleanup then
-            getgenv()._LuminaqExplorerCleanup = nil
-        end
-        pcall(function() gui:Destroy() end)
         if options.OnCleanup then
             pcall(options.OnCleanup)
         end
+        pcall(function() gui:Destroy() end)
     end
 
     gui.Destroying:Connect(cleanup)
 
-    if typeof(getgenv) == "function" then
-        getgenv()._LuminaqExplorerCleanup = cleanup
-        getgenv()._VoltikMenuTestGui = gui
+    local store = Stealth and Stealth.Store and Stealth.Store() or nil
+    if store then
+        store.explorerGui = gui
+        store.explorerCleanup = cleanup
     end
 
     -- // ======================================================================
@@ -581,8 +580,10 @@ function Explorer:Create(options)
     -- // ======================================================================
     -- // SIATKA GIER
     -- // ======================================================================
-    local gridPos = UDim2.new(0, 18, 0, 152)
-    local gridSize = UDim2.new(1, -36, 1, -200)
+    local hasProtections = #Protections > 0
+    local protectOffset = hasProtections and 62 or 0
+    local gridPos = UDim2.new(0, 18, 0, 152 + protectOffset)
+    local gridSize = UDim2.new(1, -36, 1, -200 - protectOffset)
 
     local grid = new("ScrollingFrame", {
         Name = "GameGrid",
@@ -756,6 +757,158 @@ function Explorer:Create(options)
                 pcall(function() toast:Destroy() end)
             end
         end)
+    end
+
+    -- // ======================================================================
+    -- // PROTECT KICK — kategoria ochron z przełącznikami
+    -- // ======================================================================
+    if hasProtections then
+        local protectCard = new("Frame", {
+            Name = "ProtectKick",
+            Position = UDim2.new(0, 18, 0, 148),
+            Size = UDim2.new(1, -36, 0, 54),
+            BackgroundColor3 = Palette.Card,
+            BackgroundTransparency = 0.45,
+            BorderSizePixel = 0,
+        }, main)
+        bindTheme(protectCard, "BackgroundColor3", "Card")
+        corner(protectCard, 15)
+        local protectStroke = stroke(protectCard, Palette.StrokeSoft, 0.5, 1)
+        bindTheme(protectStroke, "Color", "StrokeSoft")
+
+        local shieldIcon = new("ImageLabel", {
+            Name = "ShieldIcon",
+            Size = UDim2.fromOffset(16, 16),
+            Position = UDim2.new(0, 14, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            ImageColor3 = Palette.Accent,
+        }, protectCard)
+        bindTheme(shieldIcon, "ImageColor3", "Accent")
+        applyIcon(shieldIcon, "shield")
+
+        local protectTitle = new("TextLabel", {
+            Text = "Protect Kick",
+            Font = Enum.Font.GothamBold,
+            TextSize = 12,
+            TextColor3 = Palette.Text,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 40, 0, 9),
+            Size = UDim2.new(0, 220, 0, 16),
+            TextXAlignment = Enum.TextXAlignment.Left,
+        }, protectCard)
+        bindTheme(protectTitle, "TextColor3", "Text")
+
+        local protectSub = new("TextLabel", {
+            Text = "Blokada wyrzucania z gry",
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextColor3 = Palette.Dim,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 40, 0, 27),
+            Size = UDim2.new(0, 220, 0, 14),
+            TextXAlignment = Enum.TextXAlignment.Left,
+        }, protectCard)
+        bindTheme(protectSub, "TextColor3", "Dim")
+
+        local chipRight = -12
+        for index, protection in ipairs(Protections) do
+            local id = tostring(protection.Id or protection.Name or ("protect" .. tostring(index)))
+            local chip = new("TextButton", {
+                Name = "Protect_" .. id,
+                Size = UDim2.fromOffset(150, 32),
+                Position = UDim2.new(1, chipRight, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+                BackgroundColor3 = Palette.Card3,
+                BackgroundTransparency = 0.35,
+                Text = "",
+                AutoButtonColor = false,
+            }, protectCard)
+            chipRight = chipRight - 158
+            corner(chip, 16)
+            local chipStroke = stroke(chip, Palette.StrokeSoft, 0.35, 1)
+            bindTheme(chipStroke, "Color", "StrokeSoft")
+
+            local pill = new("Frame", {
+                Size = UDim2.fromOffset(30, 16),
+                Position = UDim2.new(0, 10, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundColor3 = Palette.Dim2,
+                BorderSizePixel = 0,
+            }, chip)
+            corner(pill, 8)
+
+            local knob = new("Frame", {
+                Size = UDim2.fromOffset(12, 12),
+                Position = UDim2.new(0, 2, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+            }, pill)
+            corner(knob, 6)
+
+            local label = new("TextLabel", {
+                Text = tostring(protection.Name or id),
+                Font = Enum.Font.GothamBold,
+                TextSize = 10,
+                TextColor3 = Palette.Text,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 48, 0, 0),
+                Size = UDim2.new(1, -54, 1, 0),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+            }, chip)
+            bindTheme(label, "TextColor3", "Text")
+
+            local state = false
+            local function renderState()
+                local on = state == true
+                TweenService:Create(pill, TweenInfo.new(0.15), {
+                    BackgroundColor3 = on and Palette.Accent or Palette.Dim2,
+                }):Play()
+                TweenService:Create(knob, TweenInfo.new(0.15), {
+                    Position = on and UDim2.new(1, -14, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+                }):Play()
+                TweenService:Create(chipStroke, TweenInfo.new(0.15), {
+                    Color = on and Palette.Accent or Palette.StrokeSoft,
+                    Transparency = on and 0.15 or 0.35,
+                }):Play()
+            end
+
+            local function setState(newState, silent)
+                newState = newState == true
+                if newState == state then
+                    renderState()
+                    return
+                end
+                if type(protection.OnToggle) == "function" then
+                    local ok, applied, message = pcall(protection.OnToggle, newState)
+                    if not ok or applied == false then
+                        if not silent then
+                            notify(tostring(message or applied or "Ochrona niedostępna"), false)
+                        end
+                        return
+                    end
+                end
+                state = newState
+                if store then
+                    store.protections = store.protections or {}
+                    store.protections[id] = state
+                end
+                renderState()
+                if not silent then
+                    notify(tostring(protection.Name or id) .. ": " .. (state and "włączone" or "wyłączone"), true)
+                end
+            end
+
+            chip.MouseButton1Click:Connect(function()
+                setState(not state)
+            end)
+
+            local saved = store and type(store.protections) == "table" and store.protections[id] == true
+            setState(saved == true, true)
+            renderState()
+        end
     end
 
     -- // ======================================================================

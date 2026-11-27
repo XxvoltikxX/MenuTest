@@ -46,7 +46,7 @@ local function safeLoadSub(relativePath, remoteUrl)
 end
 
 function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons, passedGameId)
-    local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "LuminaqHUB")
+    local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "0")
     local Icons = passedIcons or (UI and UI.Icons)
     if not Icons then
         Icons = safeLoadSub("Icons.lua", baseUrl .. "Icons.lua")
