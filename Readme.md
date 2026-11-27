@@ -137,6 +137,8 @@ Options = {
 - Fullbright
 
 **Misc**
+- AntiAFK (domyślnie włączony)
+- AntiFling (domyślnie włączony)
 - Reset Character
 - Low Graphics
 - Copy JobId
