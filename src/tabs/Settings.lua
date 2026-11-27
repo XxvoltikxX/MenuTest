@@ -46,7 +46,7 @@ local function safeLoadSub(relativePath, remoteUrl)
 end
 
 function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons, passedGameId)
-    local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "109949693269081")
+    local GameId = tostring(passedGameId or (UI and UI.GameId) or (game and (game.PlaceId or game.GameId)) or "LuminaqHUB")
     local Icons = passedIcons or (UI and UI.Icons)
     if not Icons then
         Icons = safeLoadSub("Icons.lua", baseUrl .. "Icons.lua")
@@ -968,8 +968,12 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
         Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
 
         local currentVal = defaultVal
-        SwitchBtn.MouseButton1Click:Connect(function()
-            currentVal = not currentVal
+
+        local function setValue(newVal, invokeCallback)
+            newVal = newVal and true or false
+            if currentVal == newVal then return end
+            currentVal = newVal
+
             local destPos = currentVal and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
             local destBg = currentVal and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(34, 40, 58)
             local destStrk = currentVal and Color3.fromRGB(140, 160, 245) or Color3.fromRGB(50, 58, 82)
@@ -980,10 +984,14 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
             TweenService:Create(SwitchBtn, TweenInfo.new(0.2), { BackgroundColor3 = destBg }):Play()
             TweenService:Create(swStroke, TweenInfo.new(0.2), { Color = destStrk }):Play()
 
-            if callback then callback(currentVal) end
+            if invokeCallback ~= false and callback then callback(currentVal) end
+        end
+
+        SwitchBtn.MouseButton1Click:Connect(function()
+            setValue(not currentVal)
         end)
 
-        return Card
+        return Card, setValue
     end
 
     -- 1. AntiAFK
@@ -1051,10 +1059,22 @@ function Settings:Render(UI, order, theme, mainFolder, passedToggle, passedIcons
     end
     enableAntiFling()
 
-    makePowerCard("AntiFling Defense", "Chroni postać przed wyrzuceniem ze zderzeń", "zap", true, function(state)
+    local _, setAntiFlingCard = makePowerCard("AntiFling Defense", "Chroni postać przed wyrzuceniem ze zderzeń", "zap", true, function(state)
         if state then enableAntiFling() else disableAntiFling() end
         if UI and UI.MenuConfig then UI.MenuConfig["AntiFling"] = state end
     end)
+
+    -- Publiczne API dla skryptów gier: Window:SetAntiFling(false) wyłącza ochronę
+    -- i synchronizuje wizualny stan karty w Ustawieniach.
+    if UI then
+        function UI:SetAntiFling(state)
+            if setAntiFlingCard then
+                setAntiFlingCard(state)
+            else
+                if state then enableAntiFling() else disableAntiFling() end
+            end
+        end
+    end
 
     -- 3. Keybinds Overlay
     local isOverlayActive = (UI and UI.MenuConfig and UI.MenuConfig["KeybindsOverlay"] == true) or false

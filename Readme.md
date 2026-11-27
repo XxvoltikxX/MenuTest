@@ -1,4 +1,4 @@
-# 💎 MenuTest UI Library
+# 💎 LuminaqHUB UI Library (MenuTest)
 
 Nowoczesna, ultra-szybka i w pełni responsywna biblioteka interfejsu użytkownika dla środowiska **Roblox**. Zaprojektowana z myślą o maksymalnej płynności (pamięć podręczna modułów, zerowe zacięcia), dark-mode, systemie dynamicznych modułów (inspirowanych klientami PvP), dolnym pasku profilu w stylu **Discord** z dedykowaną zębatką ustawień oraz inteligentnym Master Loaderze z automatyczną detekcją gier.
 
@@ -394,14 +394,13 @@ Plik [Loader.lua](file:///C:/Users/kubak/Desktop/githubMenu/MenuTest/Loader.lua)
 ### Jak działa detekcja gier:
 1. Sprawdza `game.PlaceId` oraz `game.GameId`.
 2. Jeśli gra jest na liście w `Loader.lua`: uruchamia `Games/<PlaceId>/Script.lua`.
-3. Jeśli gra nie jest zarejestrowana: uruchamia `Games/Universal.lua` (z kompletnym modułem Visuals & ESP).
+3. Jeśli gra nie jest zarejestrowana: uruchamia `Games/Universal.lua` jako **LuminaqHUB** (z kompletnym modułem Visuals & ESP).
 
 ### Jak dodać wsparcie dla nowej gry:
 1. W pliku `Loader.lua` dodaj wpis do tabeli `Games`:
 ```lua
 local Games = {
-    [109949693269081] = "[UPD 3.1] Tycoon, but one dropper",
-    [TWÓJ_PLACE_ID]   = "Nazwa Twojej Gry", -- <- tylko jedna linijka!
+    [TWÓJ_PLACE_ID] = { name = "Nazwa Twojej Gry", folder = "TWÓJ_PLACE_ID" }, -- <- tylko jedna linijka!
 }
 ```
 2. Utwórz folder `Games/<TWÓJ_PLACE_ID>/Script.lua`.

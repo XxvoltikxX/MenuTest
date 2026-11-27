@@ -180,7 +180,7 @@ local function isMobileDevice(cfg)
 end
 
 -- // ============================================================
--- // EKRAN INICJALIZACJI: PŁYNNA ANIMACJA LIXHUB (VISIONOS GLASS EMBLEM)
+-- // EKRAN INICJALIZACJI: PŁYNNA ANIMACJA LUMINAQHUB (VISIONOS GLASS EMBLEM)
 -- // ============================================================
 local function createLoadingIndicator(title, isMobile, config)
     local screenParent
@@ -188,7 +188,7 @@ local function createLoadingIndicator(title, isMobile, config)
     if not screenParent then screenParent = PlayerGui end
 
     local loaderGui = Instance.new("ScreenGui")
-    loaderGui.Name = "LixHub_LoaderSplash"
+    loaderGui.Name = "LuminaqHUB_LoaderSplash"
     loaderGui:SetAttribute("MenuLoaderIndicator", true)
     loaderGui.ResetOnSpawn = false
     loaderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -206,9 +206,9 @@ local function createLoadingIndicator(title, isMobile, config)
     Backdrop.ZIndex = 1
     Backdrop.Parent = loaderGui
 
-    -- Główna karta Splash LixHub (Nowoczesne szkło VisionOS)
+    -- Główna karta Splash LuminaqHUB (Nowoczesne szkło VisionOS)
     local Splash = Instance.new("Frame")
-    Splash.Name = "LixHub_Splash"
+    Splash.Name = "LuminaqHUB_Splash"
     Splash.Size = UDim2.new(0, 360, 0, 215)
     Splash.Position = UDim2.new(0.5, 0, 0.52, 0)
     Splash.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -290,7 +290,7 @@ local function createLoadingIndicator(title, isMobile, config)
     Satellite2.Parent = OrbitSpinner
     Instance.new("UICorner", Satellite2).CornerRadius = UDim.new(1, 0)
 
-    -- Środkowa szklana kula monogramu LixHub
+    -- Środkowa szklana kula monogramu LuminaqHUB
     local CoreOrb = Instance.new("Frame")
     CoreOrb.Name = "CoreOrb"
     CoreOrb.Size = UDim2.new(0, 46, 0, 46)
@@ -325,7 +325,7 @@ local function createLoadingIndicator(title, isMobile, config)
     CoreIcon.Parent = CoreOrb
 
     -- // ========================================================
-    -- // TYPOGRAFIA ETAPU ŁADOWANIA "LIX HUB"
+    -- // TYPOGRAFIA ETAPU ŁADOWANIA "LUMINAQ HUB"
     -- // ========================================================
     local TitleRow = Instance.new("Frame")
     TitleRow.Name = "TitleRow"
@@ -345,7 +345,7 @@ local function createLoadingIndicator(title, isMobile, config)
 
     local LixText = Instance.new("TextLabel")
     LixText.Name = "LixText"
-    LixText.Text = "LIX"
+    LixText.Text = "LUMINAQ"
     LixText.Font = Enum.Font.GothamBold
     LixText.TextSize = 21
     LixText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -458,11 +458,11 @@ local function createLoadingIndicator(title, isMobile, config)
     end
 
     -- // ========================================================
-    -- // EKRAN POWITALNY: "Welcome to LixHub" ORAZ DETEKCJA GRY
+    -- // EKRAN POWITALNY: "Welcome to LuminaqHub" ORAZ DETEKCJA GRY
     -- // ========================================================
     local WelcomeLabel = Instance.new("TextLabel")
     WelcomeLabel.Name = "WelcomeLabel"
-    WelcomeLabel.Text = "Welcome to LixHub"
+    WelcomeLabel.Text = "Welcome to LuminaqHub"
     WelcomeLabel.Font = Enum.Font.GothamBold
     WelcomeLabel.TextSize = 18
     WelcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -558,40 +558,27 @@ local function createLoadingIndicator(title, isMobile, config)
         local placeId   = tostring(game and game.PlaceId or "")
         local gameId    = tostring(game and game.GameId or "")
 
-        -- 1. Wymuszone lub jawne Universal Suite
-        if cfgGameId == "Universal" or cfgTitle:lower():find("universal") or cfgName:lower():find("universal") then
+        -- 1. Wymuszone lub jawne LuminaqHUB (dawniej Universal Suite)
+        local gameIdLower = cfgGameId:lower()
+        local titleLower  = cfgTitle:lower()
+        local nameLower   = cfgName:lower()
+        if gameIdLower == "universal" or gameIdLower == "luminaqhub" or gameIdLower == "luminaq"
+            or titleLower:find("universal") or titleLower:find("luminaq")
+            or nameLower:find("universal") or nameLower:find("luminaq") then
             return false, nil
         end
 
-        -- 2. Dedykowane gry dopasowywane po konkretnym ID (PlaceId/GameId w configu) lub tytule
-        if cfgGameId == "109949693269081" or placeId == "109949693269081" or cfgTitle:lower():find("tycoon") then
-            return true, "[UPD 3.1] Tycoon, but one dropper"
-        end
-
-        if cfgGameId == "85920622393590" or placeId == "85920622393590" or cfgTitle:lower():find("pet simulator x") then
-            return true, "PetSimulatorX (Event)"
-        end
-
-        if cfgGameId == "8737899170" or placeId == "8737899170" or cfgTitle:lower():find("garden") then
-            return true, "Pet Simulator 99 (Garden Event)"
-        end
-
-        if cfgGameId == "16498369169" or placeId == "16498369169" or cfgTitle:lower():find("hallowen") or cfgTitle:lower():find("halloween") then
-            return true, "Pet sim 99 event hallowen"
-        end
-
-        -- 3. Tabela znanych gier (ściśle po PlaceId oraz cfgGameId)
+        -- 2. Tabela znanych gier (PlaceId / GameId -> nazwa).
+        --    Startujemy od zera — dodawaj gry powoli, po jednej, w miarę tworzenia skryptów.
         local KnownGames = {
-            ["85920622393590"] = "PetSimulatorX (Event)",
-            ["109949693269081"] = "[UPD 3.1] Tycoon, but one dropper",
-            ["8737899170"] = "Pet Simulator 99 (Garden Event)",
-            ["16498369169"] = "Pet sim 99 event hallowen",
+            -- ["1234567890"] = "Moja Gra",
         }
         if KnownGames[placeId] then return true, KnownGames[placeId] end
         if KnownGames[cfgGameId] then return true, KnownGames[cfgGameId] end
 
         -- 5. Jeśli tytuł jest konkretny i inny niż domyślny
-        if #cfgTitle > 0 and cfgTitle ~= "Universal Suite" and cfgTitle ~= "Menu" and not cfgTitle:lower():find("universal") then
+        if #cfgTitle > 0 and cfgTitle ~= "Universal Suite" and cfgTitle ~= "LuminaqHUB" and cfgTitle ~= "Menu"
+            and not cfgTitle:lower():find("universal") and not cfgTitle:lower():find("luminaq") then
             return true, cfgTitle
         end
 
@@ -665,7 +652,7 @@ local function createLoadingIndicator(title, isMobile, config)
     local controller = {}
 
     function controller:Update(progress, statusText)
-        -- Bez brzydkich napisów i tradycyjnych pasków — animacja LixHub płynie sama
+        -- Bez brzydkich napisów i tradycyjnych pasków — animacja LuminaqHUB płynie sama
     end
 
     function controller:Done(timeText, keybindName, onFinishCallback)
@@ -688,7 +675,7 @@ local function createLoadingIndicator(title, isMobile, config)
             TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
             TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
         else
-            DetectText.Text = "game not supported : loading universal Hub"
+            DetectText.Text = "game not supported : loading LuminaqHUB"
             DetectText.TextColor3 = Color3.fromRGB(253, 224, 71)
             DetectDot.BackgroundColor3 = Color3.fromRGB(251, 191, 36)
             DetectBadge.BackgroundColor3 = Color3.fromRGB(36, 26, 14)
@@ -713,7 +700,7 @@ local function createLoadingIndicator(title, isMobile, config)
         TweenService:Create(HubText, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
         TweenService:Create(HbStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
 
-        -- Pokaż piękny ekran powitalny "Welcome to LixHub" oraz status gry
+        -- Pokaż piękny ekran powitalny "Welcome to LuminaqHub" oraz status gry
         TweenService:Create(WelcomeLabel, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             TextTransparency = 0,
             Position = UDim2.new(0.5, 0, 0, 90)
@@ -782,7 +769,7 @@ function MenuLib:CreateWindow(options)
     local Config = options or {}
     local rawName = tostring(Config.Name or "Menu")
     local Name   = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
-    local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "109949693269081")
+    local GameId = tostring(Config.GameId or (game and (game.PlaceId or game.GameId)) or "LuminaqHUB")
     local startTime = os.clock()
     local isMobile = isMobileDevice(Config)
 
@@ -1130,6 +1117,12 @@ function MenuLib:CreateWindow(options)
         end
         return WindowAPI
     end
+    function WindowAPI:SetAntiFling(state)
+        if UI and UI.SetAntiFling then
+            UI:SetAntiFling(state)
+        end
+        return WindowAPI
+    end
     UI.WindowAPI    = WindowAPI
 
     UI._userTabCounter   = 2
@@ -1338,7 +1331,7 @@ function MenuLib:CreateWindow(options)
             pcall(function() UI:SelectDashboard() end)
         end
 
-        -- Zakończ proces ładowania i płynnie ujawnij menu dopiero po zniknięciu animacji LixHub
+        -- Zakończ proces ładowania i płynnie ujawnij menu dopiero po zniknięciu animacji LuminaqHUB
         pcall(function()
             loader:Done(string.format("%.2fs", os.clock() - startTime), UI.CurrentMenuKeyName, function()
                 if UI.RevealMenu then

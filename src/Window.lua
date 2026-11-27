@@ -311,7 +311,7 @@ function Window:Create(config)
     UI.SelectedTab = nil
     UI.MenuConfig     = config.MenuConfig
     UI.SaveMenuConfig = config.SaveMenuConfig
-    UI.GameId         = tostring(config.GameId or "109949693269081")
+    UI.GameId         = tostring(config.GameId or "LuminaqHUB")
 
     -- // THEME MANAGER
     local ThemeManager = { Elements = {}, CurrentTheme = config.Theme or {}, _callbacks = {} }
@@ -448,7 +448,7 @@ function Window:Create(config)
 
     -- ScreenGui z unikalnym podpisem i zabezpieczeniem przed skanerami dublikacji innych baz menu
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "VoltikMenu_" .. (config.GenerateID and config.GenerateID() or tostring(math.random(100000, 999999)))
+    ScreenGui.Name = "LuminaqHUB_" .. (config.GenerateID and config.GenerateID() or tostring(math.random(100000, 999999)))
     ScreenGui:SetAttribute("MenuOwner", myOwnerTag)
     ScreenGui:SetAttribute("VoltikMenuInstance", true)
     ScreenGui:SetAttribute("MenuTest_Voltik", true)

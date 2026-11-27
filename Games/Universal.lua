@@ -1,5 +1,5 @@
 -- // ==========================================================================
--- // MENUTEST UNIVERSAL SUITE
+-- // LUMINAQHUB — UNIVERSAL SUITE
 -- // Zaawansowany, uniwersalny pakiet narzędzi działający w KAŻDEJ grze Roblox.
 -- // Zakładki: Player (Speed, Fly, InfJump, Noclip, ClickTP), Render (ESP, Tracers, World), Misc
 -- // W pełni zintegrowany z systemem nowoczesnych kategorii, sliderów i motywów.
@@ -11,12 +11,12 @@ local MENU = loadstring(mainRaw:gsub("^\239\187\191", ""))()
 
 -- 2. Stworzenie okna głównego
 local Window = MENU:CreateWindow({
-    Name = "Universal",
-    Tittle = "Universal Suite",
+    Name = "LuminaqHUB",
+    Tittle = "Welcome to LuminaqHub",
     TittlePos = "Center",
     ToggleUIKeybind = "K",
     TestMobile = false,
-    GameId = "Universal"
+    GameId = "LuminaqHUB"
 })
 
 -- 3. Inicjalizacja zakładek
@@ -857,4 +857,4 @@ CatClient:AddButton({
     end
 })
 
-print("[Universal Suite] Pomyślnie załadowano pełny pakiet Universal.")
+print("[LuminaqHUB] Pomyślnie załadowano pełny pakiet Universal Suite.")

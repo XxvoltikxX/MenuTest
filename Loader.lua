@@ -1,7 +1,7 @@
 -- // ==========================================================================
 -- // MENUTEST MASTER LOADER
 -- // Automatyczny system detekcji gry i ładowania dedykowanych skryptów
--- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub Universal Suite
+-- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub LuminaqHUB (Universal Suite)
 -- // ==========================================================================
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"
@@ -9,10 +9,6 @@ local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/head
 -- Usunięcie istniejącego menu oraz unieważnienie starych pamięci podręcznych (podpisane pod Voltik)
 if typeof(getgenv) == "function" then
     if getgenv()._VoltikMenuCleanup then pcall(getgenv()._VoltikMenuCleanup); getgenv()._VoltikMenuCleanup = nil end
-    if getgenv()._VoltikTycoonScriptCleanup then pcall(getgenv()._VoltikTycoonScriptCleanup); getgenv()._VoltikTycoonScriptCleanup = nil end
-    if getgenv()._PS99GardenCleanup then pcall(getgenv()._PS99GardenCleanup); getgenv()._PS99GardenCleanup = nil end
-    if getgenv()._VoltikPS99Cleanup then pcall(getgenv()._VoltikPS99Cleanup); getgenv()._VoltikPS99Cleanup = nil end
-    if getgenv()._PS99HalloweenCleanup then pcall(getgenv()._PS99HalloweenCleanup); getgenv()._PS99HalloweenCleanup = nil end
     if getgenv()._VoltikMenuTestGui then pcall(function() getgenv()._VoltikMenuTestGui:Destroy() end); getgenv()._VoltikMenuTestGui = nil end
     getgenv()._VoltikMenuModuleCache = nil
     getgenv()._VoltikMenuCache = nil
@@ -21,9 +17,6 @@ if typeof(getgenv) == "function" then
     getgenv()._VoltikIconsData = nil
     getgenv()._VoltikLibrary = nil
 end
-if _G.PS99GardenCleanup then pcall(_G.PS99GardenCleanup); _G.PS99GardenCleanup = nil end
-if _G.PS99HalloweenCleanup then pcall(_G.PS99HalloweenCleanup); _G.PS99HalloweenCleanup = nil end
-if _G._VoltikPS99Cleanup then pcall(_G._VoltikPS99Cleanup); _G._VoltikPS99Cleanup = nil end
 _G._VoltikMenuModuleCache = nil
 _G._VoltikMenuCache = nil
 _G._VoltikToggleElement = nil
@@ -42,7 +35,7 @@ pcall(function()
         if loc then
             for _, child in ipairs(loc:GetChildren()) do
                 if child:IsA("ScreenGui") then
-                    if child.Name:find("VoltikMenu") or child.Name:find("PetHub") or child.Name:find("Universal")
+                    if child.Name:find("VoltikMenu") or child.Name:find("PetHub") or child.Name:find("Universal") or child.Name:find("Luminaq")
                        or child:GetAttribute("VoltikMenuInstance") or child:GetAttribute("MenuTest_Voltik")
                        or child:GetAttribute("MenuOwner") == "XxvoltikxX" then
                         pcall(function() child:Destroy() end)
@@ -117,18 +110,14 @@ end
 
 -- // ==========================================================================
 -- // LISTA OBSŁUGIWANYCH GIER
--- // Aby dodać grę, wpisz: [ID_GRY] = "Nazwa Gry"
+-- // Startujemy od zera — dodawaj gry powoli, po jednej:
+-- //   [ID_GRY] = { name = "Nazwa Gry", folder = "ID_GRY" },
 -- // Loader automatycznie załaduje: Games/<ID_GRY>/Script.lua
+-- // Gdy gra nie jest na liście -> uruchamia LuminaqHUB (Games/Universal.lua).
 -- // ==========================================================================
 local Games = {
-    [109949693269081] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
-    ["109949693269081"] = { name = "[UPD 3.1] Tycoon, but one dropper", folder = "109949693269081" },
-    [85920622393590] = { name = "Pet Simulator X Event", folder = "85920622393590" },
-    ["85920622393590"] = { name = "Pet Simulator X Event", folder = "85920622393590" },
-    [8737899170] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
-    ["8737899170"] = { name = "Pet Simulator 99 (Garden Event)", folder = "8737899170" },
-    [16498369169] = { name = "Pet sim 99 event hallowen", folder = "16498369169" },
-    ["16498369169"] = { name = "Pet sim 99 event hallowen", folder = "16498369169" },
+    -- Przyklad:
+    -- [1234567890] = { name = "Moja Gra", folder = "1234567890" },
 }
 
 -- // ==========================================================================
@@ -165,10 +154,11 @@ local function findGameMatch(id)
     return nil, nil, nil
 end
 
--- Możliwość ręcznego wymuszenia Universal Suite w dowolnej grze
-local forceUniversal = (typeof(getgenv) == "function" and getgenv()._ForceUniversal == true) or (_G._ForceUniversal == true)
+-- Możliwość ręcznego wymuszenia LuminaqHUB (Universal Suite) w dowolnej grze
+local forceUniversal = (typeof(getgenv) == "function" and (getgenv()._ForceUniversal == true or getgenv()._ForceLuminaq == true))
+    or (_G._ForceUniversal == true) or (_G._ForceLuminaq == true)
 if forceUniversal then
-    print("[Loader] Wymuszono uruchomienie Universal Suite...")
+    print("[Loader] Wymuszono uruchomienie LuminaqHUB...")
     safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     return
 end
@@ -185,7 +175,7 @@ if targetFolder then
     local success = safeExecute(relPath, fullUrl)
 
     if not success then
-        warn("[Loader] Blad ladowania dedykowanego skryptu " .. tostring(relPath) .. ", uruchamiam Universal...")
+        warn("[Loader] Blad ladowania dedykowanego skryptu " .. tostring(relPath) .. ", uruchamiam LuminaqHUB...")
         safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     end
 else
@@ -193,10 +183,10 @@ else
     for k, _ in pairs(Games) do
         if type(k) == "string" then table.insert(registeredList, k) end
     end
-    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. " (Lista gier: " .. table.concat(registeredList, ", ") .. "). Uruchamiam Universal Suite...")
+    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. " (Lista gier: " .. table.concat(registeredList, ", ") .. "). Uruchamiam LuminaqHUB...")
     local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
     if not success then
-        warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic Universal Suite!")
+        warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic LuminaqHUB!")
     end
 end
 
