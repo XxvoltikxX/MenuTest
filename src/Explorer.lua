@@ -131,13 +131,16 @@ function Explorer:Create(options)
     local function applyTheme(mode)
         Theme.mode = mode
         Palette = Palettes[mode] or Palettes.dark
+        local alive = {}
         for _, it in ipairs(Theme.items) do
             if it.obj and it.obj.Parent then
                 pcall(function()
                     it.obj[it.prop] = Palette[it.role]
                 end)
+                table.insert(alive, it)
             end
         end
+        Theme.items = alive
     end
 
     local Icons = options.Icons
@@ -1461,6 +1464,7 @@ function Explorer:Create(options)
 
     function renderDetails(entry)
         clearChildren(detailContent)
+        pcall(function() detailContent.CanvasPosition = Vector2.zero end)
         if not entry then
             local empty = new("Frame", {
                 Size = UDim2.fromScale(1, 1),
@@ -1803,6 +1807,7 @@ function Explorer:Create(options)
 
     local function renderList()
         clearChildren(listScroll)
+        pcall(function() listScroll.CanvasPosition = Vector2.zero end)
         local filtered = getFilteredScripts()
         countLabel.Text = tostring(#filtered) .. (#filtered == 1 and " script" or " scriptów")
         for i, entry in ipairs(filtered) do
