@@ -260,10 +260,13 @@ local function updateVisuals()
                     visuals.Name.Position = UDim2.fromOffset(topX, topY - 4)
                 end
 
-                -- Head ESP — kółko na głowie
+                -- Head ESP — kółko na głowie (skaluje się z graczem, nie rośnie z oddalaniem)
                 visuals.Head.Visible = onScreen and headCfg.enabled
                 if visuals.Head.Visible then
-                    local diameter = math.max(headCfg.size * 2, 4)
+                    local sizeScale = math.clamp((headCfg.size or 18) / 18, 0.25, 3)
+                    local radius = math.clamp(math.max(height, 1) * 0.11 * sizeScale, 2, 80)
+                    local diameter = radius * 2
+
                     visuals.Head.Size = UDim2.fromOffset(diameter, diameter)
                     visuals.Head.Position = UDim2.fromOffset(headScreen.X, headScreen.Y)
                     visuals.HeadStroke.Color = headCfg.color
