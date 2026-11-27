@@ -675,7 +675,7 @@ local function createLoadingIndicator(title, isMobile, config)
             TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
             TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
         else
-            DetectText.Text = "game not supported : loading LuminaqHUB"
+            DetectText.Text = "LuminaqHUB : tryb uniwersalny"
             DetectText.TextColor3 = Color3.fromRGB(253, 224, 71)
             DetectDot.BackgroundColor3 = Color3.fromRGB(251, 191, 36)
             DetectBadge.BackgroundColor3 = Color3.fromRGB(36, 26, 14)

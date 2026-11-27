@@ -1002,10 +1002,17 @@ function Explorer:Create(options)
     bindTheme(detailStroke, "Color", "StrokeSoft")
     pad(detailPanel, 16, 16, 14, 14)
 
-    local detailContent = new("Frame", {
+    local detailContent = new("ScrollingFrame", {
         Name = "DetailContent",
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Palette.Accent,
+        ScrollBarImageTransparency = 0.5,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
     }, detailPanel)
 
     -- // ======================================================================
@@ -1162,27 +1169,35 @@ function Explorer:Create(options)
     -- // ======================================================================
     local selectedEntry = nil
     local renderDetails
+    local updateDetailAction
 
-    local function setEntryState(entry, state, silent)
-        entry.State = state == true
-        if entry.OnToggle then
-            local ok, err = pcall(entry.OnToggle, entry.State)
-            if not ok then
-                notify("Błąd: " .. tostring(err), false)
-                return
-            end
-        end
+    local function syncEntrySwitches(entry)
         if entry._quickSwitch and entry._quickSwitch.Button and entry._quickSwitch.Button.Parent then
             entry._quickSwitch.Set(entry.State, false)
         end
         if entry._rowSwitch and entry._rowSwitch.Button and entry._rowSwitch.Button.Parent then
             entry._rowSwitch.Set(entry.State, false)
         end
+    end
+
+    local function setEntryState(entry, state, silent)
+        local previous = entry.State
+        entry.State = state == true
+        if entry.OnToggle then
+            local ok, err = pcall(entry.OnToggle, entry.State)
+            if not ok then
+                entry.State = previous
+                syncEntrySwitches(entry)
+                notify("Błąd: " .. tostring(err), false)
+                return
+            end
+        end
+        syncEntrySwitches(entry)
         if not silent then
             notify(entry.Name .. (entry.State and " — włączony" or " — wyłączony"), entry.State)
         end
-        if selectedEntry == entry and renderDetails then
-            renderDetails(entry)
+        if selectedEntry == entry and updateDetailAction then
+            updateDetailAction(entry)
         end
     end
 
@@ -1257,7 +1272,7 @@ function Explorer:Create(options)
             ImageColor3 = Color3.fromRGB(255, 255, 255),
         }, btn)
         applyIcon(ico, iconName)
-        new("TextLabel", {
+        local label = new("TextLabel", {
             Text = text,
             Font = Enum.Font.GothamBold,
             TextSize = 12,
@@ -1274,7 +1289,7 @@ function Explorer:Create(options)
             TweenService:Create(btn, TweenInfo.new(0.15), { BackgroundTransparency = 0.1 }):Play()
         end)
         btn.MouseButton1Click:Connect(callback)
-        return btn
+        return btn, label, ico
     end
 
     local function makeOptionSlider(parent, opt, order)
@@ -1421,6 +1436,29 @@ function Explorer:Create(options)
         return sw
     end
 
+    function updateDetailAction(entry)
+        local btn = entry and entry._detailBtn
+        if not btn or not btn.Parent then return end
+        local actionColor = Palette.Accent
+        local actionText = "Uruchom"
+        local actionIcon = "play"
+        if entry.Mode == "toggle" then
+            actionColor = entry.State and Palette.Red or Palette.Green
+            actionText = entry.State and "Wyłącz" or "Włącz"
+            actionIcon = entry.State and "square" or "play"
+        elseif entry.Url then
+            actionText = "Pobierz i uruchom"
+            actionIcon = "download"
+        end
+        btn.BackgroundColor3 = actionColor
+        if entry._detailLabel and entry._detailLabel.Parent then
+            entry._detailLabel.Text = actionText
+        end
+        if entry._detailIcon and entry._detailIcon.Parent then
+            applyIcon(entry._detailIcon, actionIcon)
+        end
+    end
+
     function renderDetails(entry)
         clearChildren(detailContent)
         if not entry then
@@ -1553,25 +1591,14 @@ function Explorer:Create(options)
 
         -- Akcja
         local actionY = 150
-        local actionColor = Palette.Accent
-        if entry.Mode == "toggle" then
-            actionColor = entry.State and Palette.Red or Palette.Green
-        end
-        local actionText = "Uruchom"
-        local actionIcon = "play"
-        if entry.Mode == "toggle" then
-            actionText = entry.State and "Wyłącz" or "Włącz"
-            actionIcon = entry.State and "square" or "play"
-        elseif entry.Url then
-            actionText = "Pobierz i uruchom"
-            actionIcon = "download"
-        end
-
-        local actionBtn = makeDetailActionButton(detailContent, actionText, actionIcon, actionColor, function()
+        local actionBtn, actionLabel, actionIconImg = makeDetailActionButton(detailContent, "", "play", Palette.Accent, function()
             executeEntry(entry)
         end)
         actionBtn.Position = UDim2.new(0, 0, 0, actionY)
         entry._detailBtn = actionBtn
+        entry._detailLabel = actionLabel
+        entry._detailIcon = actionIconImg
+        updateDetailAction(entry)
 
         -- Opcje
         if entry.Options and #entry.Options > 0 then
@@ -1589,13 +1616,15 @@ function Explorer:Create(options)
 
             local optFrame = new("Frame", {
                 Position = UDim2.new(0, 0, 0, actionY + 72),
-                Size = UDim2.new(1, 0, 1, -(actionY + 72)),
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
                 BackgroundTransparency = 1,
             }, detailContent)
             local optLayout = new("UIListLayout", {
                 Padding = UDim.new(0, 6),
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }, optFrame)
+            pad(optFrame, 0, 0, 0, 6)
             for i, opt in ipairs(entry.Options) do
                 if opt.Type == "slider" then
                     makeOptionSlider(optFrame, opt, i)
@@ -2108,6 +2137,7 @@ function Explorer:Create(options)
     local dragStart = nil
     topBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if UserInputService:GetFocusedTextBox() then return end
             dragging = true
             dragStart = {
                 x = input.Position.X,
@@ -2118,6 +2148,11 @@ function Explorer:Create(options)
         end
     end)
     connect(UserInputService.InputChanged:Connect(function(input)
+        if dragging and UserInputService:GetFocusedTextBox() then
+            dragging = false
+            dragStart = nil
+            return
+        end
         if dragging and dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local dx = input.Position.X - dragStart.x
             local dy = input.Position.Y - dragStart.y
@@ -2169,7 +2204,7 @@ function Explorer:Create(options)
     connect(UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         if input.KeyCode == keyEnum then
-            if searchBox:IsFocused() then return end
+            if UserInputService:GetFocusedTextBox() then return end
             setVisible(not main.Visible)
         end
     end))

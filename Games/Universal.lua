@@ -21,6 +21,10 @@ pcall(function() VirtualUser = game:GetService("VirtualUser") end)
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
 
+local function getCamera()
+    return Workspace.CurrentCamera or Camera
+end
+
 local Connections = {}
 
 local function connect(conn)
@@ -123,10 +127,11 @@ local function CleanupFlyPhysics()
 end
 
 local function UpdateFly()
+    local cam = getCamera()
     local char = getCharacter()
     local hrp = getRootPart(char)
     local hum = getHumanoid(char)
-    if not char or not hrp or not hum or hum.Health <= 0 then
+    if not cam or not char or not hrp or not hum or hum.Health <= 0 then
         CleanupFlyPhysics()
         return
     end
@@ -141,7 +146,7 @@ local function UpdateFly()
         flyBG = Instance.new("BodyGyro")
         flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
         flyBG.P = 9e4
-        flyBG.CFrame = Camera.CFrame
+        flyBG.CFrame = cam.CFrame
         flyBG.Parent = hrp
     end
 
@@ -155,7 +160,7 @@ local function UpdateFly()
         end
     end
 
-    local camCF = Camera.CFrame
+    local camCF = cam.CFrame
     local moveDir = Vector3.zero
 
     if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camCF.LookVector end
@@ -328,7 +333,9 @@ local function CleanupAllESP()
 end
 
 local function GetTracerOrigin()
-    local vp = Camera.ViewportSize
+    local cam = getCamera()
+    if not cam then return nil end
+    local vp = cam.ViewportSize
     if tracerFromBottom then
         return Vector2.new(vp.X / 2, vp.Y - 10)
     end
@@ -344,6 +351,12 @@ local function UpdateESP()
 
     local myHrp = getRootPart()
     local originPos = GetTracerOrigin()
+
+    local cam = getCamera()
+    if not cam then
+        CleanupAllESP()
+        return
+    end
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
@@ -425,7 +438,7 @@ local function UpdateESP()
 
                     -- Tracers (Drawing API)
                     if tracersEnabled and Drawing then
-                        local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                        local screenPos, onScreen = cam:WorldToViewportPoint(hrp.Position)
                         if onScreen then
                             if not data.TracerLine then
                                 local line = Drawing.new("Line")
