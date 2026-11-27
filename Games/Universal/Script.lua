@@ -440,30 +440,60 @@ local function getMousePosition()
     return nil
 end
 
+-- Histereza celu: nie przeskakuj między graczami, gdy są blisko siebie.
+local lockedTarget = nil
+
+-- Tłumienie oscylacji: gdy kierunek ruchu miga, zmniejszamy gain.
+local aimStability = 1.0
+local lastSignX, lastSignY = 0, 0
+local lastTargetPlayer = nil
+
+local AIM_DEADZONE = 6 -- px: w tej strefie aimbot nie rusza myszą
+
+local function screenPositionOf(camera, player)
+    local _, hum, hrp, headPart = getCharacterParts(player)
+    if not (hum and hum.Health > 0 and hrp) then return nil end
+
+    local part = (aimCfg.target == "Body" and hrp) or headPart or hrp
+    if not part then return nil end
+
+    local pos, onScreen = camera:WorldToViewportPoint(part.Position)
+    if not onScreen or not pos.Z or pos.Z <= 0 then return nil end
+    return pos
+end
+
 local function findAimTarget(camera, viewport)
     local centerX, centerY = viewport.X / 2, viewport.Y / 2
-    local bestPos, bestDist = nil, math.max(fovCfg.radius or 160, 1)
+    local radius = math.max(fovCfg.radius or 160, 1)
+    local bestPlayer, bestPos, bestDist = nil, nil, radius
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local _, hum, hrp, headPart = getCharacterParts(player)
-            if hum and hum.Health > 0 and hrp then
-                local part = (aimCfg.target == "Body" and hrp) or headPart or hrp
-                if part then
-                    local pos, onScreen = camera:WorldToViewportPoint(part.Position)
-                    if onScreen and pos.Z and pos.Z > 0 then
-                        local dx, dy = pos.X - centerX, pos.Y - centerY
-                        local dist = math.sqrt(dx * dx + dy * dy)
-                        if dist <= bestDist then
-                            bestPos, bestDist = pos, dist
-                        end
-                    end
+            local pos = screenPositionOf(camera, player)
+            if pos then
+                local dx, dy = pos.X - centerX, pos.Y - centerY
+                local dist = math.sqrt(dx * dx + dy * dy)
+                if dist <= radius and dist < bestDist then
+                    bestPlayer, bestPos, bestDist = player, pos, dist
                 end
             end
         end
     end
 
-    return bestPos
+    -- Histereza: trzymaj poprzedni cel, jeśli nadal jest w FOV i nieznacznie dalej.
+    if lockedTarget and lockedTarget ~= bestPlayer and lockedTarget.Parent then
+        local pos = screenPositionOf(camera, lockedTarget)
+        if pos then
+            local dx, dy = pos.X - centerX, pos.Y - centerY
+            local dist = math.sqrt(dx * dx + dy * dy)
+            if dist <= radius and dist <= bestDist * 1.25 then
+                return pos, lockedTarget
+            end
+        end
+    end
+
+    lockedTarget = bestPlayer
+    return bestPos, bestPlayer
 end
 
 local function updateAimbot()
@@ -475,30 +505,61 @@ local function updateAimbot()
     local viewport = camera.ViewportSize
     if not viewport then return end
 
-    local target = findAimTarget(camera, viewport)
-    if not target then return end
+    local target, targetPlayer = findAimTarget(camera, viewport)
+    if not target then
+        lastTargetPlayer = nil
+        return
+    end
 
     local mouseX, mouseY = getMousePosition()
     if not mouseX then return end
 
-    -- Czułość: tempo podążania celownika za celem.
-    local follow = 0.05 + (math.clamp(aimCfg.sensitivity, 1, 100) / 100) * 0.85
-    -- Intensywność: siła przyciągania i maksymalny krok na klatkę.
-    local strength = 0.15 + (math.clamp(aimCfg.intensity, 1, 100) / 100) * 0.85
-
-    local dx = (target.X - mouseX) * follow * strength
-    local dy = (target.Y - mouseY) * follow * strength
-
-    local maxStep = math.max(1, 45 * strength)
+    local dx = target.X - mouseX
+    local dy = target.Y - mouseY
     local dist = math.sqrt(dx * dx + dy * dy)
-    if dist > maxStep then
-        local k = maxStep / dist
+
+    -- Martwa strefa — bez drgania, gdy celownik jest już na celu.
+    if dist <= AIM_DEADZONE then return end
+
+    -- Tłumienie oscylacji (gdy cel przeskakuje na drugą stronę).
+    local signX = dx > 0 and 1 or (dx < 0 and -1 or 0)
+    local signY = dy > 0 and 1 or (dy < 0 and -1 or 0)
+    if targetPlayer == lastTargetPlayer then
+        local flipped = (signX ~= 0 and lastSignX ~= 0 and signX ~= lastSignX)
+            or (signY ~= 0 and lastSignY ~= 0 and signY ~= lastSignY)
+        if flipped then
+            aimStability = math.max(0.25, aimStability * 0.65)
+        else
+            aimStability = math.min(1.0, aimStability + (1.0 - aimStability) * 0.08)
+        end
+    else
+        aimStability = 1.0
+    end
+    lastSignX, lastSignY, lastTargetPlayer = signX, signY, targetPlayer
+
+    -- Czułość: tempo podążania (nisko = płynnie, trudniej wykryć).
+    local sensitivity = math.clamp(aimCfg.sensitivity, 1, 100) / 100
+    local intensity   = math.clamp(aimCfg.intensity, 1, 100) / 100
+
+    local follow   = 0.02 + sensitivity * 0.10 -- 0.02 .. 0.12
+    local strength = 0.35 + intensity * 0.65   -- 0.35 .. 1.00
+    local gain     = follow * strength * aimStability
+
+    dx = dx * gain
+    dy = dy * gain
+
+    local maxStep = 1 + intensity * 5 -- 1 .. 6 px na klatkę
+    local stepDist = math.sqrt(dx * dx + dy * dy)
+    if stepDist > maxStep then
+        local k = maxStep / stepDist
         dx, dy = dx * k, dy * k
     end
 
     if aimCfg.jitter then
-        dx = dx + (math.random() - 0.5) * 1.8
-        dy = dy + (math.random() - 0.5) * 1.8
+        -- Powolne, płynne mikro-drgania zamiast losowego szarpania.
+        local t = tick()
+        dx = dx + math.sin(t * 2.4) * 0.6
+        dy = dy + math.sin(t * 3.7 + 1.3) * 0.6
     end
 
     mousemoverel(roundStep(dx), roundStep(dy))
