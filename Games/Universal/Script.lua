@@ -2,6 +2,9 @@
 -- // LUMINAQHUB — UNIVERSAL
 -- // Pierwsza gra w panelu: ESP, Tracers, Nametag, Head ESP,
 -- // WalkSpeed (Velocity / CFrame) oraz ustawienia (bind menu, tło GIF/Pictures).
+-- //
+-- // Visuals działają na własnej nakładce ScreenGui (Frames), więc nie wymagają
+-- // Drawing API — ramki, linie i kółka renderują się w każdym executorze.
 -- // ==========================================================================
 
 local mainUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb="
@@ -84,135 +87,133 @@ local function getLocalHumanoid()
     return hum
 end
 
+local function atan2(y, x)
+    if math.atan2 then
+        return math.atan2(y, x)
+    end
+    return math.atan(y, x)
+end
+
 -- // ==========================================================================
--- // DRAWING (ESP / TRACERS / NAMETAG / HEAD ESP)
+-- // NAKŁADKA ESP (ScreenGui + Frames — bez Drawing API)
 -- // ==========================================================================
-local DrawingLib = nil
-pcall(function() DrawingLib = Drawing end)
-local hasDrawing = (DrawingLib ~= nil and type(DrawingLib.new) == "function")
+local overlayGui = Instance.new("ScreenGui")
+overlayGui.Name = "Universal_ESP"
+overlayGui.ResetOnSpawn = false
+overlayGui.IgnoreGuiInset = true
+overlayGui.DisplayOrder = 5
+overlayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-if not hasDrawing then
-    warn("[Universal] Drawing API niedostępne — ESP działa w trybie Highlight, pozostałe efekty 2D są wyłączone.")
+local parentedOk = pcall(function()
+    overlayGui.Parent = game:GetService("CoreGui")
+end)
+if not parentedOk or not overlayGui.Parent then
+    pcall(function()
+        overlayGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end)
 end
 
-local espCache = {}
+local visualCache = {}
 
-local function removeDrawing(obj)
-    if not obj then return end
-    pcall(function()
-        if obj.Remove then obj:Remove() end
-    end)
+local function createPlayerVisuals()
+    local box = Instance.new("Frame")
+    box.Name = "ESP_Box"
+    box.BackgroundTransparency = 1
+    box.BorderSizePixel = 0
+    box.Visible = false
+    box.Parent = overlayGui
+
+    local boxStroke = Instance.new("UIStroke", box)
+    boxStroke.Thickness = 1.5
+    boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    local tracer = Instance.new("Frame")
+    tracer.Name = "ESP_Tracer"
+    tracer.AnchorPoint = Vector2.new(0.5, 0.5)
+    tracer.BorderSizePixel = 0
+    tracer.Visible = false
+    tracer.Parent = overlayGui
+
+    local nameTag = Instance.new("TextLabel")
+    nameTag.Name = "ESP_Name"
+    nameTag.BackgroundTransparency = 1
+    nameTag.AnchorPoint = Vector2.new(0.5, 1)
+    nameTag.Size = UDim2.fromOffset(260, 18)
+    nameTag.Font = Enum.Font.GothamBold
+    nameTag.TextSize = 12
+    nameTag.TextStrokeTransparency = 0.35
+    nameTag.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameTag.TextXAlignment = Enum.TextXAlignment.Center
+    nameTag.TextTruncate = Enum.TextTruncate.AtEnd
+    nameTag.Visible = false
+    nameTag.Parent = overlayGui
+
+    local head = Instance.new("Frame")
+    head.Name = "ESP_Head"
+    head.BackgroundTransparency = 1
+    head.AnchorPoint = Vector2.new(0.5, 0.5)
+    head.BorderSizePixel = 0
+    head.Visible = false
+    head.Parent = overlayGui
+
+    Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
+    local headStroke = Instance.new("UIStroke", head)
+    headStroke.Thickness = 1.5
+    headStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+    return {
+        Box        = box,
+        BoxStroke  = boxStroke,
+        Tracer     = tracer,
+        Name       = nameTag,
+        Head       = head,
+        HeadStroke = headStroke,
+    }
 end
 
-local function clearPlayerDrawing(player)
-    local cache = espCache[player]
-    if not cache then return end
-    removeDrawing(cache.Box)
-    removeDrawing(cache.Line)
-    removeDrawing(cache.Name)
-    removeDrawing(cache.Head)
-    espCache[player] = nil
+local function hidePlayerVisuals(visuals)
+    if not visuals then return end
+    visuals.Box.Visible = false
+    visuals.Tracer.Visible = false
+    visuals.Name.Visible = false
+    visuals.Head.Visible = false
 end
 
-local function getPlayerDrawing(player)
-    local cache = espCache[player]
-    if cache then return cache end
-    if not hasDrawing then return nil end
-
-    cache = {}
-    local ok = pcall(function()
-        cache.Box  = DrawingLib.new("Square")
-        cache.Line = DrawingLib.new("Line")
-        cache.Name = DrawingLib.new("Text")
-        cache.Head = DrawingLib.new("Circle")
-    end)
-    if not ok then return nil end
-
-    pcall(function()
-        cache.Box.Thickness   = 1
-        cache.Box.Filled      = false
-        cache.Box.Transparency = 0
-    end)
-    pcall(function()
-        cache.Line.Thickness = 1
-        cache.Line.Transparency = 0
-    end)
-    pcall(function()
-        cache.Name.Size    = 13
-        cache.Name.Center  = true
-        cache.Name.Outline = true
-        cache.Name.Font    = 2
-        cache.Name.Transparency = 0
-    end)
-    pcall(function()
-        cache.Head.Thickness = 1.5
-        cache.Head.Filled    = false
-        cache.Head.NumSides  = 32
-    end)
-
-    espCache[player] = cache
-    return cache
-end
-
--- Fallback: Highlight, gdy executor nie ma Drawing API
-local highlightCache = {}
-
-local function clearPlayerHighlight(player)
-    local hl = highlightCache[player]
-    if hl then
-        pcall(function() hl:Destroy() end)
-        highlightCache[player] = nil
+local function destroyPlayerVisuals(player)
+    local visuals = visualCache[player]
+    if not visuals then return end
+    visualCache[player] = nil
+    for _, obj in ipairs({ visuals.Box, visuals.Tracer, visuals.Name, visuals.Head }) do
+        pcall(function() obj:Destroy() end)
     end
 end
 
-local function updateHighlights()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local char = player.Character
-            local hl = highlightCache[player]
-
-            if espCfg.enabled and char then
-                if not hl or hl.Parent ~= char then
-                    clearPlayerHighlight(player)
-                    local newHl = Instance.new("Highlight")
-                    newHl.Name = "LuminaqESP"
-                    newHl.FillTransparency = 1
-                    newHl.OutlineTransparency = 0
-                    pcall(function() newHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop end)
-                    newHl.Parent = char
-                    highlightCache[player] = newHl
-                    hl = newHl
-                end
-                pcall(function() hl.OutlineColor = espCfg.color end)
-            elseif hl then
-                clearPlayerHighlight(player)
-            end
-        end
-    end
-end
-
-local function updateDrawingESP()
+local function updateVisuals()
     local camera = Workspace.CurrentCamera
     if not camera then return end
     local viewport = camera.ViewportSize
 
-    -- Usuń rysunki graczy, którzy wyszli
-    for player in pairs(espCache) do
+    -- Usuń nakładki graczy, którzy wyszli z serwera
+    for player in pairs(visualCache) do
         if not player.Parent then
-            clearPlayerDrawing(player)
+            destroyPlayerVisuals(player)
         end
     end
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local _, hum, hrp, head = getCharacterParts(player)
-            local alive = hum and hum.Health > 0 and hrp and head
+            local _, hum, hrp, headPart = getCharacterParts(player)
+            local alive = hum and hum.Health > 0 and hrp and headPart
 
             local wanted = espCfg.enabled or tracerCfg.enabled or nameCfg.enabled or headCfg.enabled
-            local cache = wanted and getPlayerDrawing(player) or espCache[player]
+            local visuals = visualCache[player]
+            if wanted and not visuals then
+                visuals = createPlayerVisuals()
+                visualCache[player] = visuals
+            end
 
-            if alive and cache then
-                local headPos = head.Position + Vector3.new(0, 0.6, 0)
+            if alive and visuals then
+                local headPos = headPart.Position + Vector3.new(0, 0.6, 0)
                 local footPos = hrp.Position - Vector3.new(0, 3, 0)
 
                 local headScreen, headOn = camera:WorldToViewportPoint(headPos)
@@ -227,58 +228,50 @@ local function updateDrawingESP()
 
                 local distance = (camera.CFrame.Position - hrp.Position).Magnitude
 
-                if cache.Box then
-                    cache.Box.Visible = onScreen and espCfg.enabled
-                    if cache.Box.Visible then
-                        cache.Box.Color = espCfg.color
-                        cache.Box.Position = Vector2.new(leftX, topY)
-                        cache.Box.Size = Vector2.new(width, height)
-                    end
+                -- ESP — prostokąt wokół gracza
+                visuals.Box.Visible = onScreen and espCfg.enabled
+                if visuals.Box.Visible then
+                    visuals.Box.Position = UDim2.fromOffset(leftX, topY)
+                    visuals.Box.Size = UDim2.fromOffset(width, height)
+                    visuals.BoxStroke.Color = espCfg.color
                 end
 
-                if cache.Line then
-                    cache.Line.Visible = onScreen and tracerCfg.enabled
-                    if cache.Line.Visible then
-                        cache.Line.Color = tracerCfg.color
-                        cache.Line.From = Vector2.new(viewport.X / 2, viewport.Y)
-                        cache.Line.To = Vector2.new(topX, bottomY)
-                    end
+                -- Tracers — linia od dołu ekranu do stóp gracza
+                visuals.Tracer.Visible = onScreen and tracerCfg.enabled
+                if visuals.Tracer.Visible then
+                    local fromX, fromY = viewport.X / 2, viewport.Y
+                    local toX, toY = topX, bottomY
+                    local dx, dy = toX - fromX, toY - fromY
+                    local length = math.sqrt(dx * dx + dy * dy)
+
+                    visuals.Tracer.Position = UDim2.fromOffset((fromX + toX) / 2, (fromY + toY) / 2)
+                    visuals.Tracer.Size = UDim2.fromOffset(math.max(length, 1), 1.5)
+                    visuals.Tracer.Rotation = math.deg(atan2(dy, dx))
+                    visuals.Tracer.BackgroundColor3 = tracerCfg.color
                 end
 
-                if cache.Name then
-                    cache.Name.Visible = onScreen and nameCfg.enabled
-                    if cache.Name.Visible then
-                        cache.Name.Color = nameCfg.color
-                        cache.Name.Text = nameCfg.showDistance
-                            and string.format("%s [%dm]", player.Name, math.floor(distance))
-                            or player.Name
-                        cache.Name.Position = Vector2.new(topX, topY - 18)
-                    end
+                -- Nametag — nazwa (i dystans) nad głową
+                visuals.Name.Visible = onScreen and nameCfg.enabled
+                if visuals.Name.Visible then
+                    visuals.Name.Text = nameCfg.showDistance
+                        and string.format("%s [%dm]", player.Name, math.floor(distance))
+                        or player.Name
+                    visuals.Name.TextColor3 = nameCfg.color
+                    visuals.Name.Position = UDim2.fromOffset(topX, topY - 4)
                 end
 
-                if cache.Head then
-                    cache.Head.Visible = onScreen and headCfg.enabled
-                    if cache.Head.Visible then
-                        cache.Head.Color = headCfg.color
-                        cache.Head.Radius = headCfg.size
-                        cache.Head.Position = Vector2.new(headScreen.X, headScreen.Y)
-                    end
+                -- Head ESP — kółko na głowie
+                visuals.Head.Visible = onScreen and headCfg.enabled
+                if visuals.Head.Visible then
+                    local diameter = math.max(headCfg.size * 2, 4)
+                    visuals.Head.Size = UDim2.fromOffset(diameter, diameter)
+                    visuals.Head.Position = UDim2.fromOffset(headScreen.X, headScreen.Y)
+                    visuals.HeadStroke.Color = headCfg.color
                 end
-            elseif cache then
-                if cache.Box then cache.Box.Visible = false end
-                if cache.Line then cache.Line.Visible = false end
-                if cache.Name then cache.Name.Visible = false end
-                if cache.Head then cache.Head.Visible = false end
+            elseif visuals then
+                hidePlayerVisuals(visuals)
             end
         end
-    end
-end
-
-local function updateVisuals()
-    if hasDrawing then
-        updateDrawingESP()
-    else
-        updateHighlights()
     end
 end
 
@@ -505,8 +498,7 @@ local bindConnection = UserInputService.InputBegan:Connect(function(input)
 end)
 
 local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
-    clearPlayerDrawing(player)
-    clearPlayerHighlight(player)
+    destroyPlayerVisuals(player)
 end)
 
 -- // ==========================================================================
@@ -523,12 +515,11 @@ local function cleanupAll()
     pcall(function() bindConnection:Disconnect() end)
     pcall(function() playerRemovingConnection:Disconnect() end)
 
-    for player in pairs(espCache) do
-        clearPlayerDrawing(player)
+    for player in pairs(visualCache) do
+        destroyPlayerVisuals(player)
     end
-    for player in pairs(highlightCache) do
-        clearPlayerHighlight(player)
-    end
+
+    pcall(function() overlayGui:Destroy() end)
 
     local hum = getLocalHumanoid()
     if hum then
