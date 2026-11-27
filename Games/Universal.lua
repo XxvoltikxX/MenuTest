@@ -35,9 +35,9 @@ local Games = {
     {
         Id          = "Universal",
         Name        = "Universal",
-        Description = "ESP, Tracers, Nametag, Head ESP, WalkSpeed i ustawienia",
+        Description = "ESP, Tracers, Nametag, Head ESP, Aimbot, FOV, WalkSpeed i ustawienia",
         Icon        = "eye",
-        Tags        = { "esp", "visuals", "speed" },
+        Tags        = { "esp", "visuals", "aimbot", "combat", "speed" },
         Author      = "XxvoltikxX",
     },
     -- Przyklad:

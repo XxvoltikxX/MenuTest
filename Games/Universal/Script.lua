@@ -1,7 +1,7 @@
 -- // ==========================================================================
 -- // LUMINAQHUB — UNIVERSAL
--- // Pierwsza gra w panelu: ESP, Tracers, Nametag, Head ESP,
--- // WalkSpeed (Velocity / CFrame) oraz ustawienia (bind menu, tło GIF/Pictures).
+-- // Pierwsza gra w panelu: Visuals (ESP, Tracers, Nametag, Head ESP),
+-- // Combat (Aimbot + FOV), Movement (WalkSpeed) oraz Settings (bind, tło).
 -- //
 -- // Visuals działają na własnej nakładce ScreenGui (Frames), więc nie wymagają
 -- // Drawing API — ramki, linie i kółka renderują się w każdym executorze.
@@ -16,6 +16,7 @@ local MENU = loadstring(game:HttpGet(mainUrl):gsub("^\239\187\191", ""))()
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
+local GuiService        = game:GetService("GuiService")
 local Workspace         = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
@@ -35,8 +36,9 @@ if not Window then
 end
 
 local VisualsTab  = Window:CreateTab("Visuals", "eye", 1)
-local PlayerTab   = Window:CreateTab("Player", "user", 2)
-local SettingsTab = Window:CreateTab("Settings", "settings", 3)
+local CombatTab   = Window:CreateTab("Combat", "crosshair", 2)
+local MovementTab = Window:CreateTab("Movement", "wind", 3)
+local SettingsTab = Window:CreateTab("Settings", "settings", 4)
 
 -- // ==========================================================================
 -- // STAN FUNKCJI
@@ -68,6 +70,24 @@ local speedCfg = {
     mode     = "Velocity",
     value    = 60,
     baseWalk = 16,
+}
+
+-- Aimbot: enabled = moduł włączony, active = faktycznie namierza (bind).
+local aimCfg = {
+    enabled     = false,
+    active      = false,
+    key         = "F",
+    mode        = "Toggle", -- Toggle / Hold
+    target      = "Head",   -- Head / Body
+    sensitivity = 55,       -- 1-100: jak szybko celownik podąża za celem
+    intensity   = 70,       -- 1-100: siła przyciągania / maks. krok
+    jitter      = false,    -- mikro-drgania imitujące rękę
+}
+
+local fovCfg = {
+    enabled = false, -- pokaż okrąg FOV
+    radius  = 160,   -- promień wyszukiwania (px)
+    color   = Color3.fromRGB(129, 140, 248),
 }
 
 -- // ==========================================================================
@@ -114,6 +134,22 @@ if not parentedOk or not overlayGui.Parent then
 end
 
 local visualCache = {}
+
+-- FOV aimbota — okrąg wyszukiwania na środku ekranu
+local fovCircle = Instance.new("Frame")
+fovCircle.Name = "Aimbot_FOV"
+fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+fovCircle.BackgroundTransparency = 1
+fovCircle.BorderSizePixel = 0
+fovCircle.Visible = false
+fovCircle.Parent = overlayGui
+
+Instance.new("UICorner", fovCircle).CornerRadius = UDim.new(1, 0)
+local fovStroke = Instance.new("UIStroke", fovCircle)
+fovStroke.Thickness = 1.5
+fovStroke.Transparency = 0.2
+fovStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+fovStroke.Color = fovCfg.color
 
 local function createPlayerVisuals()
     local box = Instance.new("Frame")
@@ -192,6 +228,15 @@ local function updateVisuals()
     local camera = Workspace.CurrentCamera
     if not camera then return end
     local viewport = camera.ViewportSize
+
+    -- FOV — okrąg wyszukiwania aimbota
+    fovCircle.Visible = fovCfg.enabled
+    if fovCircle.Visible then
+        local diameter = math.max((fovCfg.radius or 160) * 2, 8)
+        fovCircle.Size = UDim2.fromOffset(diameter, diameter)
+        fovCircle.Position = UDim2.fromOffset(viewport.X / 2, viewport.Y / 2)
+        fovStroke.Color = fovCfg.color
+    end
 
     -- Usuń nakładki graczy, którzy wyszli z serwera
     for player in pairs(visualCache) do
@@ -349,9 +394,224 @@ HeadModule:AddSlider({
 })
 
 -- // ==========================================================================
--- // PLAYER — WALKSPEED
+-- // COMBAT — AIMBOT + FOV
 -- // ==========================================================================
-local SpeedModule = PlayerTab:CreateModule({
+local aimBindButton
+local listeningForAimBind = false
+
+local function refreshAimBindLabel()
+    if aimBindButton then
+        aimBindButton:Set("Bind aimbota: [" .. tostring(aimCfg.key) .. "]")
+    end
+end
+
+local function isAimKey(input)
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then return false end
+    local code = input.KeyCode and input.KeyCode.Name
+    return code ~= nil and code == aimCfg.key
+end
+
+local function roundStep(value)
+    if value >= 0 then return math.floor(value + 0.5) end
+    return math.ceil(value - 0.5)
+end
+
+local function getMousePosition()
+    local ok, pos = pcall(function()
+        return UserInputService:GetMouseLocation()
+    end)
+    if ok and pos then
+        -- GetMouseLocation zwraca współrzędne z topbarem, a WorldToViewportPoint
+        -- bez niego — korygujemy GUI inset, żeby delta była dokładna.
+        local insetX, insetY = 0, 0
+        pcall(function()
+            local topLeft = GuiService:GetGuiInset()
+            if topLeft then
+                insetX, insetY = topLeft.X or 0, topLeft.Y or 0
+            end
+        end)
+        return pos.X - insetX, pos.Y - insetY
+    end
+
+    local camera = Workspace.CurrentCamera
+    if camera and camera.ViewportSize then
+        return camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2
+    end
+    return nil
+end
+
+local function findAimTarget(camera, viewport)
+    local centerX, centerY = viewport.X / 2, viewport.Y / 2
+    local bestPos, bestDist = nil, math.max(fovCfg.radius or 160, 1)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local _, hum, hrp, headPart = getCharacterParts(player)
+            if hum and hum.Health > 0 and hrp then
+                local part = (aimCfg.target == "Body" and hrp) or headPart or hrp
+                if part then
+                    local pos, onScreen = camera:WorldToViewportPoint(part.Position)
+                    if onScreen and pos.Z and pos.Z > 0 then
+                        local dx, dy = pos.X - centerX, pos.Y - centerY
+                        local dist = math.sqrt(dx * dx + dy * dy)
+                        if dist <= bestDist then
+                            bestPos, bestDist = pos, dist
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return bestPos
+end
+
+local function updateAimbot()
+    if not aimCfg.enabled or not aimCfg.active then return end
+    if type(mousemoverel) ~= "function" then return end
+
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+    local viewport = camera.ViewportSize
+    if not viewport then return end
+
+    local target = findAimTarget(camera, viewport)
+    if not target then return end
+
+    local mouseX, mouseY = getMousePosition()
+    if not mouseX then return end
+
+    -- Czułość: tempo podążania celownika za celem.
+    local follow = 0.05 + (math.clamp(aimCfg.sensitivity, 1, 100) / 100) * 0.85
+    -- Intensywność: siła przyciągania i maksymalny krok na klatkę.
+    local strength = 0.15 + (math.clamp(aimCfg.intensity, 1, 100) / 100) * 0.85
+
+    local dx = (target.X - mouseX) * follow * strength
+    local dy = (target.Y - mouseY) * follow * strength
+
+    local maxStep = math.max(1, 45 * strength)
+    local dist = math.sqrt(dx * dx + dy * dy)
+    if dist > maxStep then
+        local k = maxStep / dist
+        dx, dy = dx * k, dy * k
+    end
+
+    if aimCfg.jitter then
+        dx = dx + (math.random() - 0.5) * 1.8
+        dy = dy + (math.random() - 0.5) * 1.8
+    end
+
+    mousemoverel(roundStep(dx), roundStep(dy))
+end
+
+local AimbotModule = CombatTab:CreateModule({
+    Name        = "Aimbot",
+    Description = "Namierzanie graczy pod bindem",
+    Icon        = "crosshair",
+    Callback    = function(state)
+        aimCfg.enabled = state
+        if not state then aimCfg.active = false end
+    end,
+})
+
+aimBindButton = AimbotModule:AddButton({
+    Name     = "Bind aimbota: [" .. tostring(aimCfg.key) .. "]",
+    Callback = function()
+        if listeningForAimBind then return end
+        listeningForAimBind = true
+        aimBindButton:Set("Naciśnij klawisz...")
+
+        task.delay(5, function()
+            if listeningForAimBind then
+                listeningForAimBind = false
+                refreshAimBindLabel()
+            end
+        end)
+    end,
+})
+
+AimbotModule:AddDropdown({
+    Name          = "Aktywacja",
+    Flag          = "Universal_Aimbot_Mode",
+    Options       = { "Toggle", "Hold" },
+    CurrentOption = { aimCfg.mode },
+    Callback      = function(option)
+        local value = type(option) == "table" and option[1] or option
+        if value == "Toggle" or value == "Hold" then
+            aimCfg.mode = value
+            aimCfg.active = false
+        end
+    end,
+})
+
+AimbotModule:AddDropdown({
+    Name          = "Cel",
+    Flag          = "Universal_Aimbot_Target",
+    Options       = { "Head", "Body" },
+    CurrentOption = { aimCfg.target },
+    Callback      = function(option)
+        local value = type(option) == "table" and option[1] or option
+        if value == "Head" or value == "Body" then
+            aimCfg.target = value
+        end
+    end,
+})
+
+AimbotModule:AddSlider({
+    Name     = "Czułość",
+    Flag     = "Universal_Aimbot_Sensitivity",
+    Range    = { 1, 100 },
+    Default  = aimCfg.sensitivity,
+    Step     = 1,
+    Suffix   = "%",
+    Callback = function(value) aimCfg.sensitivity = value end,
+})
+
+AimbotModule:AddSlider({
+    Name     = "Intensywność",
+    Flag     = "Universal_Aimbot_Intensity",
+    Range    = { 1, 100 },
+    Default  = aimCfg.intensity,
+    Step     = 1,
+    Suffix   = "%",
+    Callback = function(value) aimCfg.intensity = value end,
+})
+
+AimbotModule:AddToggle({
+    Name     = "Jitter (mikro-drgania)",
+    Flag     = "Universal_Aimbot_Jitter",
+    Default  = false,
+    Callback = function(state) aimCfg.jitter = state end,
+})
+
+local FovModule = CombatTab:CreateModule({
+    Name        = "FOV",
+    Description = "Obszar wyszukiwania celu (przełącznik = pokaż okrąg)",
+    Icon        = "eye",
+    Callback    = function(state) fovCfg.enabled = state end,
+})
+
+FovModule:AddSlider({
+    Name     = "Promień FOV",
+    Flag     = "Universal_FOV_Radius",
+    Range    = { 40, 600 },
+    Default  = fovCfg.radius,
+    Step     = 5,
+    Suffix   = " px",
+    Callback = function(value) fovCfg.radius = value end,
+})
+
+FovModule:AddColorPicker({
+    Name     = "Kolor FOV",
+    Flag     = "Universal_FOV_Color",
+    Default  = fovCfg.color,
+    Callback = function(color) fovCfg.color = color end,
+})
+
+-- // ==========================================================================
+-- // MOVEMENT — WALKSPEED
+-- // ==========================================================================
+local SpeedModule = MovementTab:CreateModule({
     Name        = "WalkSpeed",
     Description = "Prędkość poruszania się",
     Icon        = "zap",
@@ -485,20 +745,51 @@ local speedConnection = RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
-local bindConnection = UserInputService.InputBegan:Connect(function(input)
-    if not listeningForBind then return end
+local bindConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
 
-    listeningForBind = false
-    local keyName = input.KeyCode and input.KeyCode.Name or "K"
-    if keyName == "Escape" then
+    -- Przechwytywanie binda menu
+    if listeningForBind then
+        listeningForBind = false
+        local keyName = input.KeyCode and input.KeyCode.Name or "K"
+        if keyName ~= "Escape" then
+            Window:SetMenuKeybind(keyName)
+        end
         refreshBindLabel()
         return
     end
 
-    Window:SetMenuKeybind(keyName)
-    refreshBindLabel()
+    -- Przechwytywanie binda aimbota
+    if listeningForAimBind then
+        listeningForAimBind = false
+        local keyName = input.KeyCode and input.KeyCode.Name or aimCfg.key
+        if keyName ~= "Escape" then
+            aimCfg.key = keyName
+            aimCfg.active = false
+        end
+        refreshAimBindLabel()
+        return
+    end
+
+    -- Aktywacja aimbota (pomijamy wpisywanie w polach GUI)
+    if gameProcessed then return end
+    if isAimKey(input) then
+        if aimCfg.mode == "Hold" then
+            aimCfg.active = true
+        else
+            aimCfg.active = not aimCfg.active
+        end
+    end
 end)
+
+local aimReleaseConnection = UserInputService.InputEnded:Connect(function(input)
+    if aimCfg.mode ~= "Hold" then return end
+    if isAimKey(input) then
+        aimCfg.active = false
+    end
+end)
+
+local aimConnection = RunService.RenderStepped:Connect(updateAimbot)
 
 local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
     destroyPlayerVisuals(player)
@@ -516,6 +807,8 @@ local function cleanupAll()
     pcall(function() renderConnection:Disconnect() end)
     pcall(function() speedConnection:Disconnect() end)
     pcall(function() bindConnection:Disconnect() end)
+    pcall(function() aimReleaseConnection:Disconnect() end)
+    pcall(function() aimConnection:Disconnect() end)
     pcall(function() playerRemovingConnection:Disconnect() end)
 
     for player in pairs(visualCache) do
