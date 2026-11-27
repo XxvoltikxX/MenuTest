@@ -1,7 +1,8 @@
 -- // ==========================================================================
 -- // MENUTEST MASTER LOADER
--- // Automatyczny system detekcji gry i ładowania dedykowanych skryptów
--- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub LuminaqHUB Explorer
+-- // Zawsze uruchamia LuminaqHUB — panel manualnego wyboru gry.
+-- // Bez detekcji PlaceId: użytkownik sam wybiera grę z listy.
+-- // Przepływ: Loader.lua -> Games/Universal.lua -> Panel wyboru gry
 -- // ==========================================================================
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"
@@ -109,84 +110,11 @@ local function safeExecute(relativePath, remoteUrl)
 end
 
 -- // ==========================================================================
--- // LISTA OBSŁUGIWANYCH GIER
--- // Startujemy od zera — dodawaj gry powoli, po jednej:
--- //   [ID_GRY] = { name = "Nazwa Gry", folder = "ID_GRY" },
--- // Loader automatycznie załaduje: Games/<ID_GRY>/Script.lua
--- // Gdy gra nie jest na liście -> uruchamia LuminaqHUB (Games/Universal.lua).
+-- // START — PANEL WYBORU GRY
 -- // ==========================================================================
-local Games = {
-    -- Przyklad:
-    -- [1234567890] = { name = "Moja Gra", folder = "1234567890" },
-}
+print("[Loader] Inicjalizacja... Uruchamiam LuminaqHUB (panel wyboru gry)...")
 
--- // ==========================================================================
--- // DETEKCJA GRY I URUCHOMIENIE SKRYPTU
--- // ==========================================================================
-local placeId = game.PlaceId
-local gameId  = game.GameId
-
-local function findGameMatch(id)
-    if not id then return nil, nil, nil end
-    local strId = tostring(id):gsub("%s+", "")
-    local numId = tonumber(strId)
-
-    if numId and Games[numId] then
-        local entry = Games[numId]
-        return entry.folder or tostring(numId), entry.name or "Game", numId
-    end
-    if Games[strId] then
-        local entry = Games[strId]
-        return entry.folder or strId, entry.name or "Game", strId
-    end
-
-    for k, v in pairs(Games) do
-        local kStr = tostring(k):gsub("%s+", "")
-        if kStr == strId or (numId and tonumber(kStr) == numId) then
-            if type(v) == "table" then
-                return v.folder or kStr, v.name or "Game", k
-            else
-                return tostring(v), tostring(v), k
-            end
-        end
-    end
-
-    return nil, nil, nil
+local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
+if not success then
+    warn("[Loader] KRYTYCZNY BŁĄD: Nie udało się uruchomić LuminaqHUB!")
 end
-
--- Możliwość ręcznego wymuszenia LuminaqHUB (Universal Suite) w dowolnej grze
-local forceUniversal = (typeof(getgenv) == "function" and (getgenv()._ForceUniversal == true or getgenv()._ForceLuminaq == true))
-    or (_G._ForceUniversal == true) or (_G._ForceLuminaq == true)
-if forceUniversal then
-    print("[Loader] Wymuszono uruchomienie LuminaqHUB...")
-    safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
-    return
-end
-
--- Ścisła detekcja wyłącznie po konkretnym PlaceId (eliminuje konflikt pod-miejsc i Universe ID)
-local targetFolder, targetName, rawId = findGameMatch(placeId)
-
-print("[Loader] Inicjalizacja (v2.1-Halloween)... PlaceId: " .. tostring(placeId) .. " | GameId: " .. tostring(gameId))
-
-if targetFolder then
-    print("[Loader] Wykryto dedykowany skrypt: " .. tostring(targetName) .. " (Folder: " .. tostring(targetFolder) .. ")")
-    local relPath = "Games/" .. tostring(targetFolder) .. "/Script.lua"
-    local fullUrl = baseUrl .. relPath
-    local success = safeExecute(relPath, fullUrl)
-
-    if not success then
-        warn("[Loader] Blad ladowania dedykowanego skryptu " .. tostring(relPath) .. ", uruchamiam LuminaqHUB...")
-        safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
-    end
-else
-    local registeredList = {}
-    for k, _ in pairs(Games) do
-        if type(k) == "string" then table.insert(registeredList, k) end
-    end
-    print("[Loader] Brak dedykowanego skryptu dla PlaceId: " .. tostring(placeId) .. " (Lista gier: " .. table.concat(registeredList, ", ") .. "). Uruchamiam LuminaqHUB...")
-    local success = safeExecute("Games/Universal.lua", baseUrl .. "Games/Universal.lua")
-    if not success then
-        warn("[Loader] KRYTYCZNY BLAD: Nie udalo sie uruchomic LuminaqHUB!")
-    end
-end
-

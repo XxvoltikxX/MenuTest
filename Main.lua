@@ -24,6 +24,7 @@ end
 if _G._VoltikMenuCleanup then pcall(_G._VoltikMenuCleanup); _G._VoltikMenuCleanup = nil end
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/src/"
+local gamesBaseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Games/"
 
 -- // SYSTEM BEZPIECZNEGO POBIERANIA (Safe HttpGet z retry oraz ominięciem cache CDN)
 local function safeHttpGet(url, maxRetries, retryDelay)
@@ -474,7 +475,7 @@ local function createLoadingIndicator(title, isMobile, config)
     WelcomeLabel.ZIndex = 8
     WelcomeLabel.Parent = Splash
 
-    -- Kapsuła detekcji gry (Game Detection Status Badge)
+    -- Kapsuła statusu (Status Badge)
     local DetectBadge = Instance.new("Frame")
     DetectBadge.Name = "DetectBadge"
     DetectBadge.Size = UDim2.new(0, 0, 0, 26)
@@ -547,43 +548,6 @@ local function createLoadingIndicator(title, isMobile, config)
     HintLabel.TextTransparency = 1
     HintLabel.ZIndex = 8
     HintLabel.Parent = Splash
-
-    -- // ========================================================
-    -- // DETEKCJA OBSŁUGIWANEJ GRY
-    -- // ========================================================
-    local function resolveDetection(cfg)
-        local cfgGameId = tostring((cfg and cfg.GameId) or "")
-        local cfgTitle  = tostring((cfg and (cfg.Tittle or cfg.Title)) or "")
-        local cfgName   = tostring((cfg and cfg.Name) or "")
-        local placeId   = tostring(game and game.PlaceId or "")
-        local gameId    = tostring(game and game.GameId or "")
-
-        -- 1. Wymuszone lub jawne LuminaqHUB (dawniej Universal Suite)
-        local gameIdLower = cfgGameId:lower()
-        local titleLower  = cfgTitle:lower()
-        local nameLower   = cfgName:lower()
-        if gameIdLower == "universal" or gameIdLower == "luminaqhub" or gameIdLower == "luminaq"
-            or titleLower:find("universal") or titleLower:find("luminaq")
-            or nameLower:find("universal") or nameLower:find("luminaq") then
-            return false, nil
-        end
-
-        -- 2. Tabela znanych gier (PlaceId / GameId -> nazwa).
-        --    Startujemy od zera — dodawaj gry powoli, po jednej, w miarę tworzenia skryptów.
-        local KnownGames = {
-            -- ["1234567890"] = "Moja Gra",
-        }
-        if KnownGames[placeId] then return true, KnownGames[placeId] end
-        if KnownGames[cfgGameId] then return true, KnownGames[cfgGameId] end
-
-        -- 5. Jeśli tytuł jest konkretny i inny niż domyślny
-        if #cfgTitle > 0 and cfgTitle ~= "Universal Suite" and cfgTitle ~= "LuminaqHUB" and cfgTitle ~= "Menu"
-            and not cfgTitle:lower():find("universal") and not cfgTitle:lower():find("luminaq") then
-            return true, cfgTitle
-        end
-
-        return false, nil
-    end
 
     -- // ========================================================
     -- // SILNIK PŁYNNEJ ANIMACJI W CZASIE RZECZYWISTYM (SPOWOLNIONY)
@@ -659,33 +623,17 @@ local function createLoadingIndicator(title, isMobile, config)
         keybindName = tostring(keybindName or "K")
         local isMobileView = isMobile or (UserInputService.TouchEnabled and not UserInputService.MouseEnabled)
 
-        -- Detekcja gry i przygotowanie tekstu statusu
-        local isDetected, detectedGameName = resolveDetection(config)
+        -- Brak detekcji gry — panel zawsze pokazuje listę gier do wyboru
+        DetectText.Text = "Wybierz grę z listy"
+        DetectText.TextColor3 = Color3.fromRGB(134, 239, 172)
+        DetectDot.BackgroundColor3 = Color3.fromRGB(74, 222, 128)
+        DetectBadge.BackgroundColor3 = Color3.fromRGB(15, 30, 22)
+        DetectStroke.Color = Color3.fromRGB(74, 222, 128)
 
-        if isDetected then
-            local gName = detectedGameName or "PetSimulatorX (Event)"
-            DetectText.Text = "game detect :" .. gName
-            DetectText.TextColor3 = Color3.fromRGB(134, 239, 172)
-            DetectDot.BackgroundColor3 = Color3.fromRGB(74, 222, 128)
-            DetectBadge.BackgroundColor3 = Color3.fromRGB(15, 30, 22)
-            DetectStroke.Color = Color3.fromRGB(74, 222, 128)
-
-            TweenService:Create(CoreStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.1 }):Play()
-            TweenService:Create(OrbitStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.3 }):Play()
-            TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
-            TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
-        else
-            DetectText.Text = "LuminaqHUB : tryb uniwersalny"
-            DetectText.TextColor3 = Color3.fromRGB(253, 224, 71)
-            DetectDot.BackgroundColor3 = Color3.fromRGB(251, 191, 36)
-            DetectBadge.BackgroundColor3 = Color3.fromRGB(36, 26, 14)
-            DetectStroke.Color = Color3.fromRGB(251, 191, 36)
-
-            TweenService:Create(CoreStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(251, 191, 36), Transparency = 0.1 }):Play()
-            TweenService:Create(OrbitStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(251, 191, 36), Transparency = 0.3 }):Play()
-            TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(251, 191, 36) }):Play()
-            TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(251, 191, 36) }):Play()
-        end
+        TweenService:Create(CoreStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.1 }):Play()
+        TweenService:Create(OrbitStroke, TweenInfo.new(0.4), { Color = Color3.fromRGB(74, 222, 128), Transparency = 0.3 }):Play()
+        TweenService:Create(Satellite1, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
+        TweenService:Create(Satellite2, TweenInfo.new(0.4), { BackgroundColor3 = Color3.fromRGB(74, 222, 128) }):Play()
 
         HintLabel.Text = isMobileView and "• DOTKNIJ PRZYCISK ABY OTWORZYĆ MENU •" or ("• KLAWISZ [" .. keybindName .. "] OTWIERA MENU •")
 
@@ -1390,7 +1338,8 @@ function MenuLib:CreateExplorer(options)
     local createOk, ExplorerAPI = pcall(function()
         return ExplorerModule:Create({
             Name            = Name,
-            Scripts         = Config.Scripts or {},
+            Games           = Config.Games or {},
+            BaseUrl         = Config.BaseUrl or gamesBaseUrl,
             Icons           = IconsModule,
             ToggleUIKeybind = Config.ToggleUIKeybind or "K",
             OnCleanup       = Config.OnCleanup,
