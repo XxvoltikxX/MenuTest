@@ -147,6 +147,11 @@ overlayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local hudCfg = {
     info = true,
     list = true,
+    listBg     = Color3.fromRGB(15, 17, 26),
+    listText   = Color3.fromRGB(244, 246, 255),
+    listAccent = Color3.fromRGB(129, 140, 248),
+    infoOn     = Color3.fromRGB(52, 211, 153),
+    infoOff    = Color3.fromRGB(248, 113, 113),
 }
 
 local hudGui
@@ -299,14 +304,14 @@ local function refreshArrayList()
         if not entry then
             entry = Instance.new("TextLabel")
             entry.Name = "HUD_Entry"
-            entry.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
+            entry.BackgroundColor3 = hudCfg.listBg
             entry.BackgroundTransparency = 0.22
             entry.BorderSizePixel = 0
             entry.Size = UDim2.new(0, 0, 0, 22)
             entry.AutomaticSize = Enum.AutomaticSize.X
             entry.Font = Enum.Font.GothamBold
             entry.TextSize = 11
-            entry.TextColor3 = Color3.fromRGB(244, 246, 255)
+            entry.TextColor3 = hudCfg.listText
             entry.TextXAlignment = Enum.TextXAlignment.Right
             entry.Parent = arrayList
 
@@ -319,7 +324,7 @@ local function refreshArrayList()
 
             local entryStroke = Instance.new("UIStroke", entry)
             entryStroke.Thickness = 1
-            entryStroke.Color = Color3.fromRGB(129, 140, 248)
+            entryStroke.Color = hudCfg.listAccent
             entryStroke.Transparency = 0.45
 
             dragArrayList(entry)
@@ -331,6 +336,18 @@ local function refreshArrayList()
     end
 
     arrayList.Visible = hudCfg.list and #arrayOrder > 0
+end
+
+-- // Odświeża kolory istniejących wpisów arraylisty po zmianie w Settings.
+local function applyListColors()
+    for _, entry in pairs(arrayEntries) do
+        entry.BackgroundColor3 = hudCfg.listBg
+        entry.TextColor3 = hudCfg.listText
+        local entryStroke = entry:FindFirstChildOfClass("UIStroke")
+        if entryStroke then
+            entryStroke.Color = hudCfg.listAccent
+        end
+    end
 end
 
 -- Toggle info: krótki komunikat na dole ekranu.
@@ -371,7 +388,7 @@ infoLabel.Position = UDim2.new(0, 28, 0, 0)
 infoLabel.Size = UDim2.new(1, -40, 1, 0)
 infoLabel.Font = Enum.Font.GothamBold
 infoLabel.TextSize = 12
-infoLabel.TextColor3 = Color3.fromRGB(52, 211, 153)
+infoLabel.TextColor3 = hudCfg.infoOn
 infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.Text = ""
 
@@ -379,15 +396,35 @@ dragInfo(infoLabel)
 dragInfo(infoDot)
 
 local infoToken = 0
+local infoMode = "on"
+
+local function applyInfoColor(color)
+    infoLabel.TextColor3 = color
+    infoDot.BackgroundColor3 = color
+    infoStroke.Color = color
+end
+
+-- // Odświeża kolor widocznego komunikatu po zmianie w Settings.
+local function refreshInfoColors()
+    if not infoToast.Visible then return end
+    if infoMode == "preview" then
+        applyInfoColor(hudCfg.listAccent)
+    elseif infoMode == "off" then
+        applyInfoColor(hudCfg.infoOff)
+    else
+        applyInfoColor(hudCfg.infoOn)
+    end
+end
 
 local function showToggleInfo(name, state)
     if not hudCfg.info or not hudGui or not hudGui.Parent then return end
 
-    local color = state and Color3.fromRGB(52, 211, 153) or Color3.fromRGB(248, 113, 113)
+    local color = state and hudCfg.infoOn or hudCfg.infoOff
     local text = tostring(name) .. (state and "  ON" or "  OFF")
 
     infoToken = infoToken + 1
     local token = infoToken
+    infoMode = state and "on" or "off"
 
     infoLabel.Text = text
     infoLabel.TextColor3 = color
@@ -440,12 +477,13 @@ local function previewHudPosition()
 
     infoToken = infoToken + 1
     local token = infoToken
+    infoMode = "preview"
 
     infoLabel.Text = "Toggle Info — przeciągnij"
-    infoLabel.TextColor3 = Color3.fromRGB(129, 140, 248)
+    infoLabel.TextColor3 = hudCfg.listAccent
     infoLabel.TextTransparency = 0
-    infoDot.BackgroundColor3 = Color3.fromRGB(129, 140, 248)
-    infoStroke.Color = Color3.fromRGB(129, 140, 248)
+    infoDot.BackgroundColor3 = hudCfg.listAccent
+    infoStroke.Color = hudCfg.listAccent
     infoStroke.Transparency = 0.2
     infoToast.BackgroundTransparency = 0.15
     infoToast.Size = UDim2.fromOffset(220, 30)
@@ -1068,6 +1106,57 @@ SettingsTab:CreateToggle({
     Callback = function(state)
         hudCfg.list = state
         refreshArrayList()
+    end,
+})
+
+SettingsTab:CreateColorPicker({
+    Name     = "Kolor arraylisty",
+    Flag     = "Universal_HUD_ListAccent",
+    Default  = hudCfg.listAccent,
+    Callback = function(color)
+        hudCfg.listAccent = color
+        applyListColors()
+        refreshInfoColors()
+    end,
+})
+
+SettingsTab:CreateColorPicker({
+    Name     = "Kolor tekstu arraylisty",
+    Flag     = "Universal_HUD_ListText",
+    Default  = hudCfg.listText,
+    Callback = function(color)
+        hudCfg.listText = color
+        applyListColors()
+    end,
+})
+
+SettingsTab:CreateColorPicker({
+    Name     = "Kolor tła arraylisty",
+    Flag     = "Universal_HUD_ListBg",
+    Default  = hudCfg.listBg,
+    Callback = function(color)
+        hudCfg.listBg = color
+        applyListColors()
+    end,
+})
+
+SettingsTab:CreateColorPicker({
+    Name     = "Toggle Info ON",
+    Flag     = "Universal_HUD_InfoOn",
+    Default  = hudCfg.infoOn,
+    Callback = function(color)
+        hudCfg.infoOn = color
+        refreshInfoColors()
+    end,
+})
+
+SettingsTab:CreateColorPicker({
+    Name     = "Toggle Info OFF",
+    Flag     = "Universal_HUD_InfoOff",
+    Default  = hudCfg.infoOff,
+    Callback = function(color)
+        hudCfg.infoOff = color
+        refreshInfoColors()
     end,
 })
 

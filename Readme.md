@@ -184,6 +184,8 @@ print(Window:GetMenuKeybind()) -- "K"
     pozycja jest zapamiętywana w sesji (`getgenv()._0x5a17.hud`) i odtwarzana przy starcie.
   - **Ustaw pozycję HUD** (Settings) pokazuje podgląd toggle info na 8 s, żeby wygodnie
     ustawić jego miejsce; **Reset pozycji HUD** przywraca domyślne pozycje.
+  - **Kolory** (Settings): akcent, tekst i tło arraylisty oraz osobno kolor komunikatu
+    `ON` i `OFF`.
   - Oba elementy można wyłączyć w zakładce **Settings**.
 - **Settings**: bind menu, tryb tła (`Pictures` / `GIF`), wygląd, przezroczystość.
 
