@@ -470,6 +470,17 @@ local function hudSetModule(name, state)
     showToggleInfo(name, state)
 end
 
+-- // Aktywacja aimbota bindem — osobny komunikat, żeby odróżnić ją od
+-- // włączenia samego modułu w menu (Aimbot ON/OFF).
+local function setAimbotActive(state)
+    state = state == true
+    if aimCfg.active == state then return end
+    aimCfg.active = state
+    if aimCfg.enabled then
+        showToggleInfo("Aimbot (bind)", state)
+    end
+end
+
 -- // Podgląd HUD do ustawiania pozycji — pokazuje toggle info na 8 s,
 -- // żeby można go było przeciągnąć w dowolne miejsce ekranu.
 local function previewHudPosition()
@@ -918,7 +929,7 @@ local AimbotModule = CombatTab:CreateModule({
     Callback    = function(state)
         aimCfg.enabled = state
         if not state then
-            aimCfg.active = false
+            setAimbotActive(false)
         end
         hudSetModule("Aimbot", state)
     end,
@@ -1261,7 +1272,7 @@ local bindConnection = UserInputService.InputBegan:Connect(function(input, gameP
         local keyName = input.KeyCode and input.KeyCode.Name or aimCfg.key
         if keyName ~= "Escape" then
             aimCfg.key = keyName
-            aimCfg.active = false
+            setAimbotActive(false)
         end
         refreshAimBindLabel()
         return
@@ -1271,9 +1282,9 @@ local bindConnection = UserInputService.InputBegan:Connect(function(input, gameP
     if gameProcessed then return end
     if isAimKey(input) then
         if aimCfg.mode == "Hold" then
-            aimCfg.active = true
+            setAimbotActive(true)
         else
-            aimCfg.active = not aimCfg.active
+            setAimbotActive(not aimCfg.active)
         end
     end
 end)
@@ -1281,7 +1292,7 @@ end)
 local aimReleaseConnection = UserInputService.InputEnded:Connect(function(input)
     if aimCfg.mode ~= "Hold" then return end
     if isAimKey(input) then
-        aimCfg.active = false
+        setAimbotActive(false)
     end
 end)
 
