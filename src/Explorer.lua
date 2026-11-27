@@ -581,7 +581,7 @@ function Explorer:Create(options)
     -- // SIATKA GIER
     -- // ======================================================================
     local hasProtections = #Protections > 0
-    local protectOffset = hasProtections and 62 or 0
+    local protectOffset = hasProtections and (#Protections * 62) or 0
     local gridPos = UDim2.new(0, 18, 0, 152 + protectOffset)
     local gridSize = UDim2.new(1, -36, 1, -200 - protectOffset)
 
@@ -760,21 +760,23 @@ function Explorer:Create(options)
     end
 
     -- // ======================================================================
-    -- // PROTECT KICK — kategoria ochron z przełącznikami
     -- // ======================================================================
-    if hasProtections then
-        local protectCard = new("Frame", {
-            Name = "ProtectKick",
-            Position = UDim2.new(0, 18, 0, 148),
+    -- // OCHRONY PER GRA — każda gra ma własną kartę i własne opcje
+    -- // ======================================================================
+    for moduleIndex, protectionModule in ipairs(Protections) do
+        local moduleId = tostring(protectionModule.Id or protectionModule.Name or ("game" .. tostring(moduleIndex)))
+        local card = new("Frame", {
+            Name = "Protect_" .. moduleId,
+            Position = UDim2.new(0, 18, 0, 148 + (moduleIndex - 1) * 62),
             Size = UDim2.new(1, -36, 0, 54),
             BackgroundColor3 = Palette.Card,
             BackgroundTransparency = 0.45,
             BorderSizePixel = 0,
         }, main)
-        bindTheme(protectCard, "BackgroundColor3", "Card")
-        corner(protectCard, 15)
-        local protectStroke = stroke(protectCard, Palette.StrokeSoft, 0.5, 1)
-        bindTheme(protectStroke, "Color", "StrokeSoft")
+        bindTheme(card, "BackgroundColor3", "Card")
+        corner(card, 15)
+        local cardStroke = stroke(card, Palette.StrokeSoft, 0.5, 1)
+        bindTheme(cardStroke, "Color", "StrokeSoft")
 
         local shieldIcon = new("ImageLabel", {
             Name = "ShieldIcon",
@@ -783,12 +785,12 @@ function Explorer:Create(options)
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundTransparency = 1,
             ImageColor3 = Palette.Accent,
-        }, protectCard)
+        }, card)
         bindTheme(shieldIcon, "ImageColor3", "Accent")
         applyIcon(shieldIcon, "shield")
 
-        local protectTitle = new("TextLabel", {
-            Text = "Protect Kick",
+        local title = new("TextLabel", {
+            Text = tostring(protectionModule.Name or moduleId),
             Font = Enum.Font.GothamBold,
             TextSize = 12,
             TextColor3 = Palette.Text,
@@ -796,11 +798,11 @@ function Explorer:Create(options)
             Position = UDim2.new(0, 40, 0, 9),
             Size = UDim2.new(0, 220, 0, 16),
             TextXAlignment = Enum.TextXAlignment.Left,
-        }, protectCard)
-        bindTheme(protectTitle, "TextColor3", "Text")
+        }, card)
+        bindTheme(title, "TextColor3", "Text")
 
-        local protectSub = new("TextLabel", {
-            Text = "Blokada wyrzucania z gry",
+        local subtitle = new("TextLabel", {
+            Text = tostring(protectionModule.Description or "Ochrona klienta"),
             Font = Enum.Font.GothamMedium,
             TextSize = 9,
             TextColor3 = Palette.Dim,
@@ -808,14 +810,16 @@ function Explorer:Create(options)
             Position = UDim2.new(0, 40, 0, 27),
             Size = UDim2.new(0, 220, 0, 14),
             TextXAlignment = Enum.TextXAlignment.Left,
-        }, protectCard)
-        bindTheme(protectSub, "TextColor3", "Dim")
+            TextTruncate = Enum.TextTruncate.AtEnd,
+        }, card)
+        bindTheme(subtitle, "TextColor3", "Dim")
 
         local chipRight = -12
-        for index, protection in ipairs(Protections) do
-            local id = tostring(protection.Id or protection.Name or ("protect" .. tostring(index)))
+        for optionIndex, option in ipairs(protectionModule.Options or {}) do
+            local optionId = tostring(option.Id or option.Name or ("option" .. tostring(optionIndex)))
+            local stateKey = moduleId .. "." .. optionId
             local chip = new("TextButton", {
-                Name = "Protect_" .. id,
+                Name = "Protect_" .. moduleId .. "_" .. optionId,
                 Size = UDim2.fromOffset(150, 32),
                 Position = UDim2.new(1, chipRight, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
@@ -823,7 +827,7 @@ function Explorer:Create(options)
                 BackgroundTransparency = 0.35,
                 Text = "",
                 AutoButtonColor = false,
-            }, protectCard)
+            }, card)
             chipRight = chipRight - 158
             corner(chip, 16)
             local chipStroke = stroke(chip, Palette.StrokeSoft, 0.35, 1)
@@ -848,7 +852,7 @@ function Explorer:Create(options)
             corner(knob, 6)
 
             local label = new("TextLabel", {
-                Text = tostring(protection.Name or id),
+                Text = tostring(option.Name or optionId),
                 Font = Enum.Font.GothamBold,
                 TextSize = 10,
                 TextColor3 = Palette.Text,
@@ -881,8 +885,8 @@ function Explorer:Create(options)
                     renderState()
                     return
                 end
-                if type(protection.OnToggle) == "function" then
-                    local ok, applied, message = pcall(protection.OnToggle, newState)
+                if type(option.OnToggle) == "function" then
+                    local ok, applied, message = pcall(option.OnToggle, newState)
                     if not ok or applied == false then
                         if not silent then
                             notify(tostring(message or applied or "Ochrona niedostępna"), false)
@@ -893,11 +897,13 @@ function Explorer:Create(options)
                 state = newState
                 if store then
                     store.protections = store.protections or {}
-                    store.protections[id] = state
+                    store.protections[stateKey] = state
                 end
                 renderState()
                 if not silent then
-                    notify(tostring(protection.Name or id) .. ": " .. (state and "włączone" or "wyłączone"), true)
+                    notify(tostring(protectionModule.Name or moduleId) .. " · "
+                        .. tostring(option.Name or optionId) .. ": "
+                        .. (state and "włączone" or "wyłączone"), true)
                 end
             end
 
@@ -905,7 +911,7 @@ function Explorer:Create(options)
                 setState(not state)
             end)
 
-            local saved = store and type(store.protections) == "table" and store.protections[id] == true
+            local saved = store and type(store.protections) == "table" and store.protections[stateKey] == true
             setState(saved == true, true)
             renderState()
         end

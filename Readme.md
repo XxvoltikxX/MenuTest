@@ -166,7 +166,7 @@ print(Window:GetMenuKeybind()) -- "K"
 ### Gry: Strike Force (pierwsza) i Universal
 
 **Strike Force** to pierwsza karta w panelu — korzysta z tego samego skryptu co Universal
-(`Folder = "Universal"`) i jest objęta przełącznikiem **Protect Kick**.
+(`Folder = "Universal"`) i ma własną klasę ochrony z opcjami **Protect Kick** i **AntiBan**.
 
 `Games/Universal/Script.lua` to kompletny przykład menu gry:
 
@@ -199,38 +199,65 @@ local overlay = Stealth.NewScreenGui({ DisplayOrder = 5, IgnoreGuiInset = true }
 
 To **nie ukryje** faktu użycia executora (`HttpGet`, `loadstring`, `gethui`, `mousemoverel`) ani zachowania serwerowego (WalkSpeed, statystyki, aimbot). Jeśli gra już oznaczyła sesję, zmiana nazw GUI nie cofnie flagi — pomóc może tylko nowa sesja i mniej agresywne funkcje.
 
-### Protect Kick
+### Ochrony per gra (Protections)
 
-W panelu wyboru gier znajduje się kategoria **Protect Kick** z przełącznikami gier.
-Domyślnie zawiera **Strike Force** — pierwszą grę na liście.
+Każda gra ma **osobną klasę ochrony** w `src/protections/<Gra>.lua` — nic nie jest
+wrzucone do jednego wspólnego worka. Panel wyboru gier pokazuje osobną kartę dla
+każdej klasy, a w niej przełączniki jej opcji.
 
-- `src/ProtectKick.lua` blokuje `Player:Kick` oraz `player.Kick` wywoływane po stronie klienta
-  (hook `__namecall` + `__index` przez `hookmetamethod`).
-- Przełącznik włącza i wyłącza ochronę w locie; stan jest pamiętany w sesji
-  (`getgenv()._0x5a17.protections`).
-- Jeśli executor nie udostępnia `hookmetamethod`, przełącznik pokaże błąd zamiast
-  udawać, że ochrona działa.
+- `src/protections/Core.lua` — wspólny silnik: jeden hook `__namecall` + `__index`
+  (`hookmetamethod`) i rejestr handlerów per gra.
+- `src/protections/StrikeForce.lua` — klasa Strike Force:
+  - **Protect Kick** — blokuje `Player:Kick` / `player.Kick` po stronie klienta.
+  - **AntiBan** — blokuje `Kick`, `game:Shutdown` oraz teleport na inny `PlaceId`
+    (typowa droga do „ban place”). Teleporty w obrębie tego samego miejsca przechodzą.
+- `src/protections/Universal.lua` — klasa Universal z własnym **Protect Kick**.
 
-> Kick wysłany bezpośrednio z serwera **nie da się zablokować po stronie klienta**.
-> Protect Kick chroni tylko przed kickiem wywołanym przez skrypty klienta.
+Gra deklaruje swoje klasy w rejestrze:
 
-Własną kategorię ochron możesz przekazać do `CreateExplorer`:
+```lua
+{
+    Id          = "StrikeForce",
+    -- ...
+    Protections = { "StrikeForce" }, -- plik src/protections/StrikeForce.lua
+}
+```
+
+Stan przełączników jest pamiętany w sesji (`getgenv()._0x5a17.protections`)
+pod kluczem `Gra.Opcja`, np. `StrikeForce.AntiBan`.
+
+Własną listę ochron możesz też przekazać bezpośrednio do `CreateExplorer`:
 
 ```lua
 MENU:CreateExplorer({
     -- ...
     Protections = {
         {
-            Id = "StrikeForce",
+            Id   = "StrikeForce",
             Name = "Strike Force",
-            OnToggle = function(state)
-                if state then return MENU.ProtectKick.Enable() end
-                return MENU.ProtectKick.Disable()
-            end,
+            Options = {
+                {
+                    Id = "Kick",
+                    Name = "Protect Kick",
+                    OnToggle = function(state)
+                        return MENU.ProtectCore.SetNamecall("MojaGra.Kick", function(self, method)
+                            if state and method == "Kick" and self == MENU.ProtectCore.LocalPlayer then
+                                return true, nil
+                            end
+                            return false
+                        end)
+                    end,
+                },
+            },
         },
     },
 })
 ```
+
+> Kick/ban wysłany bezpośrednio z serwera **nie da się zablokować po stronie klienta**.
+> Protect Kick i AntiBan chronią tylko przed wywołaniami po stronie klienta.
+> Jeśli executor nie udostępnia `hookmetamethod`, przełącznik pokaże błąd zamiast
+> udawać, że ochrona działa.
 
 ---
 
@@ -254,7 +281,8 @@ Games/Universal/Script.lua -- menu gry: ESP / Aimbot / FOV / WalkSpeed
 Games/<ID>/Script.lua    -- skrypt wybranej gry
 src/Explorer.lua         -- panel "Welcome to LuminaqHub" + wyszukiwarka gier
 src/Stealth.lua          -- ukrywanie GUI (gethui / CoreGui, losowe nazwy, ochrona)
-src/ProtectKick.lua      -- blokada Kick (kategoria Protect Kick w panelu)
+src/protections/Core.lua -- wspólny silnik hooków ochron
+src/protections/*.lua    -- osobne klasy ochron per gra (StrikeForce, Universal)
 src/Window.lua           -- starszy silnik okna (CreateWindow + tło GIF/Pictures)
 src/Icons.lua            -- ikony Lucide
 src/elements/            -- kontrolki (Slider, Toggle, Dropdown, ...)

@@ -107,10 +107,10 @@ local Stealth = safeLoadUrl(baseUrl .. "Stealth.lua", nil)
 if type(Stealth) ~= "table" then Stealth = nil end
 MenuLib.Stealth = Stealth
 
--- // PROTECT KICK — blokada wyrzucania z gry (kategoria w panelu wyboru gier)
-local ProtectKick = safeLoadUrl(baseUrl .. "ProtectKick.lua", nil)
-if type(ProtectKick) ~= "table" then ProtectKick = nil end
-MenuLib.ProtectKick = ProtectKick
+-- // OCHRONY — wspólny silnik hooków; klasy per gra są w src/protections/
+local ProtectCore = safeLoadUrl(baseUrl .. "protections/Core.lua", nil)
+if type(ProtectCore) ~= "table" then ProtectCore = nil end
+MenuLib.ProtectCore = ProtectCore
 
 -- Bezpieczna (no-op) wersja konstruktora elementu używana jako fallback
 local function dummyElement()
@@ -1345,24 +1345,43 @@ function MenuLib:CreateExplorer(options)
         return nil
     end
 
-    -- // KATEGORIA "PROTECT KICK" — domyślnie przełącznik Strike Force.
-    -- // Wpis można nadpisać własną listą przez Config.Protections.
-    local Protections = Config.Protections
-    if Protections == nil and ProtectKick then
-        Protections = {
-            {
-                Id          = "StrikeForce",
-                Name        = "Strike Force",
-                Description = "Blokuje Kick w grze Strike Force",
-                OnToggle    = function(state)
-                    if state then
-                        return ProtectKick.Enable()
+    -- // OCHRONY PER GRA — każda gra deklaruje własne klasy w polu Protections,
+    -- // np. Games/Universal.lua: Protections = { "StrikeForce" }.
+    local function buildProtections()
+        if Config.Protections ~= nil then
+            return Config.Protections
+        end
+        if not ProtectCore then
+            return nil
+        end
+
+        local list = {}
+        local seen = {}
+        for _, gameEntry in ipairs(Config.Games or {}) do
+            local names = gameEntry.Protections
+            if type(names) == "string" then names = { names } end
+            if type(names) == "table" then
+                for _, rawId in ipairs(names) do
+                    local id = tostring(rawId)
+                    if not seen[id] then
+                        seen[id] = true
+                        local factory = safeLoadUrl(baseUrl .. "protections/" .. id .. ".lua", nil)
+                        if type(factory) == "function" then
+                            local ok, module = pcall(factory, { Core = ProtectCore, Store = store })
+                            if ok and type(module) == "table" then
+                                table.insert(list, module)
+                            end
+                        elseif type(factory) == "table" then
+                            table.insert(list, factory)
+                        end
                     end
-                    return ProtectKick.Disable()
-                end,
-            },
-        }
+                end
+            end
+        end
+        return list
     end
+
+    local Protections = buildProtections()
 
     local createOk, ExplorerAPI = pcall(function()
         return ExplorerModule:Create({

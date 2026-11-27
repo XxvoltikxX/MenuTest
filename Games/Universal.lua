@@ -28,6 +28,7 @@ local LocalPlayer = Players.LocalPlayer
 -- //     Description = "Krótki opis",      -- opcjonalne
 -- //     Icon        = "gamepad-2",        -- ikona Lucide (opcjonalne)
 -- //     Tags        = { "pvp", "fps" },   -- opcjonalne
+-- //     Protections = { "StrikeForce" },  -- klasy ochron z src/protections/ (opcjonalne)
 -- //     Author      = "XxvoltikxX",       -- opcjonalne
 -- // }
 -- // ==========================================================================
@@ -35,10 +36,11 @@ local Games = {
     {
         Id          = "StrikeForce",
         Name        = "Strike Force",
-        Description = "Pierwsza gra — menu Universal + Protect Kick (blokada wyrzucania z gry)",
+        Description = "Pierwsza gra — menu Universal + Protect Kick i AntiBan",
         Icon        = "shield",
         Folder      = "Universal",
         Tags        = { "fps", "protect", "bypass" },
+        Protections = { "StrikeForce" },
         Author      = "XxvoltikxX",
     },
     {
@@ -47,6 +49,7 @@ local Games = {
         Description = "ESP, Tracers, Nametag, Head ESP, Aimbot, FOV, WalkSpeed i ustawienia",
         Icon        = "eye",
         Tags        = { "esp", "visuals", "aimbot", "combat", "speed" },
+        Protections = { "Universal" },
         Author      = "XxvoltikxX",
     },
     -- Przyklad:
