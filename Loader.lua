@@ -1,7 +1,7 @@
 -- // ==========================================================================
 -- // MENUTEST MASTER LOADER
 -- // Automatyczny system detekcji gry i ładowania dedykowanych skryptów
--- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub LuminaqHUB (Universal Suite)
+-- // Przepływ: Loader.lua -> Wykrycie ID Gry -> Skrypt Gry lub LuminaqHUB Explorer
 -- // ==========================================================================
 
 local baseUrl = "https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/"

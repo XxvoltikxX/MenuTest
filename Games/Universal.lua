@@ -1,42 +1,32 @@
 -- // ==========================================================================
--- // LUMINAQHUB — UNIVERSAL SUITE
--- // Zaawansowany, uniwersalny pakiet narzędzi działający w KAŻDEJ grze Roblox.
--- // Zakładki: Player (Speed, Fly, InfJump, Noclip, ClickTP), Render (ESP, Tracers, World), Misc
--- // W pełni zintegrowany z systemem nowoczesnych kategorii, sliderów i motywów.
+-- // LUMINAQHUB — UNIVERSAL EXPLORER
+-- // Nowy silnik: dashboard + wyszukiwarka scriptów + panel szczegółów.
+-- // Wszystkie funkcje uniwersalne działają w KAŻDEJ grze Roblox.
 -- // ==========================================================================
 
 -- 1. Załadowanie głównej biblioteki UI
 local mainRaw = game:HttpGet("https://raw.githubusercontent.com/XxvoltikxX/MenuTest/refs/heads/main/Main.lua?_cb=" .. tostring(tick()) .. "_" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999)))
 local MENU = loadstring(mainRaw:gsub("^\239\187\191", ""))()
 
--- 2. Stworzenie okna głównego
-local Window = MENU:CreateWindow({
-    Name = "LuminaqHUB",
-    Tittle = "Welcome to LuminaqHub",
-    TittlePos = "Center",
-    ToggleUIKeybind = "K",
-    TestMobile = false,
-    GameId = "LuminaqHUB"
-})
-
--- 3. Inicjalizacja zakładek
-local TabPlayer = Window:CreateTab("Player", "user")
-local TabRender = Window:CreateTab("Render", "eye")
-local TabMisc   = Window:CreateTab("Misc", "wrench")
-
--- // ==========================================================================
--- // SERWISY I ZMIENNE ROBLOX
--- // ==========================================================================
+-- 2. Serwisy i zmienne
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
-local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
+local VirtualUser = nil
+pcall(function() VirtualUser = game:GetService("VirtualUser") end)
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+
+local Connections = {}
+
+local function connect(conn)
+    table.insert(Connections, conn)
+    return conn
+end
 
 local function getCharacter()
     return LocalPlayer and LocalPlayer.Character
@@ -53,10 +43,8 @@ local function getRootPart(char)
 end
 
 -- // ==========================================================================
--- // STAN I LOGIKA GRACZA (PLAYER)
+-- // PLAYER — SPEED
 -- // ==========================================================================
-
--- 1. SPEED
 local speedEnabled = false
 local walkSpeedValue = 50
 local originalWalkSpeed = 16
@@ -67,31 +55,30 @@ local sprintEnabled = false
 
 local function ApplySpeed()
     local hum = getHumanoid()
-    if hum then
-        if speedEnabled then
-            hum.WalkSpeed = (sprintActive and sprintEnabled) and sprintSpeedValue or walkSpeedValue
-        else
-            hum.WalkSpeed = originalWalkSpeed
-        end
+    if not hum then return end
+    if speedEnabled then
+        hum.WalkSpeed = (sprintActive and sprintEnabled) and sprintSpeedValue or walkSpeedValue
+    else
+        hum.WalkSpeed = originalWalkSpeed
     end
 end
 
 local function SetSpeedState(state)
-    speedEnabled = state
+    speedEnabled = state == true
     local hum = getHumanoid()
-    if hum and not state then
-        originalWalkSpeed = 16
-    end
-    ApplySpeed()
 
-    if state then
+    if speedEnabled then
+        if hum and not speedLoopConn then
+            originalWalkSpeed = hum.WalkSpeed
+        end
+        ApplySpeed()
         if not speedLoopConn then
             speedLoopConn = RunService.Heartbeat:Connect(function()
-                if speedEnabled then
-                    local h = getHumanoid()
-                    if h and h.WalkSpeed ~= ((sprintActive and sprintEnabled) and sprintSpeedValue or walkSpeedValue) then
-                        h.WalkSpeed = (sprintActive and sprintEnabled) and sprintSpeedValue or walkSpeedValue
-                    end
+                if not speedEnabled then return end
+                local h = getHumanoid()
+                local target = (sprintActive and sprintEnabled) and sprintSpeedValue or walkSpeedValue
+                if h and h.WalkSpeed ~= target then
+                    h.WalkSpeed = target
                 end
             end)
         end
@@ -100,26 +87,29 @@ local function SetSpeedState(state)
             speedLoopConn:Disconnect()
             speedLoopConn = nil
         end
-        ApplySpeed()
+        if hum then
+            hum.WalkSpeed = originalWalkSpeed
+        end
     end
 end
 
--- Obsługa sprintu z Shiftem
-UserInputService.InputBegan:Connect(function(input, gpe)
+connect(UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and (input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift) then
         sprintActive = true
         if speedEnabled and sprintEnabled then ApplySpeed() end
     end
-end)
+end))
 
-UserInputService.InputEnded:Connect(function(input, gpe)
+connect(UserInputService.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
         sprintActive = false
         if speedEnabled and sprintEnabled then ApplySpeed() end
     end
-end)
+end))
 
--- 2. FLY
+-- // ==========================================================================
+-- // PLAYER — FLY
+-- // ==========================================================================
 local flyEnabled = false
 local flySpeed = 60
 local flyNoclip = true
@@ -186,61 +176,78 @@ local function UpdateFly()
 end
 
 local function SetFlyState(state)
-    flyEnabled = state
-    if state then
+    flyEnabled = state == true
+    if flyEnabled then
         if not flyConn then
             flyConn = RunService.RenderStepped:Connect(UpdateFly)
         end
     else
         if flyConn then flyConn:Disconnect(); flyConn = nil end
         CleanupFlyPhysics()
-        local hum = getHumanoid()
+        local char = getCharacter()
+        local hum = getHumanoid(char)
         if hum then hum.PlatformStand = false end
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
     end
 end
 
--- 3. INFINITE JUMP
+-- // ==========================================================================
+-- // PLAYER — INFINITE JUMP
+-- // ==========================================================================
 local infJumpEnabled = false
 local jumpPowerValue = 75
 local originalJumpPower = 50
 
 local function ApplyJumpPower()
     local hum = getHumanoid()
-    if hum then
-        if infJumpEnabled then
-            hum.UseJumpPower = true
-            hum.JumpPower = jumpPowerValue
-        else
-            hum.JumpPower = originalJumpPower
-        end
+    if not hum then return end
+    if infJumpEnabled then
+        hum.UseJumpPower = true
+        hum.JumpPower = jumpPowerValue
+    else
+        hum.JumpPower = originalJumpPower
     end
 end
 
-UserInputService.JumpRequest:Connect(function()
+connect(UserInputService.JumpRequest:Connect(function()
     if infJumpEnabled then
         local hum = getHumanoid()
         if hum then
             hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
-end)
+end))
 
--- 4. NOCLIP
+local function SetInfJumpState(state)
+    infJumpEnabled = state == true
+    if infJumpEnabled then
+        local hum = getHumanoid()
+        if hum then originalJumpPower = hum.JumpPower end
+    end
+    ApplyJumpPower()
+end
+
+-- // ==========================================================================
+-- // PLAYER — NOCLIP
+-- // ==========================================================================
 local noclipEnabled = false
 local noclipConn = nil
 
 local function SetNoclipState(state)
-    noclipEnabled = state
-    if state then
+    noclipEnabled = state == true
+    if noclipEnabled then
         if not noclipConn then
             noclipConn = RunService.Stepped:Connect(function()
-                if noclipEnabled then
-                    local char = getCharacter()
-                    if char then
-                        for _, p in ipairs(char:GetDescendants()) do
-                            if p:IsA("BasePart") and p.CanCollide then
-                                p.CanCollide = false
-                            end
+                if not noclipEnabled then return end
+                local char = getCharacter()
+                if char then
+                    for _, p in ipairs(char:GetDescendants()) do
+                        if p:IsA("BasePart") and p.CanCollide then
+                            p.CanCollide = false
                         end
                     end
                 end
@@ -251,32 +258,42 @@ local function SetNoclipState(state)
             noclipConn:Disconnect()
             noclipConn = nil
         end
+        local char = getCharacter()
+        if char then
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = true end
+            end
+        end
     end
 end
 
--- 5. CLICK TELEPORT (Ctrl + Click)
+-- // ==========================================================================
+-- // PLAYER — CLICK TELEPORT
+-- // ==========================================================================
 local clickTpEnabled = false
 local mouse = LocalPlayer:GetMouse()
 
-mouse.Button1Down:Connect(function()
+connect(mouse.Button1Down:Connect(function()
     if clickTpEnabled and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
         local hrp = getRootPart()
         if hrp and mouse.Hit then
             hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3.5, 0))
         end
     end
-end)
+end))
 
--- Obsługa respawnu gracza
-LocalPlayer.CharacterAdded:Connect(function(newChar)
+-- // ==========================================================================
+-- // RESPAWN
+-- // ==========================================================================
+connect(LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.6)
     if speedEnabled then ApplySpeed() end
     if infJumpEnabled then ApplyJumpPower() end
     if flyEnabled then SetFlyState(true) end
-end)
+end))
 
 -- // ==========================================================================
--- // STAN I LOGIKA WIZUALIÓW (RENDER & ESP)
+-- // RENDER — ESP & TRACERS
 -- // ==========================================================================
 local espEnabled = false
 local espHighlights = true
@@ -284,13 +301,11 @@ local espChams = false
 local espNames = true
 local espDistance = true
 local espColor = Color3.fromRGB(0, 255, 170)
-local espAlpha = 1.0
 local maxEspDistance = 1500
 
 local tracersEnabled = false
-local tracerOriginMode = "Dół Ekranu (Bottom)"
+local tracerFromBottom = true
 local tracerColor = Color3.fromRGB(0, 220, 255)
-local tracerAlpha = 1.0
 local tracerThickness = 1.5
 
 local trackedPlayers = {}
@@ -314,14 +329,11 @@ end
 
 local function GetTracerOrigin()
     local vp = Camera.ViewportSize
-    if tracerOriginMode:find("Bottom") then
+    if tracerFromBottom then
         return Vector2.new(vp.X / 2, vp.Y - 10)
-    elseif tracerOriginMode:find("Center") then
-        return Vector2.new(vp.X / 2, vp.Y / 2)
-    else
-        local mousePos = UserInputService:GetMouseLocation()
-        return Vector2.new(mousePos.X, mousePos.Y)
     end
+    local mousePos = UserInputService:GetMouseLocation()
+    return Vector2.new(mousePos.X, mousePos.Y)
 end
 
 local function UpdateESP()
@@ -354,7 +366,7 @@ local function UpdateESP()
                         if not data.Highlight or data.Highlight.Parent ~= char then
                             if data.Highlight then data.Highlight:Destroy() end
                             local hl = Instance.new("Highlight")
-                            hl.Name = "MenuTest_HL"
+                            hl.Name = "LuminaqHUB_HL"
                             hl.Adornee = char
                             hl.FillTransparency = espChams and 0.4 or 1.0
                             hl.OutlineTransparency = 0
@@ -379,7 +391,7 @@ local function UpdateESP()
                         if not data.Billboard or data.Billboard.Parent ~= hrp then
                             if data.Billboard then data.Billboard:Destroy() end
                             local bb = Instance.new("BillboardGui")
-                            bb.Name = "MenuTest_BB"
+                            bb.Name = "LuminaqHUB_BB"
                             bb.Adornee = hrp
                             bb.Size = UDim2.new(0, 160, 0, 36)
                             bb.StudsOffset = Vector3.new(0, 3.2, 0)
@@ -418,7 +430,7 @@ local function UpdateESP()
                             if not data.TracerLine then
                                 local line = Drawing.new("Line")
                                 line.Thickness = tracerThickness
-                                line.Transparency = tracerAlpha
+                                line.Transparency = 1
                                 data.TracerLine = line
                             end
                             data.TracerLine.Visible = true
@@ -442,24 +454,23 @@ local function UpdateESP()
     end
 end
 
-RunService.RenderStepped:Connect(function()
+connect(RunService.RenderStepped:Connect(function()
     pcall(UpdateESP)
-end)
+end))
 
-Players.PlayerRemoving:Connect(CleanupPlayerESP)
+connect(Players.PlayerRemoving:Connect(CleanupPlayerESP))
 
 -- // ==========================================================================
--- // STAN I LOGIKA ŚWIATA (LIGHTING & FULLBRIGHT)
+-- // RENDER — FULLBRIGHT
 -- // ==========================================================================
 local fullbrightEnabled = false
 local oldAmbient = Lighting.Ambient
 local oldBrightness = Lighting.Brightness
-local oldClockTime = Lighting.ClockTime
 local oldGlobalShadows = Lighting.GlobalShadows
 
 local function SetFullbrightState(state)
-    fullbrightEnabled = state
-    if state then
+    fullbrightEnabled = state == true
+    if fullbrightEnabled then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.Brightness = 2
         Lighting.GlobalShadows = false
@@ -471,390 +482,434 @@ local function SetFullbrightState(state)
 end
 
 -- // ==========================================================================
--- // BUDOWA INTERFEJSU UŻYTKOWNIKA (KATEGORIE I KONTROLKI)
+-- // MISC — AKCJE
 -- // ==========================================================================
+local function ResetCharacter()
+    local hum = getHumanoid()
+    if hum then hum.Health = 0 end
+end
 
--- =============================================================================
--- === ZAKŁADKA 1: PLAYER ===
--- =============================================================================
-local CatMovement = TabPlayer:CreateCategory({
-    Name = "Movement & Speed",
-    Icon = "wind",
-    Description = "Zarządzanie prędkością poruszania się oraz sprintem",
-    Badge = "MOBILITY",
-    Side = "Left"
-})
+local function LowGraphics()
+    pcall(function()
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            if v:IsA("BasePart") and not v:IsA("MeshPart") then
+                v.Material = Enum.Material.SmoothPlastic
+            end
+        end
+    end)
+end
 
-local SpeedMod = CatMovement:CreateModule({
-    Name = "WalkSpeed",
-    Icon = "zap",
-    Description = "Zwiększa prędkość poruszania się postaci",
-    Default = false,
-    DefaultExpanded = true,
-    DefaultKeybind = "Z",
-    Flag = "Universal_Speed",
-    Callback = function(state)
-        SetSpeedState(state)
+local function CopyJobId()
+    pcall(function() setclipboard(tostring(game.JobId)) end)
+end
+
+local function RejoinServer()
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
+end
+
+-- // ==========================================================================
+-- // MISC — OCHRONA KLIENTA
+-- // ==========================================================================
+local antiAfkEnabled = false
+local antiAfkConnection = nil
+
+local function SetAntiAfkState(state)
+    antiAfkEnabled = state == true
+    if antiAfkConnection then
+        pcall(function() antiAfkConnection:Disconnect() end)
+        antiAfkConnection = nil
     end
-})
+    if not antiAfkEnabled then return end
 
-SpeedMod:AddSlider({
-    Name = "Prędkość",
-    Min = 16,
-    Max = 300,
-    Default = 50,
-    Step = 1,
-    Suffix = " studs/s",
-    Flag = "Universal_SpeedVal",
-    Callback = function(val)
-        walkSpeedValue = val
-        if speedEnabled then ApplySpeed() end
-    end
-})
+    pcall(function()
+        if typeof(getconnections) == "function" then
+            for _, c in pairs(getconnections(LocalPlayer.Idled)) do
+                pcall(function() c:Disable(); c:Disconnect() end)
+            end
+        end
+    end)
 
-SpeedMod:AddToggle({
-    Name = "Sprint na Shift",
-    Default = false,
-    Flag = "Universal_SprintEnabled",
-    Callback = function(state)
-        sprintEnabled = state
-    end
-})
-
-SpeedMod:AddSlider({
-    Name = "Prędkość Sprintu",
-    Min = 30,
-    Max = 350,
-    Default = 90,
-    Step = 1,
-    Suffix = " studs/s",
-    Flag = "Universal_SprintSpeedVal",
-    Callback = function(val)
-        sprintSpeedValue = val
-        if speedEnabled and sprintActive then ApplySpeed() end
-    end
-})
-
-local JumpMod = CatMovement:CreateModule({
-    Name = "Infinite Jump",
-    Icon = "arrow-up-circle",
-    Description = "Pozwala skakać w powietrzu bez limitu",
-    Default = false,
-    DefaultKeybind = "J",
-    Flag = "Universal_InfJump",
-    Callback = function(state)
-        infJumpEnabled = state
-        ApplyJumpPower()
-    end
-})
-
-JumpMod:AddSlider({
-    Name = "Siła Skoku",
-    Min = 50,
-    Max = 350,
-    Default = 75,
-    Step = 1,
-    Suffix = " power",
-    Flag = "Universal_JumpPowerVal",
-    Callback = function(val)
-        jumpPowerValue = val
-        if infJumpEnabled then ApplyJumpPower() end
-    end
-})
-
-local CatPhysics = TabPlayer:CreateCategory({
-    Name = "Flight & Noclip",
-    Icon = "plane",
-    Description = "Swobodne latanie w przestrzeni oraz przenikanie przez ściany",
-    Badge = "PHYSICS",
-    Side = "Right"
-})
-
-local FlyMod = CatPhysics:CreateModule({
-    Name = "Flight (Fly)",
-    Icon = "plane",
-    Description = "Sterowanie: W, S, A, D, Space (góra), Ctrl/Shift (dół)",
-    Default = false,
-    DefaultExpanded = true,
-    DefaultKeybind = "F",
-    Flag = "Universal_Fly",
-    Callback = function(state)
-        SetFlyState(state)
-    end
-})
-
-FlyMod:AddSlider({
-    Name = "Prędkość Lotu",
-    Min = 10,
-    Max = 300,
-    Default = 60,
-    Step = 1,
-    Suffix = " studs/s",
-    Flag = "Universal_FlySpeed",
-    Callback = function(val)
-        flySpeed = val
-    end
-})
-
-FlyMod:AddToggle({
-    Name = "Noclip w locie",
-    Default = true,
-    Flag = "Universal_FlyNoclip",
-    Callback = function(state)
-        flyNoclip = state
-    end
-})
-
-local NoclipMod = CatPhysics:CreateModule({
-    Name = "Noclip",
-    Icon = "box",
-    Description = "Wyłącza kolizje ze wszystkimi ścianami i obiektami",
-    Default = false,
-    DefaultKeybind = "V",
-    Flag = "Universal_Noclip",
-    Callback = function(state)
-        SetNoclipState(state)
-    end
-})
-
-local CatUtilities = TabPlayer:CreateCategory({
-    Name = "Shortcuts & Teleport",
-    Icon = "crosshair",
-    Description = "Narzędzia teleportacji i awaryjnego resetu postaci",
-    Badge = "SHORTCUTS",
-    Side = "Left"
-})
-
-local ClickTpMod = CatUtilities:CreateModule({
-    Name = "Click TP",
-    Icon = "mouse-pointer",
-    Description = "Przytrzymaj Ctrl i kliknij LPM w dowolny punkt mapy",
-    Default = false,
-    Flag = "Universal_ClickTP",
-    Callback = function(state)
-        clickTpEnabled = state
-    end
-})
-
-CatUtilities:AddButton({
-    Name = "Reset Postaci (Respawn)",
-    Callback = function()
-        local hum = getHumanoid()
-        if hum then hum.Health = 0 end
-    end
-})
-
--- =============================================================================
--- === ZAKŁADKA 2: RENDER ===
--- =============================================================================
-local CatVisuals = TabRender:CreateCategory({
-    Name = "Player Visuals (ESP)",
-    Icon = "eye",
-    Description = "Wykrywanie graczy przez ściany, podświetlenie i dystans",
-    Badge = "ESP",
-    Side = "Left"
-})
-
-local ESPMod = CatVisuals:CreateModule({
-    Name = "Player ESP",
-    Icon = "eye",
-    Default = false,
-    DefaultExpanded = true,
-    DefaultKeybind = "H",
-    Flag = "Universal_ESP",
-    Callback = function(state)
-        espEnabled = state
-        if not state then CleanupAllESP() end
-    end
-})
-
-ESPMod:AddToggle({
-    Name = "Highlight (Obrys)",
-    Default = true,
-    Flag = "Universal_ESPHighlight",
-    Callback = function(state)
-        espHighlights = state
-    end
-})
-
-ESPMod:AddToggle({
-    Name = "Chams (Przez ściany)",
-    Default = false,
-    Flag = "Universal_ESPChams",
-    Callback = function(state)
-        espChams = state
-    end
-})
-
-ESPMod:AddToggle({
-    Name = "Nicki Graczy",
-    Default = true,
-    Flag = "Universal_ESPNames",
-    Callback = function(state)
-        espNames = state
-    end
-})
-
-ESPMod:AddToggle({
-    Name = "Dystans w metrach",
-    Default = true,
-    Flag = "Universal_ESPDistance",
-    Callback = function(state)
-        espDistance = state
-    end
-})
-
-ESPMod:AddColorPicker({
-    Name = "Kolor ESP",
-    Default = Color3.fromRGB(0, 255, 170),
-    Flag = "Universal_ESPColor",
-    Callback = function(col)
-        espColor = col
-    end
-})
-
-CatVisuals:AddSlider({
-    Name = "Max Zasięg Renderu",
-    Min = 100,
-    Max = 3000,
-    Default = 1500,
-    Step = 50,
-    Suffix = " studs",
-    Flag = "Universal_MaxDist",
-    Callback = function(val)
-        maxEspDistance = val
-    end
-})
-
-local CatTracers = TabRender:CreateCategory({
-    Name = "Tracers & Beams",
-    Icon = "crosshair",
-    Description = "Wektory namierzania łączące gracza z celami na ekranie",
-    Badge = "TRACERS",
-    Side = "Right"
-})
-
-local TracerMod = CatTracers:CreateModule({
-    Name = "Tracers",
-    Icon = "navigation",
-    Default = false,
-    Flag = "Universal_Tracers",
-    Callback = function(state)
-        tracersEnabled = state
-        if not state then CleanupAllESP() end
-    end
-})
-
-TracerMod:AddDropdown({
-    Name = "Punkt Początkowy",
-    Options = {"Dół Ekranu (Bottom)", "Środek Ekranu (Center)", "Kursor (Mouse)"},
-    Default = "Dół Ekranu (Bottom)",
-    Flag = "Universal_TracerOrigin",
-    Callback = function(selected)
-        tracerOriginMode = type(selected) == "table" and selected[1] or selected
-    end
-})
-
-TracerMod:AddColorPicker({
-    Name = "Kolor Linii",
-    Default = Color3.fromRGB(0, 220, 255),
-    Flag = "Universal_TracerColor",
-    Callback = function(col)
-        tracerColor = col
-    end
-})
-
-CatTracers:AddSlider({
-    Name = "Grubość Linii",
-    Min = 1,
-    Max = 5,
-    Default = 1.5,
-    Step = 0.5,
-    Suffix = " px",
-    Flag = "Universal_TracerThickness",
-    Callback = function(val)
-        tracerThickness = val
-    end
-})
-
--- =============================================================================
--- === ZAKŁADKA 3: MISC ===
--- =============================================================================
-local CatLighting = TabMisc:CreateCategory({
-    Name = "World & Lighting",
-    Icon = "sun",
-    Description = "Ustawienia oświetlenia mapy, dnia/nocy oraz cieni",
-    Badge = "WORLD",
-    Side = "Left"
-})
-
-local FullbrightMod = CatLighting:CreateModule({
-    Name = "Fullbright",
-    Icon = "sun",
-    Description = "Rozświetla mapę i usuwa ciemne cienie",
-    Default = false,
-    Flag = "Universal_Fullbright",
-    Callback = function(state)
-        SetFullbrightState(state)
-    end
-})
-
-CatLighting:AddSlider({
-    Name = "Pora Dnia (Godzina)",
-    Min = 0,
-    Max = 24,
-    Default = 14,
-    Step = 0.5,
-    Suffix = " h",
-    Flag = "Universal_ClockTime",
-    Callback = function(val)
-        Lighting.ClockTime = val
-    end
-})
-
-CatLighting:AddSlider({
-    Name = "Pole Widzenia (FOV)",
-    Min = 60,
-    Max = 120,
-    Default = 70,
-    Step = 1,
-    Suffix = "°",
-    Flag = "Universal_FOV",
-    Callback = function(val)
-        Camera.FieldOfView = val
-    end
-})
-
-local CatClient = TabMisc:CreateCategory({
-    Name = "Client & Session",
-    Icon = "wrench",
-    Description = "Zarządzanie połączeniem z serwerem i optymalizacją",
-    Badge = "SESSION",
-    Side = "Right"
-})
-
-CatClient:AddButton({
-    Name = "Dołącz ponownie (Rejoin)",
-    Callback = function()
+    antiAfkConnection = LocalPlayer.Idled:Connect(function()
         pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+            local vim = Instance.new("VirtualInputManager")
+            vim:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            vim:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            vim:Destroy()
         end)
-    end
-})
+        if VirtualUser then
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+    end)
+end
 
-CatClient:AddButton({
-    Name = "Optymalizacja FPS (Low Gfx)",
-    Callback = function()
-        pcall(function()
-            Lighting.GlobalShadows = false
-            Lighting.FogEnd = 9e9
-            for _, v in ipairs(Workspace:GetDescendants()) do
-                if v:IsA("BasePart") and not v:IsA("MeshPart") then
-                    v.Material = Enum.Material.SmoothPlastic
+local antiFlingEnabled = false
+local antiFlingConnection = nil
+
+local function SetAntiFlingState(state)
+    antiFlingEnabled = state == true
+    if antiFlingConnection then
+        pcall(function() antiFlingConnection:Disconnect() end)
+        antiFlingConnection = nil
+    end
+    if not antiFlingEnabled then return end
+
+    antiFlingConnection = RunService.Stepped:Connect(function()
+        if not antiFlingEnabled then return end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                for _, v in ipairs(player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.CanCollide then
+                        v.CanCollide = false
+                    end
                 end
             end
-        end)
+        end
+        local char = getCharacter()
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            if hrp.AssemblyLinearVelocity and hrp.AssemblyLinearVelocity.Magnitude > 3500 then
+                hrp.AssemblyLinearVelocity = Vector3.zero
+            end
+            if hrp.AssemblyAngularVelocity and hrp.AssemblyAngularVelocity.Magnitude > 2500 then
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+        end
+    end)
+end
+
+-- Domyślnie ochrona klienta jest aktywna (jak w starym panelu Settings)
+SetAntiAfkState(true)
+SetAntiFlingState(true)
+
+-- // ==========================================================================
+-- // REJESTR SCRIPTÓW DLA EXPLORERA
+-- // ==========================================================================
+local Scripts = {
+    -- // PLAYER ---------------------------------------------------------------
+    {
+        Name = "WalkSpeed",
+        Description = "Zwiększa prędkość poruszania się postaci. Obsługuje sprint na Shift.",
+        Category = "Player",
+        Tags = { "speed", "movement" },
+        Icon = "zap",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = SetSpeedState,
+        Options = {
+            {
+                Type = "slider",
+                Name = "Prędkość",
+                Min = 16,
+                Max = 300,
+                Default = 50,
+                Step = 1,
+                Suffix = " studs/s",
+                Callback = function(val)
+                    walkSpeedValue = val
+                    if speedEnabled then ApplySpeed() end
+                end,
+            },
+            {
+                Type = "toggle",
+                Name = "Sprint na Shift",
+                Default = false,
+                Callback = function(state)
+                    sprintEnabled = state
+                    if speedEnabled then ApplySpeed() end
+                end,
+            },
+            {
+                Type = "slider",
+                Name = "Prędkość Sprintu",
+                Min = 30,
+                Max = 350,
+                Default = 90,
+                Step = 1,
+                Suffix = " studs/s",
+                Callback = function(val)
+                    sprintSpeedValue = val
+                    if speedEnabled and sprintActive then ApplySpeed() end
+                end,
+            },
+        },
+    },
+    {
+        Name = "Infinite Jump",
+        Description = "Pozwala skakać w powietrzu bez limitu. Możesz ustawić siłę skoku.",
+        Category = "Player",
+        Tags = { "jump", "movement" },
+        Icon = "arrow-up-circle",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = SetInfJumpState,
+        Options = {
+            {
+                Type = "slider",
+                Name = "Siła Skoku",
+                Min = 50,
+                Max = 350,
+                Default = 75,
+                Step = 1,
+                Suffix = " power",
+                Callback = function(val)
+                    jumpPowerValue = val
+                    if infJumpEnabled then ApplyJumpPower() end
+                end,
+            },
+        },
+    },
+    {
+        Name = "Flight (Fly)",
+        Description = "Swobodne latanie: W, S, A, D, Space (góra), Ctrl/Shift (dół).",
+        Category = "Player",
+        Tags = { "fly", "movement" },
+        Icon = "plane",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = SetFlyState,
+        Options = {
+            {
+                Type = "slider",
+                Name = "Prędkość Lotu",
+                Min = 10,
+                Max = 300,
+                Default = 60,
+                Step = 1,
+                Suffix = " studs/s",
+                Callback = function(val)
+                    flySpeed = val
+                end,
+            },
+            {
+                Type = "toggle",
+                Name = "Noclip w locie",
+                Default = true,
+                Callback = function(state)
+                    flyNoclip = state
+                end,
+            },
+        },
+    },
+    {
+        Name = "Noclip",
+        Description = "Wyłącza kolizje ze wszystkimi ścianami i obiektami.",
+        Category = "Player",
+        Tags = { "noclip", "movement" },
+        Icon = "box",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = SetNoclipState,
+    },
+    {
+        Name = "Click TP",
+        Description = "Przytrzymaj Ctrl i kliknij LPM w dowolny punkt mapy, aby się teleportować.",
+        Category = "Player",
+        Tags = { "teleport", "movement" },
+        Icon = "mouse-pointer",
+        Mode = "toggle",
+        Default = false,
+        OnToggle = function(state)
+            clickTpEnabled = state
+        end,
+    },
+
+    -- // RENDER --------------------------------------------------------------
+    {
+        Name = "Player ESP",
+        Description = "Wykrywanie graczy przez ściany, podświetlenie, nicki i dystans.",
+        Category = "Render",
+        Tags = { "esp", "visuals" },
+        Icon = "eye",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = function(state)
+            espEnabled = state
+            if not state then CleanupAllESP() end
+        end,
+        Options = {
+            {
+                Type = "toggle",
+                Name = "Highlight (Obrys)",
+                Default = true,
+                Callback = function(state) espHighlights = state end,
+            },
+            {
+                Type = "toggle",
+                Name = "Chams (Przez ściany)",
+                Default = false,
+                Callback = function(state) espChams = state end,
+            },
+            {
+                Type = "toggle",
+                Name = "Nicki Graczy",
+                Default = true,
+                Callback = function(state) espNames = state end,
+            },
+            {
+                Type = "toggle",
+                Name = "Dystans w metrach",
+                Default = true,
+                Callback = function(state) espDistance = state end,
+            },
+            {
+                Type = "slider",
+                Name = "Max Zasięg",
+                Min = 100,
+                Max = 3000,
+                Default = 1500,
+                Step = 50,
+                Suffix = " studs",
+                Callback = function(val) maxEspDistance = val end,
+            },
+        },
+    },
+    {
+        Name = "Tracers",
+        Description = "Linie namierzania łączące krawędź ekranu z każdym widocznym graczem.",
+        Category = "Render",
+        Tags = { "tracers", "visuals" },
+        Icon = "navigation",
+        Mode = "toggle",
+        Default = false,
+        OnToggle = function(state)
+            tracersEnabled = state
+            if not state then CleanupAllESP() end
+        end,
+        Options = {
+            {
+                Type = "toggle",
+                Name = "Linie od dołu ekranu",
+                Default = true,
+                Callback = function(state) tracerFromBottom = state end,
+            },
+            {
+                Type = "slider",
+                Name = "Grubość Linii",
+                Min = 1,
+                Max = 5,
+                Default = 1.5,
+                Step = 0.5,
+                Suffix = " px",
+                Callback = function(val) tracerThickness = val end,
+            },
+        },
+    },
+    {
+        Name = "Fullbright",
+        Description = "Rozświetla mapę i usuwa ciemne cienie.",
+        Category = "Render",
+        Tags = { "lighting", "world" },
+        Icon = "sun",
+        Mode = "toggle",
+        Pinned = true,
+        Default = false,
+        OnToggle = SetFullbrightState,
+    },
+
+    -- // MISC ----------------------------------------------------------------
+    {
+        Name = "AntiAFK",
+        Description = "Zapobiega rozłączeniu po 20 minutach bezczynności.",
+        Category = "Misc",
+        Tags = { "afk", "protection" },
+        Icon = "shield",
+        Mode = "toggle",
+        Default = true,
+        OnToggle = SetAntiAfkState,
+    },
+    {
+        Name = "AntiFling",
+        Description = "Chroni postać przed wyrzuceniem ze zderzeń i stabilizuje prędkość.",
+        Category = "Misc",
+        Tags = { "fling", "protection" },
+        Icon = "zap",
+        Mode = "toggle",
+        Default = true,
+        OnToggle = SetAntiFlingState,
+    },
+    {
+        Name = "Reset Character",
+        Description = "Natychmiastowo respawnuje Twoją postać.",
+        Category = "Misc",
+        Tags = { "respawn", "utility" },
+        Icon = "refresh-cw",
+        Mode = "action",
+        Run = ResetCharacter,
+    },
+    {
+        Name = "Low Graphics",
+        Description = "Upraszcza materiały i wyłącza cienie, aby poprawić FPS.",
+        Category = "Misc",
+        Tags = { "fps", "optimization" },
+        Icon = "cpu",
+        Mode = "action",
+        Run = LowGraphics,
+    },
+    {
+        Name = "Copy JobId",
+        Description = "Kopiuje identyfikator bieżącej sesji serwera do schowka.",
+        Category = "Misc",
+        Tags = { "server", "utility" },
+        Icon = "copy",
+        Mode = "action",
+        Run = CopyJobId,
+    },
+    {
+        Name = "Rejoin Server",
+        Description = "Przełącza Cię z powrotem na ten sam serwer.",
+        Category = "Misc",
+        Tags = { "server", "utility" },
+        Icon = "globe",
+        Mode = "action",
+        Run = RejoinServer,
+    },
+}
+
+-- // ==========================================================================
+-- // CLEANUP
+-- // ==========================================================================
+local function Cleanup()
+    for _, c in ipairs(Connections) do
+        pcall(function() c:Disconnect() end)
     end
+    table.clear(Connections)
+
+    pcall(function() SetSpeedState(false) end)
+    pcall(function() SetFlyState(false) end)
+    pcall(function() SetNoclipState(false) end)
+    pcall(function() SetInfJumpState(false) end)
+    pcall(function() SetFullbrightState(false) end)
+    pcall(function() SetAntiAfkState(false) end)
+    pcall(function() SetAntiFlingState(false) end)
+    pcall(CleanupAllESP)
+end
+
+-- // ==========================================================================
+-- // START EXPLORERA
+-- // ==========================================================================
+local Explorer = MENU:CreateExplorer({
+    Name = "LuminaqHUB",
+    Tittle = "Welcome to LuminaqHub",
+    ToggleUIKeybind = "K",
+    GameId = "LuminaqHUB",
+    Scripts = Scripts,
+    OnCleanup = Cleanup,
 })
 
-print("[LuminaqHUB] Pomyślnie załadowano pełny pakiet Universal Suite.")
+if Explorer then
+    print("[LuminaqHUB] Universal Explorer załadowany — " .. tostring(#Scripts) .. " scriptów.")
+else
+    warn("[LuminaqHUB] Nie udało się uruchomić explorera.")
+end

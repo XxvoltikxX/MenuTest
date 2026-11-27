@@ -1346,4 +1346,79 @@ function MenuLib:CreateWindow(options)
     return WindowAPI
 end
 
+-- // ============================================================
+-- // EXPLORER — NOWY SILNIK MENU (DASHBOARD + WYSZUKIWARKA)
+-- // ============================================================
+function MenuLib:CreateExplorer(options)
+    local Config = options or {}
+    local rawName = tostring(Config.Name or "LuminaqHUB")
+    local Name = #rawName > 16 and string.sub(rawName, 1, 16) or rawName
+    local startTime = os.clock()
+    local isMobile = isMobileDevice(Config)
+
+    local loader = createLoadingIndicator(Name, isMobile, Config)
+
+    -- Usuń poprzednią sesję explorera oraz stare okno
+    if typeof(getgenv) == "function" then
+        if getgenv()._LuminaqExplorerCleanup then
+            pcall(getgenv()._LuminaqExplorerCleanup)
+            getgenv()._LuminaqExplorerCleanup = nil
+        end
+        if getgenv()._VoltikMenuCleanup then
+            pcall(getgenv()._VoltikMenuCleanup)
+            getgenv()._VoltikMenuCleanup = nil
+        end
+    end
+    if _G._VoltikMenuCleanup then
+        pcall(_G._VoltikMenuCleanup)
+        _G._VoltikMenuCleanup = nil
+    end
+
+    loader:Update(0.35, "Pobieranie silnika...")
+    local IconsModule = safeLoadUrl(baseUrl .. "Icons.lua", nil)
+    local ExplorerModule = safeLoadUrl(baseUrl .. "Explorer.lua", nil)
+    loader:Update(0.8, "Budowanie interfejsu...")
+
+    if not ExplorerModule or type(ExplorerModule.Create) ~= "function" then
+        warn("[MenuLib] Nie udało się załadować Explorer.lua")
+        pcall(function()
+            loader:Done(string.format("%.2fs", os.clock() - startTime), Config.ToggleUIKeybind or "K")
+        end)
+        return nil
+    end
+
+    local createOk, ExplorerAPI = pcall(function()
+        return ExplorerModule:Create({
+            Name            = Name,
+            Scripts         = Config.Scripts or {},
+            Icons           = IconsModule,
+            ToggleUIKeybind = Config.ToggleUIKeybind or "K",
+            OnCleanup       = Config.OnCleanup,
+        })
+    end)
+
+    if not createOk or not ExplorerAPI then
+        warn("[MenuLib] Błąd podczas tworzenia explorera: " .. tostring(ExplorerAPI))
+        pcall(function()
+            loader:Done(string.format("%.2fs", os.clock() - startTime), Config.ToggleUIKeybind or "K")
+        end)
+        return nil
+    end
+
+    if typeof(getgenv) == "function" then
+        getgenv()._VoltikMenuCleanup = ExplorerAPI.Cleanup
+    end
+    _G._VoltikMenuCleanup = ExplorerAPI.Cleanup
+
+    pcall(function()
+        loader:Done(string.format("%.2fs", os.clock() - startTime), Config.ToggleUIKeybind or "K", function()
+            if ExplorerAPI.SetVisible then
+                ExplorerAPI:SetVisible(true)
+            end
+        end)
+    end)
+
+    return ExplorerAPI
+end
+
 return MenuLib
