@@ -177,6 +177,10 @@ print(Window:GetMenuKeybind()) -- "K"
     opcjonalny **Jitter** (mikro-drgania imitujące rękę).
   - **FOV** — promień obszaru wyszukiwania celu (40–600 px), kolor i podgląd okręgu.
 - **Movement**: WalkSpeed z trybami `Velocity` / `CFrame` i suwakiem prędkości.
+- **HUD**:
+  - **Arraylist** — lista włączonych modułów w prawym górnym rogu (aktualizuje się na żywo).
+  - **Toggle Info** — krótki komunikat `ON` / `OFF` na dole ekranu przy każdym przełączeniu modułu.
+  - Oba elementy można wyłączyć w zakładce **Settings**.
 - **Settings**: bind menu, tryb tła (`Pictures` / `GIF`), wygląd, przezroczystość.
 
 ### Ukrywanie GUI (Stealth)

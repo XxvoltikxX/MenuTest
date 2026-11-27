@@ -25,6 +25,7 @@ local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
 local Workspace         = game:GetService("Workspace")
+local TweenService      = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -139,6 +140,192 @@ overlayGui.ResetOnSpawn = false
 overlayGui.IgnoreGuiInset = true
 overlayGui.DisplayOrder = 5
 overlayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- // ==========================================================================
+-- // HUD — ARRAYLIST (aktywne moduły) + TOGGLE INFO (komunikat on/off)
+-- // ==========================================================================
+local hudCfg = {
+    info = true,
+    list = true,
+}
+
+local hudGui
+if Stealth and type(Stealth.NewScreenGui) == "function" then
+    hudGui = Stealth.NewScreenGui({ DisplayOrder = 40, IgnoreGuiInset = true })
+else
+    hudGui = Instance.new("ScreenGui")
+    hudGui.Name = tostring(math.random(1000000, 9999999))
+    hudGui.ResetOnSpawn = false
+    hudGui.IgnoreGuiInset = true
+    hudGui.DisplayOrder = 40
+    pcall(function() hudGui.Parent = game:GetService("CoreGui") end)
+end
+hudGui.ResetOnSpawn = false
+hudGui.IgnoreGuiInset = true
+hudGui.DisplayOrder = 40
+hudGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Arraylist: prawy górny róg, tylko włączone moduły.
+local arrayList = Instance.new("Frame")
+arrayList.Name = "HUD_ArrayList"
+arrayList.AnchorPoint = Vector2.new(1, 0)
+arrayList.Position = UDim2.new(1, -16, 0, 16)
+arrayList.AutomaticSize = Enum.AutomaticSize.XY
+arrayList.BackgroundTransparency = 1
+arrayList.BorderSizePixel = 0
+arrayList.Visible = false
+arrayList.Parent = hudGui
+
+local arrayLayout = Instance.new("UIListLayout", arrayList)
+arrayLayout.Padding = UDim.new(0, 4)
+arrayLayout.SortOrder = Enum.SortOrder.LayoutOrder
+arrayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+arrayLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+local arrayEntries = {}
+local arrayOrder = {}
+local arrayActive = {}
+
+local function refreshArrayList()
+    for name, entry in pairs(arrayEntries) do
+        if not arrayActive[name] then
+            entry:Destroy()
+            arrayEntries[name] = nil
+        end
+    end
+
+    for index, name in ipairs(arrayOrder) do
+        local entry = arrayEntries[name]
+        if not entry then
+            entry = Instance.new("TextLabel")
+            entry.Name = "HUD_Entry"
+            entry.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
+            entry.BackgroundTransparency = 0.22
+            entry.BorderSizePixel = 0
+            entry.Size = UDim2.new(0, 0, 0, 22)
+            entry.AutomaticSize = Enum.AutomaticSize.X
+            entry.Font = Enum.Font.GothamBold
+            entry.TextSize = 11
+            entry.TextColor3 = Color3.fromRGB(244, 246, 255)
+            entry.TextXAlignment = Enum.TextXAlignment.Right
+            entry.Parent = arrayList
+
+            local corner = Instance.new("UICorner", entry)
+            corner.CornerRadius = UDim.new(0, 6)
+
+            local padding = Instance.new("UIPadding", entry)
+            padding.PaddingLeft = UDim.new(0, 8)
+            padding.PaddingRight = UDim.new(0, 8)
+
+            local entryStroke = Instance.new("UIStroke", entry)
+            entryStroke.Thickness = 1
+            entryStroke.Color = Color3.fromRGB(129, 140, 248)
+            entryStroke.Transparency = 0.45
+
+            arrayEntries[name] = entry
+        end
+        entry.Text = tostring(name)
+        entry.LayoutOrder = index
+        entry.Visible = true
+    end
+
+    arrayList.Visible = hudCfg.list and #arrayOrder > 0
+end
+
+-- Toggle info: krótki komunikat na dole ekranu.
+local infoToast = Instance.new("Frame")
+infoToast.Name = "HUD_ToggleInfo"
+infoToast.AnchorPoint = Vector2.new(0.5, 1)
+infoToast.Position = UDim2.new(0.5, 0, 1, -96)
+infoToast.Size = UDim2.fromOffset(140, 30)
+infoToast.BackgroundColor3 = Color3.fromRGB(15, 17, 26)
+infoToast.BackgroundTransparency = 0.15
+infoToast.BorderSizePixel = 0
+infoToast.Visible = false
+infoToast.Parent = hudGui
+
+local infoCorner = Instance.new("UICorner", infoToast)
+infoCorner.CornerRadius = UDim.new(0, 10)
+
+local infoStroke = Instance.new("UIStroke", infoToast)
+infoStroke.Thickness = 1
+infoStroke.Color = Color3.fromRGB(52, 211, 153)
+infoStroke.Transparency = 0.2
+
+local infoDot = Instance.new("Frame", infoToast)
+infoDot.Name = "Dot"
+infoDot.Size = UDim2.fromOffset(7, 7)
+infoDot.Position = UDim2.new(0, 12, 0.5, 0)
+infoDot.AnchorPoint = Vector2.new(0, 0.5)
+infoDot.BackgroundColor3 = Color3.fromRGB(52, 211, 153)
+infoDot.BorderSizePixel = 0
+Instance.new("UICorner", infoDot).CornerRadius = UDim.new(1, 0)
+
+local infoLabel = Instance.new("TextLabel", infoToast)
+infoLabel.Name = "Label"
+infoLabel.BackgroundTransparency = 1
+infoLabel.Position = UDim2.new(0, 28, 0, 0)
+infoLabel.Size = UDim2.new(1, -40, 1, 0)
+infoLabel.Font = Enum.Font.GothamBold
+infoLabel.TextSize = 12
+infoLabel.TextColor3 = Color3.fromRGB(52, 211, 153)
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.Text = ""
+
+local infoToken = 0
+
+local function showToggleInfo(name, state)
+    if not hudCfg.info or not hudGui or not hudGui.Parent then return end
+
+    local color = state and Color3.fromRGB(52, 211, 153) or Color3.fromRGB(248, 113, 113)
+    local text = tostring(name) .. (state and "  ON" or "  OFF")
+
+    infoToken = infoToken + 1
+    local token = infoToken
+
+    infoLabel.Text = text
+    infoLabel.TextColor3 = color
+    infoLabel.TextTransparency = 0
+    infoDot.BackgroundColor3 = color
+    infoStroke.Color = color
+    infoToast.Size = UDim2.fromOffset(math.max(110, 58 + #text * 7), 30)
+    infoToast.BackgroundTransparency = 0.15
+    infoToast.Visible = true
+
+    task.delay(1.3, function()
+        if token ~= infoToken or not infoToast.Parent then return end
+        local tween = TweenService:Create(infoToast, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
+        TweenService:Create(infoLabel, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+        TweenService:Create(infoStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+        tween.Completed:Connect(function()
+            if token == infoToken then
+                infoToast.Visible = false
+            end
+        end)
+        tween:Play()
+    end)
+end
+
+local function hudSetModule(name, state)
+    name = tostring(name)
+    if state then
+        if not arrayActive[name] then
+            arrayActive[name] = true
+            table.insert(arrayOrder, name)
+        end
+    else
+        arrayActive[name] = nil
+        for i, activeName in ipairs(arrayOrder) do
+            if activeName == name then
+                table.remove(arrayOrder, i)
+                break
+            end
+        end
+    end
+
+    refreshArrayList()
+    showToggleInfo(name, state)
+end
 
 local visualCache = {}
 
@@ -337,7 +524,7 @@ local ESPModule = VisualsTab:CreateModule({
     Name        = "ESP",
     Description = "Ramka wokół graczy",
     Icon        = "box",
-    Callback    = function(state) espCfg.enabled = state end,
+    Callback    = function(state) espCfg.enabled = state; hudSetModule("ESP", state) end,
 })
 ESPModule:AddColorPicker({
     Name     = "Kolor ESP",
@@ -350,7 +537,7 @@ local TracerModule = VisualsTab:CreateModule({
     Name        = "Tracers",
     Description = "Linie od dołu ekranu",
     Icon        = "crosshair",
-    Callback    = function(state) tracerCfg.enabled = state end,
+    Callback    = function(state) tracerCfg.enabled = state; hudSetModule("Tracers", state) end,
 })
 TracerModule:AddColorPicker({
     Name     = "Kolor tracerów",
@@ -363,7 +550,7 @@ local NametagModule = VisualsTab:CreateModule({
     Name        = "Nametag",
     Description = "Nazwa i dystans gracza",
     Icon        = "user",
-    Callback    = function(state) nameCfg.enabled = state end,
+    Callback    = function(state) nameCfg.enabled = state; hudSetModule("Nametag", state) end,
 })
 NametagModule:AddColorPicker({
     Name     = "Kolor nazwy",
@@ -382,7 +569,7 @@ local HeadModule = VisualsTab:CreateModule({
     Name        = "Head ESP",
     Description = "Okrąg na głowie gracza",
     Icon        = "eye",
-    Callback    = function(state) headCfg.enabled = state end,
+    Callback    = function(state) headCfg.enabled = state; hudSetModule("Head ESP", state) end,
 })
 HeadModule:AddColorPicker({
     Name     = "Kolor head ESP",
@@ -555,6 +742,7 @@ local AimbotModule = CombatTab:CreateModule({
         if not state then
             aimCfg.active = false
         end
+        hudSetModule("Aimbot", state)
     end,
 })
 
@@ -632,7 +820,7 @@ local FovModule = CombatTab:CreateModule({
     Name        = "FOV",
     Description = "Obszar wyszukiwania celu (przełącznik = pokaż okrąg)",
     Icon        = "eye",
-    Callback    = function(state) fovCfg.enabled = state end,
+    Callback    = function(state) fovCfg.enabled = state; hudSetModule("FOV", state) end,
 })
 
 FovModule:AddSlider({
@@ -667,6 +855,7 @@ local SpeedModule = MovementTab:CreateModule({
         elseif hum then
             hum.WalkSpeed = speedCfg.baseWalk or 16
         end
+        hudSetModule("WalkSpeed", state)
     end,
 })
 
@@ -719,6 +908,26 @@ bindButton = SettingsTab:CreateButton({
                 refreshBindLabel()
             end
         end)
+    end,
+})
+
+SettingsTab:CreateToggle({
+    Name     = "Toggle Info",
+    Flag     = "Universal_HUD_Info",
+    Default  = true,
+    Callback = function(state)
+        hudCfg.info = state
+        if not state then infoToast.Visible = false end
+    end,
+})
+
+SettingsTab:CreateToggle({
+    Name     = "Arraylist",
+    Flag     = "Universal_HUD_List",
+    Default  = true,
+    Callback = function(state)
+        hudCfg.list = state
+        refreshArrayList()
     end,
 })
 
@@ -865,6 +1074,7 @@ local function cleanupAll()
     end
 
     pcall(function() overlayGui:Destroy() end)
+    pcall(function() hudGui:Destroy() end)
 
     local hum = getLocalHumanoid()
     if hum then
