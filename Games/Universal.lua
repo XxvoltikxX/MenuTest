@@ -886,13 +886,13 @@ local function Cleanup()
     end
     table.clear(Connections)
 
-    pcall(function() SetSpeedState(false) end)
-    pcall(function() SetFlyState(false) end)
-    pcall(function() SetNoclipState(false) end)
-    pcall(function() SetInfJumpState(false) end)
-    pcall(function() SetFullbrightState(false) end)
-    pcall(function() SetAntiAfkState(false) end)
-    pcall(function() SetAntiFlingState(false) end)
+    if speedEnabled then pcall(function() SetSpeedState(false) end) end
+    if flyEnabled then pcall(function() SetFlyState(false) end) end
+    if noclipEnabled then pcall(function() SetNoclipState(false) end) end
+    if infJumpEnabled then pcall(function() SetInfJumpState(false) end) end
+    if fullbrightEnabled then pcall(function() SetFullbrightState(false) end) end
+    if antiAfkEnabled then pcall(function() SetAntiAfkState(false) end) end
+    if antiFlingEnabled then pcall(function() SetAntiFlingState(false) end) end
     pcall(CleanupAllESP)
 end
 
