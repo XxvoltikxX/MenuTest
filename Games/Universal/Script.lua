@@ -255,7 +255,12 @@ local function createHudDrag(frame, key)
         frame.Position = UDim2.fromOffset(saved.x, saved.y)
     end
 
-    return begin
+    -- // Dla dzieci (wpisy arraylisty, etykieta/kropka toastu): podpinamy ten sam drag.
+    return function(target)
+        if target and target.InputBegan then
+            target.InputBegan:Connect(begin)
+        end
+    end
 end
 
 -- Arraylist: prawy górny róg, tylko włączone moduły.
