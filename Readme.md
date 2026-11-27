@@ -180,6 +180,10 @@ print(Window:GetMenuKeybind()) -- "K"
 - **HUD**:
   - **Arraylist** — lista włączonych modułów w prawym górnym rogu (aktualizuje się na żywo).
   - **Toggle Info** — krótki komunikat `ON` / `OFF` na dole ekranu przy każdym przełączeniu modułu.
+  - Oba elementy można **przeciągnąć** myszą lub palcem w dowolne miejsce ekranu —
+    pozycja jest zapamiętywana w sesji (`getgenv()._0x5a17.hud`) i odtwarzana przy starcie.
+  - **Ustaw pozycję HUD** (Settings) pokazuje podgląd toggle info na 8 s, żeby wygodnie
+    ustawić jego miejsce; **Reset pozycji HUD** przywraca domyślne pozycje.
   - Oba elementy można wyłączyć w zakładce **Settings**.
 - **Settings**: bind menu, tryb tła (`Pictures` / `GIF`), wygląd, przezroczystość.
 

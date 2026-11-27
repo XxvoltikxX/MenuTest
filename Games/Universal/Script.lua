@@ -165,6 +165,99 @@ hudGui.IgnoreGuiInset = true
 hudGui.DisplayOrder = 40
 hudGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- // --------------------------------------------------------------------------
+-- // POZYCJE HUD — przeciąganie myszą/dotykiem + zapis w sesji
+-- // --------------------------------------------------------------------------
+local hudConnections = {}
+
+local hudSessionStore
+if Stealth and type(Stealth.Store) == "function" then
+    local ok, store = pcall(Stealth.Store)
+    if ok and type(store) == "table" then
+        hudSessionStore = store
+    end
+end
+
+local function hudViewportSize()
+    local cam = Workspace and Workspace.CurrentCamera
+    local size = cam and cam.ViewportSize
+    if size and size.X and size.Y and size.X > 0 and size.Y > 0 then
+        return size
+    end
+    return Vector2.new(1280, 720)
+end
+
+local function saveHudPosition(key, frame)
+    if not hudSessionStore then return end
+    hudSessionStore.hud = hudSessionStore.hud or {}
+    hudSessionStore.hud[key] = {
+        x = frame.Position.X.Offset,
+        y = frame.Position.Y.Offset,
+    }
+end
+
+local function loadHudPosition(key)
+    if not hudSessionStore or type(hudSessionStore.hud) ~= "table" then return nil end
+    local pos = hudSessionStore.hud[key]
+    if type(pos) == "table" and type(pos.x) == "number" and type(pos.y) == "number" then
+        return pos
+    end
+    return nil
+end
+
+-- // Wiąże przeciąganie z ramką i zwraca funkcję dla jej dzieci (wpisy, etykiety).
+local function createHudDrag(frame, key)
+    local dragging = false
+    local startMouseX, startMouseY = 0, 0
+    local startAbsX, startAbsY = 0, 0
+
+    local function isDragInput(input)
+        local t = input and input.UserInputType
+        return t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch
+    end
+
+    local function begin(input)
+        if dragging or not isDragInput(input) then return end
+        local mouse = UserInputService:GetMouseLocation()
+        dragging = true
+        startMouseX, startMouseY = mouse.X, mouse.Y
+        startAbsX, startAbsY = frame.AbsolutePosition.X, frame.AbsolutePosition.Y
+    end
+
+    frame.InputBegan:Connect(begin)
+
+    table.insert(hudConnections, UserInputService.InputChanged:Connect(function(input)
+        if not dragging then return end
+        local t = input and input.UserInputType
+        if t ~= Enum.UserInputType.MouseMovement and t ~= Enum.UserInputType.Touch then return end
+
+        local mouse = UserInputService:GetMouseLocation()
+        local viewport = hudViewportSize()
+        local size = frame.AbsoluteSize
+        local anchor = frame.AnchorPoint
+        local width = math.max(size.X, 0)
+        local height = math.max(size.Y, 0)
+
+        local topX = math.clamp(startAbsX + (mouse.X - startMouseX), 0, math.max(viewport.X - width, 0))
+        local topY = math.clamp(startAbsY + (mouse.Y - startMouseY), 0, math.max(viewport.Y - height, 0))
+
+        frame.Position = UDim2.fromOffset(topX + anchor.X * width, topY + anchor.Y * height)
+    end))
+
+    table.insert(hudConnections, UserInputService.InputEnded:Connect(function(input)
+        if not dragging or not isDragInput(input) then return end
+        dragging = false
+        saveHudPosition(key, frame)
+    end))
+
+    local saved = loadHudPosition(key)
+    if saved then
+        frame.Position = UDim2.fromOffset(saved.x, saved.y)
+    end
+
+    return begin
+end
+
 -- Arraylist: prawy górny róg, tylko włączone moduły.
 local arrayList = Instance.new("Frame")
 arrayList.Name = "HUD_ArrayList"
@@ -175,6 +268,8 @@ arrayList.BackgroundTransparency = 1
 arrayList.BorderSizePixel = 0
 arrayList.Visible = false
 arrayList.Parent = hudGui
+
+local dragArrayList = createHudDrag(arrayList, "list")
 
 local arrayLayout = Instance.new("UIListLayout", arrayList)
 arrayLayout.Padding = UDim.new(0, 4)
@@ -222,6 +317,7 @@ local function refreshArrayList()
             entryStroke.Color = Color3.fromRGB(129, 140, 248)
             entryStroke.Transparency = 0.45
 
+            dragArrayList(entry)
             arrayEntries[name] = entry
         end
         entry.Text = tostring(name)
@@ -243,6 +339,8 @@ infoToast.BackgroundTransparency = 0.15
 infoToast.BorderSizePixel = 0
 infoToast.Visible = false
 infoToast.Parent = hudGui
+
+local dragInfo = createHudDrag(infoToast, "info")
 
 local infoCorner = Instance.new("UICorner", infoToast)
 infoCorner.CornerRadius = UDim.new(0, 10)
@@ -271,6 +369,9 @@ infoLabel.TextSize = 12
 infoLabel.TextColor3 = Color3.fromRGB(52, 211, 153)
 infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.Text = ""
+
+dragInfo(infoLabel)
+dragInfo(infoDot)
 
 local infoToken = 0
 
@@ -325,6 +426,40 @@ local function hudSetModule(name, state)
 
     refreshArrayList()
     showToggleInfo(name, state)
+end
+
+-- // Podgląd HUD do ustawiania pozycji — pokazuje toggle info na 8 s,
+-- // żeby można go było przeciągnąć w dowolne miejsce ekranu.
+local function previewHudPosition()
+    if not hudGui or not hudGui.Parent then return end
+
+    infoToken = infoToken + 1
+    local token = infoToken
+
+    infoLabel.Text = "Toggle Info — przeciągnij"
+    infoLabel.TextColor3 = Color3.fromRGB(129, 140, 248)
+    infoLabel.TextTransparency = 0
+    infoDot.BackgroundColor3 = Color3.fromRGB(129, 140, 248)
+    infoStroke.Color = Color3.fromRGB(129, 140, 248)
+    infoStroke.Transparency = 0.2
+    infoToast.BackgroundTransparency = 0.15
+    infoToast.Size = UDim2.fromOffset(220, 30)
+    infoToast.Visible = true
+
+    task.delay(8, function()
+        if token == infoToken and infoToast.Parent then
+            infoToast.Visible = false
+        end
+    end)
+end
+
+-- // Przywraca domyślne pozycje HUD i czyści zapis w sesji.
+local function resetHudPositions()
+    if hudSessionStore then
+        hudSessionStore.hud = nil
+    end
+    arrayList.Position = UDim2.new(1, -16, 0, 16)
+    infoToast.Position = UDim2.new(0.5, 0, 1, -96)
 end
 
 local visualCache = {}
@@ -931,6 +1066,20 @@ SettingsTab:CreateToggle({
     end,
 })
 
+SettingsTab:CreateButton({
+    Name     = "Ustaw pozycję HUD",
+    Callback = function()
+        previewHudPosition()
+    end,
+})
+
+SettingsTab:CreateButton({
+    Name     = "Reset pozycji HUD",
+    Callback = function()
+        resetHudPositions()
+    end,
+})
+
 local backgroundModes = { "Pictures", "GIF" }
 local presetOrder = select(1, Window:GetBackgroundPresets())
 local currentMode, currentPreset, currentTransparency = Window:GetMenuBackground()
@@ -1075,6 +1224,10 @@ local function cleanupAll()
 
     pcall(function() overlayGui:Destroy() end)
     pcall(function() hudGui:Destroy() end)
+    for _, connection in ipairs(hudConnections) do
+        pcall(function() connection:Disconnect() end)
+    end
+    table.clear(hudConnections)
 
     local hum = getLocalHumanoid()
     if hum then
