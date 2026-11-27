@@ -199,7 +199,10 @@ function Explorer:Create(options)
         pcall(function() gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
     end
 
+    local cleaned = false
     local function cleanup()
+        if cleaned then return end
+        cleaned = true
         for _, c in ipairs(Connections) do
             pcall(function() c:Disconnect() end)
         end
@@ -212,6 +215,8 @@ function Explorer:Create(options)
             pcall(options.OnCleanup)
         end
     end
+
+    gui.Destroying:Connect(cleanup)
 
     if typeof(getgenv) == "function" then
         getgenv()._LuminaqExplorerCleanup = cleanup
