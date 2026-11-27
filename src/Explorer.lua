@@ -814,6 +814,10 @@ function Explorer:Create(options)
         if ok then
             notify(tostring(g.Name) .. " — uruchomiono.", true)
             setVisible(false)
+            -- Panel wyboru znika na dobre, żeby nie kolidował z menu uruchomionej gry
+            task.delay(0.8, function()
+                if not cleaned then cleanup() end
+            end)
         else
             notify("Błąd: " .. tostring(err), false)
         end
