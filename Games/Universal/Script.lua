@@ -16,7 +16,6 @@ local MENU = loadstring(game:HttpGet(mainUrl):gsub("^\239\187\191", ""))()
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
-local GuiService        = game:GetService("GuiService")
 local Workspace         = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
@@ -411,70 +410,37 @@ local function isAimKey(input)
     return code ~= nil and code == aimCfg.key
 end
 
-local function roundStep(value)
-    if value >= 0 then return math.floor(value + 0.5) end
-    return math.ceil(value - 0.5)
-end
-
-local function getMousePosition()
-    local ok, pos = pcall(function()
-        return UserInputService:GetMouseLocation()
-    end)
-    if ok and pos then
-        -- GetMouseLocation zwraca współrzędne z topbarem, a WorldToViewportPoint
-        -- bez niego — korygujemy GUI inset, żeby delta była dokładna.
-        local insetX, insetY = 0, 0
-        pcall(function()
-            local topLeft = GuiService:GetGuiInset()
-            if topLeft then
-                insetX, insetY = topLeft.X or 0, topLeft.Y or 0
-            end
-        end)
-        return pos.X - insetX, pos.Y - insetY
-    end
-
-    local camera = Workspace.CurrentCamera
-    if camera and camera.ViewportSize then
-        return camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2
-    end
-    return nil
-end
-
 -- Histereza celu: nie przeskakuj między graczami, gdy są blisko siebie.
 local lockedTarget = nil
 
--- Tłumienie oscylacji: gdy kierunek ruchu miga, zmniejszamy gain.
-local aimStability = 1.0
-local lastSignX, lastSignY = 0, 0
-local lastTargetPlayer = nil
+local AIM_DEADZONE = 6 -- px: w tej strefie aimbot nie rusza kamerą
 
-local AIM_DEADZONE = 6 -- px: w tej strefie aimbot nie rusza myszą
-
-local function screenPositionOf(camera, player)
+local function aimPointOf(camera, player)
     local _, hum, hrp, headPart = getCharacterParts(player)
     if not (hum and hum.Health > 0 and hrp) then return nil end
 
     local part = (aimCfg.target == "Body" and hrp) or headPart or hrp
     if not part then return nil end
 
-    local pos, onScreen = camera:WorldToViewportPoint(part.Position)
-    if not onScreen or not pos.Z or pos.Z <= 0 then return nil end
-    return pos
+    local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
+    if not onScreen or not screenPos.Z or screenPos.Z <= 0 then return nil end
+
+    return part.Position, screenPos
 end
 
 local function findAimTarget(camera, viewport)
     local centerX, centerY = viewport.X / 2, viewport.Y / 2
     local radius = math.max(fovCfg.radius or 160, 1)
-    local bestPlayer, bestPos, bestDist = nil, nil, radius
+    local bestPlayer, bestWorld, bestScreen, bestDist = nil, nil, nil, radius
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local pos = screenPositionOf(camera, player)
-            if pos then
-                local dx, dy = pos.X - centerX, pos.Y - centerY
+            local worldPos, screenPos = aimPointOf(camera, player)
+            if worldPos and screenPos then
+                local dx, dy = screenPos.X - centerX, screenPos.Y - centerY
                 local dist = math.sqrt(dx * dx + dy * dy)
                 if dist <= radius and dist < bestDist then
-                    bestPlayer, bestPos, bestDist = player, pos, dist
+                    bestPlayer, bestWorld, bestScreen, bestDist = player, worldPos, screenPos, dist
                 end
             end
         end
@@ -482,87 +448,79 @@ local function findAimTarget(camera, viewport)
 
     -- Histereza: trzymaj poprzedni cel, jeśli nadal jest w FOV i nieznacznie dalej.
     if lockedTarget and lockedTarget ~= bestPlayer and lockedTarget.Parent then
-        local pos = screenPositionOf(camera, lockedTarget)
-        if pos then
-            local dx, dy = pos.X - centerX, pos.Y - centerY
+        local worldPos, screenPos = aimPointOf(camera, lockedTarget)
+        if worldPos and screenPos then
+            local dx, dy = screenPos.X - centerX, screenPos.Y - centerY
             local dist = math.sqrt(dx * dx + dy * dy)
             if dist <= radius and dist <= bestDist * 1.25 then
-                return pos, lockedTarget
+                return worldPos, screenPos, lockedTarget
             end
         end
     end
 
     lockedTarget = bestPlayer
-    return bestPos, bestPlayer
+    return bestWorld, bestScreen, bestPlayer
 end
 
-local function updateAimbot()
-    if not aimCfg.enabled or not aimCfg.active then return end
-    if type(mousemoverel) ~= "function" then return end
+-- Własny stan kamery aimbota. Domyślna kamera Roblox nadpisuje CFrame na
+-- początku każdej klatki, więc lerpowanie od jej wartości nigdy by nie
+-- dążyło do celu — musimy pamiętać własną perspektywę między klatkami.
+local aimCF = nil
+
+local function updateAimbot(dt)
+    if not aimCfg.enabled or not aimCfg.active then
+        aimCF = nil
+        return
+    end
 
     local camera = Workspace.CurrentCamera
     if not camera then return end
     local viewport = camera.ViewportSize
     if not viewport then return end
 
-    local target, targetPlayer = findAimTarget(camera, viewport)
-    if not target then
-        lastTargetPlayer = nil
-        return
+    if not aimCF then
+        aimCF = camera.CFrame
     end
 
-    local mouseX, mouseY = getMousePosition()
-    if not mouseX then return end
+    -- Ustawiamy własną perspektywę przed namierzaniem, żeby FOV i render
+    -- korzystały z tej samej kamery (a nie z tej sterowanej myszą).
+    camera.CFrame = aimCF
 
-    local dx = target.X - mouseX
-    local dy = target.Y - mouseY
-    local dist = math.sqrt(dx * dx + dy * dy)
+    local worldPos, screenPos = findAimTarget(camera, viewport)
+    if not worldPos or not screenPos then return end
 
-    -- Martwa strefa — bez drgania, gdy celownik jest już na celu.
-    if dist <= AIM_DEADZONE then return end
+    -- Martwa strefa — nie obracaj kamery, gdy cel jest już na środku.
+    local centerX, centerY = viewport.X / 2, viewport.Y / 2
+    local offX, offY = screenPos.X - centerX, screenPos.Y - centerY
+    if math.sqrt(offX * offX + offY * offY) <= AIM_DEADZONE then return end
 
-    -- Tłumienie oscylacji (gdy cel przeskakuje na drugą stronę).
-    local signX = dx > 0 and 1 or (dx < 0 and -1 or 0)
-    local signY = dy > 0 and 1 or (dy < 0 and -1 or 0)
-    if targetPlayer == lastTargetPlayer then
-        local flipped = (signX ~= 0 and lastSignX ~= 0 and signX ~= lastSignX)
-            or (signY ~= 0 and lastSignY ~= 0 and signY ~= lastSignY)
-        if flipped then
-            aimStability = math.max(0.25, aimStability * 0.65)
-        else
-            aimStability = math.min(1.0, aimStability + (1.0 - aimStability) * 0.08)
-        end
-    else
-        aimStability = 1.0
-    end
-    lastSignX, lastSignY, lastTargetPlayer = signX, signY, targetPlayer
-
-    -- Czułość: tempo podążania (nisko = płynnie, trudniej wykryć).
-    local sensitivity = math.clamp(aimCfg.sensitivity, 1, 100) / 100
-    local intensity   = math.clamp(aimCfg.intensity, 1, 100) / 100
-
-    local follow   = 0.02 + sensitivity * 0.10 -- 0.02 .. 0.12
-    local strength = 0.35 + intensity * 0.65   -- 0.35 .. 1.00
-    local gain     = follow * strength * aimStability
-
-    dx = dx * gain
-    dy = dy * gain
-
-    local maxStep = 1 + intensity * 5 -- 1 .. 6 px na klatkę
-    local stepDist = math.sqrt(dx * dx + dy * dy)
-    if stepDist > maxStep then
-        local k = maxStep / stepDist
-        dx, dy = dx * k, dy * k
-    end
+    local currentCF = aimCF
+    if not currentCF then return end
+    if (worldPos - currentCF.Position).Magnitude < 0.1 then return end
 
     if aimCfg.jitter then
         -- Powolne, płynne mikro-drgania zamiast losowego szarpania.
         local t = tick()
-        dx = dx + math.sin(t * 2.4) * 0.6
-        dy = dy + math.sin(t * 3.7 + 1.3) * 0.6
+        worldPos = worldPos + Vector3.new(
+            math.sin(t * 2.4) * 0.08,
+            math.sin(t * 3.7 + 1.3) * 0.08,
+            0
+        )
     end
 
-    mousemoverel(roundStep(dx), roundStep(dy))
+    -- Czułość: tempo obrotu kamery (nisko = płynnie, trudniej wykryć).
+    local sensitivity = math.clamp(aimCfg.sensitivity, 1, 100) / 100
+    local intensity   = math.clamp(aimCfg.intensity, 1, 100) / 100
+
+    local alpha = (0.03 + sensitivity * 0.22) * (0.4 + intensity * 0.6)
+
+    -- Niezależność od FPS: przy 60 fps alpha bez zmian, przy 144 fps mniejsza.
+    local frameScale = math.clamp((dt or 0.016) * 60, 0.35, 2)
+    alpha = math.clamp(alpha * frameScale, 0.005, 0.35)
+
+    local goalCF = CFrame.new(currentCF.Position, worldPos)
+    aimCF = currentCF:Lerp(goalCF, alpha)
+    camera.CFrame = aimCF
 end
 
 local AimbotModule = CombatTab:CreateModule({
@@ -571,7 +529,10 @@ local AimbotModule = CombatTab:CreateModule({
     Icon        = "crosshair",
     Callback    = function(state)
         aimCfg.enabled = state
-        if not state then aimCfg.active = false end
+        if not state then
+            aimCfg.active = false
+            aimCF = nil
+        end
     end,
 })
 
@@ -840,6 +801,7 @@ local bindConnection = UserInputService.InputBegan:Connect(function(input, gameP
         else
             aimCfg.active = not aimCfg.active
         end
+        if not aimCfg.active then aimCF = nil end
     end
 end)
 
@@ -847,10 +809,12 @@ local aimReleaseConnection = UserInputService.InputEnded:Connect(function(input)
     if aimCfg.mode ~= "Hold" then return end
     if isAimKey(input) then
         aimCfg.active = false
+        aimCF = nil
     end
 end)
 
-local aimConnection = RunService.RenderStepped:Connect(updateAimbot)
+-- Aimbot obraca kamerę po aktualizacji domyślnej kamery (priorytet Camera + 1).
+RunService:BindToRenderStep("LuminaqAim", Enum.RenderPriority.Camera.Value + 1, updateAimbot)
 
 local playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
     destroyPlayerVisuals(player)
@@ -869,7 +833,7 @@ local function cleanupAll()
     pcall(function() speedConnection:Disconnect() end)
     pcall(function() bindConnection:Disconnect() end)
     pcall(function() aimReleaseConnection:Disconnect() end)
-    pcall(function() aimConnection:Disconnect() end)
+    pcall(function() RunService:UnbindFromRenderStep("LuminaqAim") end)
     pcall(function() playerRemovingConnection:Disconnect() end)
 
     for player in pairs(visualCache) do
