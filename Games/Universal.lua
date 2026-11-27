@@ -32,6 +32,14 @@ local LocalPlayer = Players.LocalPlayer
 -- // }
 -- // ==========================================================================
 local Games = {
+    {
+        Id          = "Universal",
+        Name        = "Universal",
+        Description = "ESP, Tracers, Nametag, Head ESP, WalkSpeed i ustawienia",
+        Icon        = "eye",
+        Tags        = { "esp", "visuals", "speed" },
+        Author      = "XxvoltikxX",
+    },
     -- Przyklad:
     -- {
     --     Id = "1234567890",

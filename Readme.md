@@ -133,6 +133,44 @@ local Games = {
 
 `CreateWindow` wraz z zakładkami i modułami nadal istnieje w `Main.lua` dla kompatybilności wstecznej — używaj go wewnątrz `Games/<ID>/Script.lua`. Panel główny (`CreateExplorer`) służy wyłącznie do wyboru gry.
 
+```lua
+local Window = MENU:CreateWindow({
+    Name            = "Universal",
+    ToggleUIKeybind = "K",
+    HideDashboard   = true, -- opcjonalnie: bez starej zakładki Dashboard
+})
+
+local Tab = Window:CreateTab("Visuals", "eye", 1)
+```
+
+### Tło menu (`SetMenuBackground`)
+
+Silnik okna obsługuje tło obrazkowe. Roblox nie ma natywnych GIF-ów, więc tryb **GIF** to animowany pokaz slajdów (crossfade co 4 s) między standardowymi wyglądami.
+
+```lua
+Window:SetMenuBackground("Pictures", "Aurora Flow", 0.30)
+Window:SetMenuBackground("GIF")            -- animowany slideshow
+Window:CycleMenuBackground()               -- następny wygląd
+Window:GetBackgroundPresets()              -- lista nazw wyglądów
+```
+
+Tryby: `"Pictures"`, `"GIF"`, `"Animowany"`. Standardowe wyglądy: `Aurora Flow`, `Neon Grid`, `Deep Space`, `Sunset Haze`, `Emerald Mist`, `Crimson Pulse`, `Tokyo Night`, `Frost`, `Mono`.
+
+### Bind menu
+
+```lua
+Window:SetMenuKeybind("K")
+print(Window:GetMenuKeybind()) -- "K"
+```
+
+### Pierwsza gra — Universal
+
+`Games/Universal/Script.lua` to kompletny przykład menu gry:
+
+- **Visuals**: ESP, Tracers, Nametag, Head ESP (kolory + rozmiar).
+- **Player**: WalkSpeed z trybami `Velocity` / `CFrame` i suwakiem prędkości.
+- **Settings**: bind menu, tryb tła (`Pictures` / `GIF`), wygląd, przezroczystość.
+
 ---
 
 ## 🧩 Ikony
@@ -151,9 +189,10 @@ Nieznana nazwa ikony nie zatrzyma menu — po prostu pozostawi pusty obrazek.
 Main.lua                 -- biblioteka, CreateWindow + CreateExplorer
 Loader.lua               -- zawsze uruchamia panel wyboru gry
 Games/Universal.lua      -- rejestr gier + ciche AntiAFK / AntiFling
+Games/Universal/Script.lua -- pierwsza gra: ESP / Tracers / Nametag / WalkSpeed
 Games/<ID>/Script.lua    -- skrypt wybranej gry
 src/Explorer.lua         -- panel "Welcome to LuminaqHub" + wyszukiwarka gier
-src/Window.lua           -- starszy silnik okna (CreateWindow)
+src/Window.lua           -- starszy silnik okna (CreateWindow + tło GIF/Pictures)
 src/Icons.lua            -- ikony Lucide
 src/elements/            -- kontrolki (Slider, Toggle, Dropdown, ...)
 src/tabs/                -- Dashboard i Settings starego okna

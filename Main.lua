@@ -1044,6 +1044,13 @@ function MenuLib:CreateWindow(options)
         end
     end
 
+    -- Sprzątanie po zniszczeniu GUI (przycisk X, re-exec, destroy z zewnątrz)
+    if UI and UI.ScreenGui then
+        UI.ScreenGui.Destroying:Connect(function()
+            pcall(Cleanup)
+        end)
+    end
+
     local WindowAPI = {}
     WindowAPI.Flags = UI.Flags
     function WindowAPI:ApplyConfig(cfg) UI:ApplyConfig(cfg) end
@@ -1064,6 +1071,35 @@ function MenuLib:CreateWindow(options)
             UI:SetGifBackground(assetId, transparency)
         end
         return WindowAPI
+    end
+    function WindowAPI:SetMenuBackground(mode, preset, transparency)
+        if UI and UI.SetMenuBackground then
+            UI:SetMenuBackground(mode, preset, transparency)
+        end
+        return WindowAPI
+    end
+    function WindowAPI:GetBackgroundPresets()
+        return (UI and UI.PicturePresetOrder) or {}, (UI and UI.PicturePresets) or {}
+    end
+    function WindowAPI:CycleMenuBackground()
+        if UI and UI.CycleMenuBackground then
+            return UI:CycleMenuBackground()
+        end
+        return nil
+    end
+    function WindowAPI:GetMenuBackground()
+        return (UI and UI.MenuBackgroundMode) or "Pictures",
+               (UI and UI.MenuBackgroundPreset) or "Aurora Flow",
+               (UI and UI.MenuBackgroundTransparency) or 0.30
+    end
+    function WindowAPI:SetMenuKeybind(name)
+        if UI and UI.SetMenuKeybind then
+            UI:SetMenuKeybind(name)
+        end
+        return WindowAPI
+    end
+    function WindowAPI:GetMenuKeybind()
+        return (UI and UI.CurrentMenuKeyName) or "K"
     end
     function WindowAPI:SetAntiFling(state)
         if UI and UI.SetAntiFling then
@@ -1231,17 +1267,19 @@ function MenuLib:CreateWindow(options)
     -- // ŁADOWANIE ZAKŁADEK SYSTEMOWYCH W TLE (Dashboard i Settings)
     -- // ============================================================
     task.spawn(function()
-        -- 1. Dashboard (LayoutOrder = 1) ----------------------
-        local dashOk, dashErr = pcall(function()
-            local DashboardModule = safeLoadUrl(baseUrl .. "tabs/Dashboard.lua", nil)
-            if DashboardModule and type(DashboardModule.Render) == "function" then
-                DashboardModule:Render(UI, 1, UI.Icons)
-            else
-                warn("[MenuLib] Dashboard.lua nie załadował się lub brak metody Render.")
+        -- 1. Dashboard (LayoutOrder = 1) — pomijany, gdy Config.HideDashboard
+        if not Config.HideDashboard then
+            local dashOk, dashErr = pcall(function()
+                local DashboardModule = safeLoadUrl(baseUrl .. "tabs/Dashboard.lua", nil)
+                if DashboardModule and type(DashboardModule.Render) == "function" then
+                    DashboardModule:Render(UI, 1, UI.Icons)
+                else
+                    warn("[MenuLib] Dashboard.lua nie załadował się lub brak metody Render.")
+                end
+            end)
+            if not dashOk then
+                warn("[MenuLib] Błąd podczas renderowania Dashboard: " .. tostring(dashErr))
             end
-        end)
-        if not dashOk then
-            warn("[MenuLib] Błąd podczas renderowania Dashboard: " .. tostring(dashErr))
         end
 
         -- 2. Settings (LayoutOrder = 999) ----------------------

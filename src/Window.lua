@@ -525,6 +525,68 @@ function Window:Create(config)
     local BgCorner = Instance.new("UICorner", BackgroundContainer)
     BgCorner.CornerRadius = UDim.new(0, 32)
 
+    -- // ============================================================
+    -- // PICTURE / GIF BACKGROUND LAYER
+    -- // Dwa bufory z gradientowym "obrazem" i płynnym przenikaniem.
+    -- // Roblox nie wspiera natywnie GIF-ów, więc tryb GIF to animowany
+    -- // pokaz slajdów (crossfade) między standardowymi wyglądami.
+    -- // ============================================================
+    local PictureLayer = Instance.new("Frame")
+    PictureLayer.Name = "PictureLayer"
+    PictureLayer.Size = UDim2.new(1, 0, 1, 0)
+    PictureLayer.BackgroundTransparency = 1
+    PictureLayer.BorderSizePixel = 0
+    PictureLayer.ClipsDescendants = true
+    PictureLayer.ZIndex = 1
+    PictureLayer.Visible = false
+    PictureLayer.Parent = BackgroundContainer
+    Instance.new("UICorner", PictureLayer).CornerRadius = UDim.new(0, 32)
+    UI.PictureLayer = PictureLayer
+
+    local function makePictureBuffer(bufferName, order)
+        local buf = Instance.new("Frame")
+        buf.Name = bufferName
+        buf.Size = UDim2.new(1, 0, 1, 0)
+        buf.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        buf.BackgroundTransparency = 1
+        buf.BorderSizePixel = 0
+        buf.ZIndex = order
+        buf.Parent = PictureLayer
+
+        local grad = Instance.new("UIGradient")
+        grad.Rotation = 25
+        grad.Color = ColorSequence.new(Color3.fromRGB(20, 24, 40), Color3.fromRGB(40, 20, 60))
+        grad.Parent = buf
+        return buf, grad
+    end
+
+    local PictureBufferA, PictureGradientA = makePictureBuffer("BufferA", 1)
+    local PictureBufferB, PictureGradientB = makePictureBuffer("BufferB", 1)
+
+    local PictureVignette = Instance.new("Frame")
+    PictureVignette.Name = "Vignette"
+    PictureVignette.Size = UDim2.new(1, 0, 1, 0)
+    PictureVignette.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    PictureVignette.BorderSizePixel = 0
+    PictureVignette.ZIndex = 2
+    PictureVignette.Parent = PictureLayer
+    local VignetteGradient = Instance.new("UIGradient", PictureVignette)
+    VignetteGradient.Rotation = 90
+    VignetteGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.55),
+        NumberSequenceKeypoint.new(0.5, 1),
+        NumberSequenceKeypoint.new(1, 0.55),
+    })
+
+    local PictureTint = Instance.new("Frame")
+    PictureTint.Name = "Tint"
+    PictureTint.Size = UDim2.new(1, 0, 1, 0)
+    PictureTint.BackgroundColor3 = Color3.fromRGB(4, 5, 10)
+    PictureTint.BackgroundTransparency = 0.55
+    PictureTint.BorderSizePixel = 0
+    PictureTint.ZIndex = 3
+    PictureTint.Parent = PictureLayer
+
     local WaveLayer = Instance.new("Frame")
     WaveLayer.Name = "WaveLayer"
     WaveLayer.Size = UDim2.new(1, 0, 1, 0)
@@ -671,6 +733,120 @@ function Window:Create(config)
     }
     UI.AnimPresets = animPresets
 
+    -- // ============================================================
+    -- // STANDARDOWE WYGLĄDY TŁA (tryb Pictures / GIF)
+    -- // ============================================================
+    local picturePresets = {
+        ["Aurora Flow"] = {
+            Rotation = 25,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 220, 160)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 160, 240)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(120, 60, 230)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 20, 45)),
+            }),
+        },
+        ["Neon Grid"] = {
+            Rotation = 135,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(24, 22, 64)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(64, 24, 130)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(0, 180, 220)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(8, 10, 28)),
+            }),
+        },
+        ["Deep Space"] = {
+            Rotation = 45,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(8, 10, 28)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(38, 22, 86)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(84, 42, 148)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(4, 4, 14)),
+            }),
+        },
+        ["Sunset Haze"] = {
+            Rotation = 70,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(251, 113, 133)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(249, 115, 22)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(217, 70, 239)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(40, 15, 35)),
+            }),
+        },
+        ["Emerald Mist"] = {
+            Rotation = 15,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(16, 185, 129)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(6, 95, 70)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(20, 60, 80)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(5, 20, 15)),
+            }),
+        },
+        ["Crimson Pulse"] = {
+            Rotation = 110,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(239, 68, 68)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(140, 30, 36)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(60, 12, 22)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(12, 5, 8)),
+            }),
+        },
+        ["Tokyo Night"] = {
+            Rotation = 60,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(244, 63, 94)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(192, 38, 211)),
+                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(6, 182, 212)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 18, 35)),
+            }),
+        },
+        ["Frost"] = {
+            Rotation = 40,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(226, 232, 240)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(148, 163, 184)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(71, 85, 105)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(15, 23, 42)),
+            }),
+        },
+        ["Mono"] = {
+            Rotation = 90,
+            Gradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(64, 64, 76)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(32, 32, 40)),
+                ColorSequenceKeypoint.new(0.8, Color3.fromRGB(18, 18, 24)),
+                ColorSequenceKeypoint.new(1.0, Color3.fromRGB(8, 8, 12)),
+            }),
+        },
+    }
+
+    local picturePresetOrder = {
+        "Aurora Flow", "Neon Grid", "Deep Space", "Sunset Haze",
+        "Emerald Mist", "Crimson Pulse", "Tokyo Night", "Frost", "Mono",
+    }
+
+    UI.PicturePresets = picturePresets
+    UI.PicturePresetOrder = picturePresetOrder
+
+    local bgMode = (config and config.MenuConfig and config.MenuConfig["MenuBackgroundMode"]) or "Pictures"
+    local bgPreset = (config and config.MenuConfig and config.MenuConfig["MenuBackgroundPreset"]) or "Aurora Flow"
+    local bgTransparency = (config and config.MenuConfig and config.MenuConfig["MenuBackgroundTransparency"]) or 0.30
+    bgTransparency = math.clamp(tonumber(bgTransparency) or 0.30, 0, 0.95)
+    if bgMode ~= "Pictures" and bgMode ~= "GIF" and bgMode ~= "Animowany" then
+        bgMode = "Pictures"
+    end
+    if not picturePresets[bgPreset] then
+        bgPreset = "Aurora Flow"
+    end
+
+    local bgActiveBuffer = 1
+    local bgSlideClock = 0
+    local bgSlideInterval = 4
+
+    UI.MenuBackgroundMode = bgMode
+    UI.MenuBackgroundPreset = bgPreset
+    UI.MenuBackgroundTransparency = bgTransparency
+
     local currentAnimMode = (config and config.MenuConfig and config.MenuConfig["AnimatedTheme"])
         or (config and config.AnimatedTheme)
         or "Cyberpunk"
@@ -728,7 +904,7 @@ function Window:Create(config)
     local function applyAnimPreset(mode)
         local p = animPresets[mode] or animPresets["Cyberpunk"]
         WaveGradient.Color = p.Color
-        if mode == "None" then
+        if mode == "None" or bgMode ~= "Animowany" then
             WaveLayer.Visible = false
         else
             WaveLayer.Visible = true
@@ -736,14 +912,106 @@ function Window:Create(config)
         end
     end
 
+    -- // ============================================================
+    -- // SILNIK TŁA OBRAZKOWEGO (Pictures / GIF)
+    -- // ============================================================
+    local function paintPictureBuffer(buffer, gradient, presetKey)
+        local p = picturePresets[presetKey] or picturePresets["Aurora Flow"]
+        gradient.Color = p.Gradient
+        gradient.Rotation = p.Rotation or 0
+        buffer.Visible = true
+    end
+
+    local function refreshBackground(crossfade)
+        local show = (bgMode == "Pictures" or bgMode == "GIF")
+        if not show then
+            PictureLayer.Visible = false
+            UI.MenuBackgroundMode = bgMode
+            return
+        end
+
+        PictureLayer.Visible = true
+
+        local incoming = (bgActiveBuffer == 1) and PictureBufferB or PictureBufferA
+        local outgoing = (bgActiveBuffer == 1) and PictureBufferA or PictureBufferB
+        local inGrad   = (bgActiveBuffer == 1) and PictureGradientB or PictureGradientA
+
+        paintPictureBuffer(incoming, inGrad, bgPreset)
+        incoming.BackgroundTransparency = 1
+
+        local duration = crossfade and 0.7 or 0.001
+        TweenService:Create(incoming, TweenInfo.new(duration), {
+            BackgroundTransparency = bgTransparency
+        }):Play()
+        TweenService:Create(outgoing, TweenInfo.new(duration), {
+            BackgroundTransparency = 1
+        }):Play()
+
+        bgActiveBuffer = (bgActiveBuffer == 1) and 2 or 1
+
+        UI.MenuBackgroundMode = bgMode
+        UI.MenuBackgroundPreset = bgPreset
+        UI.MenuBackgroundTransparency = bgTransparency
+    end
+
+    function UI:SetMenuBackground(mode, preset, transparency)
+        if mode ~= nil then
+            local m = tostring(mode)
+            if m == "Pictures" or m == "GIF" or m == "Animowany" then
+                bgMode = m
+            end
+        end
+        if preset ~= nil and picturePresets[tostring(preset)] then
+            bgPreset = tostring(preset)
+        end
+        if transparency ~= nil then
+            bgTransparency = math.clamp(tonumber(transparency) or 0.30, 0, 0.95)
+        end
+
+        bgSlideClock = 0
+        refreshBackground(true)
+        applyAnimPreset(currentAnimMode)
+
+        if UI.SaveMenuConfig then
+            pcall(function()
+                UI.SaveMenuConfig("MenuBackgroundMode", bgMode)
+                UI.SaveMenuConfig("MenuBackgroundPreset", bgPreset)
+                UI.SaveMenuConfig("MenuBackgroundTransparency", bgTransparency)
+            end)
+        end
+        return UI
+    end
+
+    function UI:CycleMenuBackground()
+        local order = picturePresetOrder
+        local idx = 1
+        for i, key in ipairs(order) do
+            if key == bgPreset then idx = i break end
+        end
+        bgPreset = order[(idx % #order) + 1] or order[1]
+        refreshBackground(true)
+        return bgPreset
+    end
+
     local animHeartbeat
-    animHeartbeat = RunService.Heartbeat:Connect(function()
+    animHeartbeat = RunService.Heartbeat:Connect(function(dt)
         if not MainFrame or not MainFrame.Parent then
             if animHeartbeat then animHeartbeat:Disconnect() end
             return
         end
 
         local t = tick()
+
+        -- Tryb GIF: automatyczny pokaz slajdów (crossfade co kilka sekund)
+        if bgMode == "GIF" and PictureLayer.Visible then
+            bgSlideClock = bgSlideClock + (dt or 0)
+            if bgSlideClock >= bgSlideInterval then
+                bgSlideClock = 0
+                UI:CycleMenuBackground()
+            end
+        else
+            bgSlideClock = 0
+        end
 
         -- Animacja fal świetlnych
         if currentAnimMode ~= "None" and WaveLayer.Visible then
@@ -820,6 +1088,7 @@ function Window:Create(config)
 
     -- Inicjalizacja tła oraz znaku wodnego
     applyAnimPreset(currentAnimMode)
+    refreshBackground(false)
     applyWatermark()
 
     -- =========================================================================
